@@ -40,4 +40,9 @@ oc login --token=sha256~xxxxx --server=https://api.rm3.7wse.p1.openshiftapps.com
 oc whoami
 oc project
 ```
+
+## Utiliser le bon porjet
+```shell
+oc project prohart80-dev
+```
  
