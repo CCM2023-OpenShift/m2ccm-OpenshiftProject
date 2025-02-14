@@ -10,11 +10,11 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native-micro -t quarkus/openshiftproject .
+# docker build -f src/main/docker/Dockerfile.native-micro -t quarkus/hibernate-orm-quickstart .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/openshiftproject
+# docker run -i --rm -p 8080:8080 quarkus/hibernate-orm-quickstart
 #
 ###
 FROM quay.io/quarkus/quarkus-micro-image:2.0
@@ -22,7 +22,7 @@ WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
     && chown 1001:root /work
-COPY --chown=1001:root target/*-runner /work/application
+COPY --chown=1001:root --chmod=0755 target/*-runner /work/application
 
 EXPOSE 8080
 USER 1001
