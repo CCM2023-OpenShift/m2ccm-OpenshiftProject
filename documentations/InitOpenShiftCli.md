@@ -22,13 +22,12 @@ oc version
 
 # 2️⃣ Se connecter à ton OpenShift Developer Sandbox
 ## Trouver la ligne de commande pour se connecter
- - Se rendre sur l'url https://www.redhat.com/fr/products/trials et cliquez sur "Essayer"
- - Tout en bas à gauche "Developper sandbox"
+ - Se rendre sur l'url https://console.redhat.com/openshift/sandbox/ et cliquez sur "Essayer"
  - Dans la catégorie Red hat / Openshift cliquer sur "Launch"
  - Une fois sur le site (tel que : https://console-openshift-console.apps.rm3.7wse.p1.openshiftapps.com/):
  - Une fois sur la console OpenShift (https://console-openshift-console.apps...), clique sur "?" en haut à droite.
  - Sélectionne "Command Line Tools". 
- - Copie la commande oc login fournie.
+ - Cliquer sur "Copier la commande de connexion" et récupérer la commande fournie.
 
 ## Se connecter
 # ⚠️ Ne fonctionne pas sur la co de l'UPJV car port non autorisé
