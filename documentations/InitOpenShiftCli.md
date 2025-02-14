@@ -31,6 +31,7 @@ oc version
  - Copie la commande oc login fournie.
 
 ## Se connecter
+# ⚠️ Ne fonctionne pas sur la co de l'UPJV car port non autorisé
 ```shell
 oc login --token=sha256~xxxxx --server=https://api.rm3.7wse.p1.openshiftapps.com:6443 
 ```
