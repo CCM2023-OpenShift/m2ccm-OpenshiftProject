@@ -30,21 +30,16 @@
     </dependencyManagement>
 
     <dependencies>
+
+        <!-- OpenAPI (Swagger) pour la documentation -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-openshift</artifactId>
+            <artifactId>quarkus-smallrye-openapi</artifactId>
         </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-image-docker</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-image-jib</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
