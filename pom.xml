@@ -123,6 +123,32 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.26.0</version> <!-- Dernière version stable -->
+                <executions>
+                    <execution>
+                        <phase>verify</phase> <!-- PMD s'exécute à la phase verify -->
+                        <goals>
+                            <goal>check</goal> <!-- Échoue le build si des erreurs sont trouvées -->
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.9.1.0</version> <!-- Dernière version stable -->
+                <executions>
+                    <execution>
+                        <phase>verify</phase> <!-- SpotBugs s'exécute à la phase verify -->
+                        <goals>
+                            <goal>check</goal> <!-- Échoue le build si des bugs sont trouvés -->
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
