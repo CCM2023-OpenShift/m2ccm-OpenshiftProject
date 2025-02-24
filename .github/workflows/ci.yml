@@ -21,18 +21,11 @@ jobs:
           distribution: temurin
           cache: maven
 
-      # ✅ 3. Compilation et Vérification
-      - name: Build with Maven
+      # ✅ 3. Compilation et Vérification de la Qualité
+      - name: Build and Verify with Maven
         run: ./mvnw clean verify --no-transfer-progress
 
-      # ✅ 4. Qualité du Code : Checkstyle, PMD, SpotBugs
-      - name: Code Quality Checks
-        run: |
-          ./mvnw checkstyle:check
-          ./mvnw pmd:check
-          ./mvnw spotbugs:check
-
-      # ✅ 5. Upload des Rapports (en cas d'échec)
+      # ✅ 4. Upload des Rapports (en cas de succès ou d'échec)
       - name: Upload Reports
         if: always()  # ✅ Téléverse même si le workflow échoue ou réussit
         uses: actions/upload-artifact@v4
@@ -40,5 +33,5 @@ jobs:
           name: Reports
           path: |
             target/reports/pmd/**          # ✅ Upload tout le dossier PMD (HTML, JS, CSS)
-            target/checkstyle/checkstyle.html
+            target/checkstyle/**
           retention-days: 7                # ✅ Conserve les fichiers pendant 7 jours
