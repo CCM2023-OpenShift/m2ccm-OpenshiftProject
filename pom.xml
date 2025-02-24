@@ -60,6 +60,12 @@
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.maven.doxia</groupId>
+            <artifactId>doxia-module-xhtml5</artifactId>   <!-- ✅ Module HTML pour Doxia -->
+            <version>2.0.0</version>                     <!-- ✅ Version stable et récente -->
+        </dependency>
+
         <!-- Testing: -->
         <dependency>
             <groupId>io.quarkus</groupId>
