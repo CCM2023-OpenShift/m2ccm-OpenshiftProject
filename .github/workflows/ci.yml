@@ -30,8 +30,8 @@ jobs:
         if: always()  # ✅ Téléverse même si le workflow échoue ou réussit
         uses: actions/upload-artifact@v4
         with:
-          name: Reports
+          name: Reports_Code_Quality
           path: |
-            target/reports/pmd/**          # ✅ Upload tout le dossier PMD (HTML, JS, CSS)
+            target/reports/**          # ✅ Upload tout le dossier PMD (HTML, JS, CSS)
             target/checkstyle/**
           retention-days: 7                # ✅ Conserve les fichiers pendant 7 jours
