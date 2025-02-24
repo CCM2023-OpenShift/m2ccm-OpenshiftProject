@@ -33,5 +33,5 @@ jobs:
           name: Reports_Code_Quality
           path: |
             target/reports/*
-            target/checkstyle/**
+            target/checkstyle/*
           retention-days: 7                # ✅ Conserve les fichiers pendant 7 jours
