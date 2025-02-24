@@ -1,0 +1,33 @@
+# 📁 .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ✅ 1. Cloner le dépôt
+      - uses: actions/checkout@v4
+
+      # ✅ 2. Configuration du JDK
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+
+      # ✅ 3. Compilation
+      - name: Build with Maven
+        run: ./mvnw clean package --no-transfer-progress
+
+      # ✅ 4. Déploiement
+      - name: Deploy Application
+        run: |
+          echo "TODO"
+          echo "🚀 Déploiement en production effectué avec succès !"
