@@ -47,7 +47,11 @@ analyse statique de code source qui détecte :
 ```
 
 ### SpotBugs
-#### TODO
+SpotBugs est un outil d'analyse statique qui détecte les bugs potentiels dans le code Java.
+
+```shell
+./mvnw spotbugs:check
+```
 
 ## Building the demo
 

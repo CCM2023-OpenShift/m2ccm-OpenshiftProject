@@ -3,8 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.acme</groupId>
-    <artifactId>hibernate-orm-quickstart</artifactId>
+    <groupId>fr.ccm2</groupId>
+    <artifactId>CCM2-OpenShift-Project</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
@@ -119,9 +119,14 @@
                         <phase>verify</phase>
                         <goals>
                             <goal>check</goal>
+                            <goal>checkstyle</goal> <!-- Permet de générer un rapport HTML -->
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <outputFile>target/checkstyle/checkstyle.html</outputFile>
+                    <outputFormat>html</outputFormat>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -170,7 +175,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${surefire-plugin.version}</version>
+                        <!--<version>${surefire-plugin.version}</version>-->
                         <executions>
                             <execution>
                                 <goals>
