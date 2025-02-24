@@ -32,6 +32,6 @@ jobs:
         with:
           name: Reports_Code_Quality
           path: |
-            target/reports/**          # ✅ Upload tout le dossier PMD (HTML, JS, CSS)
+            target/reports/*
             target/checkstyle/**
           retention-days: 7                # ✅ Conserve les fichiers pendant 7 jours
