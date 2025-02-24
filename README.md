@@ -29,6 +29,26 @@ been set, and that a JDK 17+ `java` command is on the path.
 See the [Building a Native Executable guide](https://quarkus.io/guides/building-native-image)
 for help setting up your environment.
 
+## Code Qualtiy
+### CheckStyle 
+vérifier le style de code Java et garantir le respect des conventions de codage.
+```shell
+mvn checkstyle:check
+```
+### PMD
+analyse statique de code source qui détecte :
+
+- 📌 **Les erreurs de programmation courantes** (ex. null pointer, comparaison incorrecte)
+- 💡 **Les mauvaises pratiques de codage** (ex. code dupliqué, méthodes trop complexes)
+- 🧹 **Les problèmes de style et de lisibilité** (ex. variables non utilisées)
+
+```shell
+./mvnw pmd:pmd
+```
+
+### SpotBugs
+#### TODO
+
 ## Building the demo
 
 Launch the Maven build on the checked out sources of this demo:
