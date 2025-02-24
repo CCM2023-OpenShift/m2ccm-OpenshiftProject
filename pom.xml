@@ -152,6 +152,14 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <effort>Max</effort>               <!-- ✅ Analyse approfondie -->
+                    <threshold>Low</threshold>         <!-- ✅ Capture même les erreurs mineures -->
+                    <xmlOutput>false</xmlOutput>       <!-- ❌ Désactive le XML -->
+                    <htmlOutput>true</htmlOutput>      <!-- ✅ Active le HTML -->
+                    <outputDirectory>target/spotbugs</outputDirectory> <!-- 📁 Dossier des rapports -->
+                    <failOnError>true</failOnError>    <!-- ❗ Échoue le build si des bugs sont trouvés -->
+                </configuration>
             </plugin>
         </plugins>
     </build>

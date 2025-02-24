@@ -34,4 +34,5 @@ jobs:
           path: |
             target/reports/*
             target/checkstyle/*
+            target/spotbugs/*
           retention-days: 7                # ✅ Conserve les fichiers pendant 7 jours
