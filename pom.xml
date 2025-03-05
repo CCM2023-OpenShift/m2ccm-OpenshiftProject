@@ -123,6 +123,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <configLocation>src/main/resources/checkstyle.xml</configLocation>
                     <outputFile>target/checkstyle/checkstyle.html</outputFile>
                     <outputFormat>html</outputFormat>
                 </configuration>
