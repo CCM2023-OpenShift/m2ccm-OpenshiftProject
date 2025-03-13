@@ -1,3 +1,9 @@
+# Resources
+## GET
+```shell
+oc get deployments -n prohart80-dev
+```
+
 # PVC
 ## GET
 ```shell

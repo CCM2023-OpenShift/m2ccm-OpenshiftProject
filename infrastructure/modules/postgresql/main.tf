@@ -6,7 +6,7 @@ resource "kubernetes_persistent_volume_claim" "postgresql_pvc" {
 
   spec {
     access_modes       = ["ReadWriteOnce"]
-    storage_class_name = "gp3"  # Utilisation d'AWS EBS gp3 (WaitForFirstConsumer)
+    storage_class_name = "gp3"  # Using AWS EBS gp3 (WaitForFirstConsumer mode)
     resources {
       requests = {
         storage = "1Gi"
@@ -15,12 +15,12 @@ resource "kubernetes_persistent_volume_claim" "postgresql_pvc" {
   }
 
   timeouts {
-    create = "10m"  # Délai d'attente allongé pour la création
+    create = "5m"  # Extended timeout for creation
   }
 
   lifecycle {
     ignore_changes = [
-      spec[0].volume_name  # Ignore les modifications du volume_name généré après binding
+      spec[0].volume_name  # Ignore changes to volume_name after binding
     ]
   }
 }
@@ -52,8 +52,7 @@ resource "kubernetes_deployment" "postgresql" {
         }
         container {
           name  = "postgresql"
-          image = "registry.redhat.io/rhel9/postgresql-15"  # Image certifiée OpenShift
-
+          image = "registry.redhat.io/rhel9/postgresql-15"  # OpenShift-certified image
           env {
             name  = "POSTGRES_DB"
             value = var.db_name
@@ -98,7 +97,6 @@ resource "kubernetes_service" "postgresql" {
     name      = "postgresql-service"
     namespace = var.namespace
   }
-
   spec {
     selector = {
       app = "postgresql"
