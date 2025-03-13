@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quarkus-app
+  namespace: prohart80-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quarkus-app
+  template:
+    metadata:
+      labels:
+        app: quarkus-app
+    spec:
+      containers:
+        - name: quarkus-app
+          image: image-registry.openshift-image-registry.svc:5000/prohart80-dev/quarkus-app:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: QUARKUS_PROFILE
+              value: "prod"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quarkus-service
+  namespace: prohart80-dev
+spec:
+  selector:
+    app: quarkus-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: quarkus-route
+  namespace: prohart80-dev
+spec:
+  to:
+    kind: Service
+    name: quarkus-service
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+  wildcardPolicy: None
