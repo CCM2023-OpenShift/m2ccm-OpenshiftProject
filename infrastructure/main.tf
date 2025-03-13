@@ -9,7 +9,7 @@ terraform {
 
 provider "kubernetes" {
   host     = "https://api.rm3.7wse.p1.openshiftapps.com:6443"
-  token    = "sha256~mpBhP4em0z3zyUmSyJOnv-Q6qJGdIbfhNq3i1fNbEAM"
+  token    = "sha256~PJFOJ6Aqty-xYHsEAfurkanLPKbtxRgwLIKopbRCsuE"
   insecure = true
 }
 
