@@ -67,6 +67,9 @@ jobs:
           oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
           oc project $OPENSHIFT_PROJECT
 
+      - name: Debug - Vérifier les fichiers présents
+        run: ls -R infrastructure
+
       - name: Apply OpenShift Deployment YAML
         env:
           OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
@@ -79,4 +82,3 @@ jobs:
         run: |
           oc set image deployment/quarkus-app quarkus-app=image-registry.openshift-image-registry.svc:5000/$OPENSHIFT_PROJECT/quarkus-app:latest
           oc rollout restart deployment/quarkus-app
-  
