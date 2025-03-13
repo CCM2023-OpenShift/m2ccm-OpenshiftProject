@@ -45,9 +45,9 @@ nb-configuration.xml
 .certs/
 
 #terraform
-infrastructure/.terraform
-infrastructure/terraform.tfstate
-infrastructure/terraform.tfstate.backup
-infrastructure/.terraform.lock.hcl
-infrastructure/.terraform.lock.info
+*/.terraform
+*/terraform.tfstate
+*/terraform.tfstate.backup
+*/.terraform.lock.hcl
+*/.terraform.lock.info
 

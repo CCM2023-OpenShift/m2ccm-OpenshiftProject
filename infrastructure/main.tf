@@ -17,6 +17,6 @@ module "postgresql" {
   source      = "./modules/postgresql"
   namespace   = var.namespace
   db_name     = "mydatabase"
-  db_user     = "admin"
-  db_password = "SuperSecret"
+  db_user     = "quarkus"
+  db_password = "QuarkusSecret"
 }

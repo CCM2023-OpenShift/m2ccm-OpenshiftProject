@@ -1,0 +1,75 @@
+name: Build & Deploy Quarkus on OpenShift
+
+on:
+  push:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: maven
+
+      - name: Build Quarkus Application
+        run: ./mvnw clean package -DskipTests
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+        run: |
+          oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+          oc project prohart80-dev
+
+      - name: Get OpenShift Internal Registry URL
+        run: |
+          export OPENSHIFT_REGISTRY=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
+          echo "OPENSHIFT_REGISTRY=$OPENSHIFT_REGISTRY" >> $GITHUB_ENV
+
+      - name: Log in to OpenShift Internal Registry
+        run: |
+          echo ${{ secrets.OPENSHIFT_TOKEN }} | docker login -u $(oc whoami) --password-stdin $OPENSHIFT_REGISTRY
+
+      - name: Build and Push Docker Image to OpenShift
+        run: |
+          IMAGE_NAME=$OPENSHIFT_REGISTRY/prohart80-dev/quarkus-app:latest
+          docker build -f src/main/docker/Dockerfile.jvm -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+        run: |
+          oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+          oc project prohart80-dev
+
+      - name: Deploy to OpenShift
+        run: |
+          export OPENSHIFT_REGISTRY=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
+          IMAGE_NAME=$OPENSHIFT_REGISTRY/prohart80-dev/quarkus-app:latest
+          oc set image deployment/quarkus-app quarkus-app=$IMAGE_NAME
+          oc rollout restart deployment/quarkus-app

@@ -1,36 +1,8 @@
-resource "kubernetes_persistent_volume_claim" "postgresql_pvc" {
+resource "kubernetes_deployment" "postgresql_deployment" {
   metadata {
-    name      = "postgresql-pvc"
+    name      = "postgresql-deployment"
     namespace = var.namespace
   }
-
-  spec {
-    access_modes       = ["ReadWriteOnce"]
-    storage_class_name = "gp3"  # Using AWS EBS gp3 (WaitForFirstConsumer mode)
-    resources {
-      requests = {
-        storage = "1Gi"
-      }
-    }
-  }
-
-  timeouts {
-    create = "5m"  # Extended timeout for creation
-  }
-
-  lifecycle {
-    ignore_changes = [
-      spec[0].volume_name  # Ignore changes to volume_name after binding
-    ]
-  }
-}
-
-resource "kubernetes_deployment" "postgresql" {
-  metadata {
-    name      = "postgresql"
-    namespace = var.namespace
-  }
-
   spec {
     replicas = 1
     selector {
@@ -54,16 +26,20 @@ resource "kubernetes_deployment" "postgresql" {
           name  = "postgresql"
           image = "registry.redhat.io/rhel9/postgresql-15"  # OpenShift-certified image
           env {
-            name  = "POSTGRES_DB"
+            name  = "POSTGRESQL_DATABASE"
             value = var.db_name
           }
           env {
-            name  = "POSTGRES_USER"
+            name  = "POSTGRESQL_USER"
             value = var.db_user
           }
           env {
-            name  = "POSTGRES_PASSWORD"
+            name  = "POSTGRESQL_PASSWORD"
             value = var.db_password
+          }
+          env {
+            name  = "POSTGRESQL_ADMIN_PASSWORD"
+            value = var.db_admin_password
           }
           env {
             name  = "POSTGRES_INITDB_ARGS"
@@ -83,9 +59,7 @@ resource "kubernetes_deployment" "postgresql" {
         }
         volume {
           name = "postgresql-storage"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.postgresql_pvc.metadata[0].name
-          }
+          empty_dir {}  # Utilisation d'un emptyDir au lieu d'un PVC
         }
       }
     }

@@ -13,12 +13,19 @@ variable "db_name" {
 variable "db_user" {
   description = "Nom d'utilisateur PostgreSQL"
   type        = string
-  default     = "admin"
+  default     = "quarkus"
 }
 
 variable "db_password" {
   description = "Mot de passe PostgreSQL"
   type        = string
   sensitive   = true
-  default     = "SuperSecret"
+  default     = "QuarkusSecret"
+}
+
+variable "db_admin_password" {
+    description = "Admin password for PostgreSQL"
+    type        = string
+    sensitive   = true
+    default     = "SuperSecretAdmin"
 }
