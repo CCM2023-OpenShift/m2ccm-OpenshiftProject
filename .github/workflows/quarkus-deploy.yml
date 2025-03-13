@@ -58,7 +58,8 @@ jobs:
           OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
         run: |
           oc new-build --binary --strategy=docker --name=quarkus-app -n $OPENSHIFT_PROJECT || true
-          oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT --dockerfile=src/main/docker/Dockerfile.jvm
+          cp src/main/docker/Dockerfile.jvm Dockerfile
+          oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT
 
   deploy:
     needs: build-and-push
