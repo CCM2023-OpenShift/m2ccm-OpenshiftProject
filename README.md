@@ -53,6 +53,10 @@ SpotBugs est un outil d'analyse statique qui détecte les bugs potentiels dans l
 ./mvnw spotbugs:check
 ```
 
+### JaCoCo
+
+#SOON
+
 ## Building the demo
 
 Launch the Maven build on the checked out sources of this demo:
