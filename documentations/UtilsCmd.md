@@ -24,6 +24,10 @@ oc get pvc -n prohart80-dev postgresql-pvc
 ```shell
 oc delete pvc -n prohart80-dev postgresql-pvc
 ```
+# Images
+```shell
+oc get is quarkus-app -n prohart80-dev
+```
 # Terraform
 ## apply
 ```shell

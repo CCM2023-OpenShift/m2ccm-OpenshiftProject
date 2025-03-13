@@ -41,12 +41,24 @@ jobs:
         run: |
           oc get is quarkus-app -n $OPENSHIFT_PROJECT || oc create is quarkus-app -n $OPENSHIFT_PROJECT
 
+      - name: Clean up previous failed builds
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc delete build -l buildconfig=quarkus-app -n $OPENSHIFT_PROJECT --ignore-not-found=true || true
+
+      - name: Set Dockerfile path in BuildConfig
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc patch bc quarkus-app -n $OPENSHIFT_PROJECT --type=merge -p '{"spec":{"source":{"dockerfilePath":"src/main/docker/Dockerfile.jvm"}}}' || true
+
       - name: Build and Push Image to OpenShift ImageStream
         env:
           OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
         run: |
           oc new-build --binary --strategy=docker --name=quarkus-app -n $OPENSHIFT_PROJECT || true
-          oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT
+          oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT --dockerfile=src/main/docker/Dockerfile.jvm
 
   deploy:
     needs: build-and-push
