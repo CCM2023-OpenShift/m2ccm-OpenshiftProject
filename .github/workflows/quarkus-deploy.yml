@@ -68,7 +68,7 @@ jobs:
           oc project $OPENSHIFT_PROJECT
 
       - name: Debug - Vérifier les fichiers présents
-        run: ls -R infrastructure
+        run: ls -al
 
       - name: Apply OpenShift Deployment YAML
         env:
