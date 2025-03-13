@@ -52,6 +52,9 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Install OpenShift CLI
         run: |
           curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
@@ -66,9 +69,6 @@ jobs:
         run: |
           oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
           oc project $OPENSHIFT_PROJECT
-
-      - name: Debug - Vérifier les fichiers présents
-        run: ls -al
 
       - name: Apply OpenShift Deployment YAML
         env:
