@@ -12,6 +12,9 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
 
+    env:
+      APP_NAME: react-app-1
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -60,22 +63,23 @@ jobs:
 
       - name: Set Dockerfile path in BuildConfig
         run: |
-          oc patch bc react-app -n ${{ vars.OPENSHIFT_PROJECT }} --type=merge -p '{"spec":{"source":{"dockerfilePath":"static/front/Dockerfile"}}}' || true
+          oc patch bc ${{ env.APP_NAME }} -n ${{ vars.OPENSHIFT_PROJECT }} --type=merge -p '{"spec":{"source":{"dockerfilePath":"static/front/Dockerfile"}}}' || true
 
       - name: Build and Push Image to OpenShift ImageStream
         run: |
-          oc new-build --binary --strategy=docker --name=react-app -n ${{ vars.OPENSHIFT_PROJECT }} || true
-          oc start-build react-app --from-dir=./dist --follow -n ${{ vars.OPENSHIFT_PROJECT }}
+          oc new-build --binary --strategy=docker --name=${{ env.APP_NAME }} -n ${{ vars.OPENSHIFT_PROJECT }} || true
+          oc start-build ${{ env.APP_NAME }} --from-dir=./dist --follow -n ${{ vars.OPENSHIFT_PROJECT }}
+          oc get builds -n ${{ vars.OPENSHIFT_PROJECT }}
 
       - name: Wait for build to complete
         run: |
-          oc wait --for=condition=complete --timeout=600s build/react-app -n ${{ vars.OPENSHIFT_PROJECT }}
+          oc wait --for=condition=complete --timeout=600s build/${{ env.APP_NAME }} -n ${{ vars.OPENSHIFT_PROJECT }}
 
       - name: Deploy to OpenShift
         run: |
-          oc new-app react-app -n ${{ vars.OPENSHIFT_PROJECT }} || true
-          oc expose svc/react-app -n ${{ vars.OPENSHIFT_PROJECT }} || true
+          oc new-app ${{ env.APP_NAME }} -n ${{ vars.OPENSHIFT_PROJECT }} || true
+          oc expose svc/${{ env.APP_NAME }} -n ${{ vars.OPENSHIFT_PROJECT }} || true
 
       - name: Get deployed route
         run: |
-          echo "App available at: http://$(oc get route react-app -n ${{ vars.OPENSHIFT_PROJECT }} -o jsonpath='{.spec.host}')"
+          echo "App available at: http://$(oc get route ${{ env.APP_NAME }} -n ${{ vars.OPENSHIFT_PROJECT }} -o jsonpath='{.spec.host}')"
