@@ -78,3 +78,7 @@ jobs:
           oc start-build react-app --from-dir=./dist --follow
           oc new-app react-app
           oc expose svc/react-app
+
+      - name: Get deployed route
+        run:
+          echo "App available at: http://$(oc get route react-app -o jsonpath='{.spec.host}')"
