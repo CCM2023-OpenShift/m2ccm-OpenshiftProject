@@ -1,0 +1,97 @@
+name: Build & Deploy Quarkus on OpenShift
+
+on:
+  push:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: maven
+
+      - name: Build Quarkus Application
+        run: ./mvnw clean package -DskipTests
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+          oc project $OPENSHIFT_PROJECT
+
+      - name: Create OpenShift ImageStream (if not exists)
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc get is quarkus-app -n $OPENSHIFT_PROJECT || oc create is quarkus-app -n $OPENSHIFT_PROJECT
+
+      - name: Clean up previous failed builds
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc delete build -l buildconfig=quarkus-app -n $OPENSHIFT_PROJECT --ignore-not-found=true || true
+
+      - name: Set Dockerfile path in BuildConfig
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc patch bc quarkus-app -n $OPENSHIFT_PROJECT --type=merge -p '{"spec":{"source":{"dockerfilePath":"src/main/docker/Dockerfile.jvm"}}}' || true
+
+      - name: Build and Push Image to OpenShift ImageStream
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc new-build --binary --strategy=docker --name=quarkus-app -n $OPENSHIFT_PROJECT || true
+          cp src/main/docker/Dockerfile.jvm Dockerfile
+          oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+          oc project $OPENSHIFT_PROJECT
+
+      - name: Apply OpenShift Deployment YAML
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc apply -f infrastructure/quarkus-deployment.yaml -n $OPENSHIFT_PROJECT
+
+      - name: Deploy to OpenShift
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          oc set image deployment/quarkus-app quarkus-app=image-registry.openshift-image-registry.svc:5000/$OPENSHIFT_PROJECT/quarkus-app:latest
+          oc rollout restart deployment/quarkus-app
