@@ -16,13 +16,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-#      - name: Setup Node
-#        uses: actions/setup-node@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-            node-version: '20.9.0'
+          node-version: '20.9.0'
         working-directory: static/front
 
       - name: Install dependencies
@@ -40,15 +37,6 @@ jobs:
           name: save-production-files
           path: static/front/dist
 
-#  deploy:
-#    steps:
-#      - name: Download artifact
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: save-production-files
-#          path: ./dist
-
-
   deploy:
     name: Deploy to OpenShift
     needs: build
@@ -64,7 +52,7 @@ jobs:
         run: oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_SERVER }}
 
       - name: Set OpenShift Project
-        run: oc project {{ secrets.OPENSHIFT_PROJECT }}
+        run: oc project ${{ vars.OPENSHIFT_PROJECT }}
 
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -72,13 +60,22 @@ jobs:
           name: save-production-files
           path: ./dist
 
+      - name: Set Dockerfile path in BuildConfig
+        run: |
+          oc patch bc react-app -n ${{ vars.OPENSHIFT_PROJECT }} --type=merge -p '{"spec":{"source":{"dockerfilePath":"static/front/Dockerfile"}}}' || true
+
+      - name: Build and Push Image to OpenShift ImageStream
+        # Créer une nouvelle build dans OpenShift avec la stratégie Docker
+        # Lancer la construction de l'image depuis les fichiers de build
+        run: |
+          oc new-build --binary --strategy=docker --name=react-app -n ${{ vars.OPENSHIFT_PROJECT }} || true
+          oc start-build react-app --from-dir=./dist --follow -n ${{ vars.OPENSHIFT_PROJECT }}
+
       - name: Deploy to OpenShift
         run: |
-          oc new-build --binary --name=react-app || true
-          oc start-build react-app --from-dir=./dist --follow || true
-          oc new-app react-app || true
-          oc expose service react-app --name=react-route || true
+          oc new-app react-app -n ${{ vars.OPENSHIFT_PROJECT }} || true
+          oc expose svc/react-app -n ${{ vars.OPENSHIFT_PROJECT }} || true
 
       - name: Get deployed route
-        run:
-          echo "App available at: http://$(oc get route react-app -o jsonpath='{.spec.host}')"
+        run: |
+          echo "App available at: http://$(oc get route react-app -n ${{ vars.OPENSHIFT_PROJECT }} -o jsonpath='{.spec.host}')"
