@@ -75,9 +75,9 @@ jobs:
       - name: Deploy to OpenShift
         run: |
           oc new-build --binary --name=react-app || true
-          oc start-build react-app --from-dir=./dist --follow
-          oc new-app react-app
-          oc expose svc/react-app
+          oc start-build react-app --from-dir=./dist --follow || true
+          oc new-app react-app || true
+          oc expose service react-app --name=react-route || true
 
       - name: Get deployed route
         run:
