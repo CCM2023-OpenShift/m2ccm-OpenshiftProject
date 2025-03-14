@@ -1,12 +1,3 @@
-name: Build and Deploy React on Openshift
-
-on:
-  pull_request:
-    paths:
-      - 'static/**'
-    branches:
-      - main
-
 jobs:
   build:
     name: Build
@@ -29,7 +20,6 @@ jobs:
         run: npm run build
         working-directory: static/front
 
-      # npm run build génère les fichiers de production dans ./dist
       - name: Upload production-ready build files
         uses: actions/upload-artifact@v4
         with:
@@ -64,11 +54,13 @@ jobs:
           oc patch bc react-app -n ${{ vars.OPENSHIFT_PROJECT }} --type=merge -p '{"spec":{"source":{"dockerfilePath":"static/front/Dockerfile"}}}' || true
 
       - name: Build and Push Image to OpenShift ImageStream
-        # Créer une nouvelle build dans OpenShift avec la stratégie Docker
-        # Lancer la construction de l'image depuis les fichiers de build
         run: |
           oc new-build --binary --strategy=docker --name=react-app -n ${{ vars.OPENSHIFT_PROJECT }} || true
           oc start-build react-app --from-dir=./dist --follow -n ${{ vars.OPENSHIFT_PROJECT }}
+
+      - name: Wait for build to complete
+        run: |
+          oc wait --for=condition=complete --timeout=600s build/react-app -n ${{ vars.OPENSHIFT_PROJECT }}
 
       - name: Deploy to OpenShift
         run: |
