@@ -1,3 +1,12 @@
+name: Build and Deploy React on Openshift
+
+on:
+  pull_request:
+    paths:
+      - 'static/**'
+    branches:
+      - main
+
 jobs:
   build:
     name: Build
