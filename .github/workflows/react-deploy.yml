@@ -16,9 +16,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: move to static/front folder
-        run: cd static/front
-
 #      - name: Setup Node
 #        uses: actions/setup-node@v4
 
@@ -26,16 +23,22 @@ jobs:
         uses: actions/setup-node@v2
         with:
             node-version: '20.9.0'
+        working-directory: static/front
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: static/front
 
       - name: Build project
         run: npm run build
+        working-directory: static/front
 
       # npm run build génère les fichiers de production dans ./dist
       - name: Upload production-ready build files
         uses: actions/upload-artifact@v4
         with:
           name: save-production-files
-          path: ./dist
+          path: static/front/dist
 
 #  deploy:
 #    steps:
