@@ -7,7 +7,7 @@ brew install openshift-cli
 
 ## Windows
 ```batch
-choco install openshift-cli
+choco install openshift-cli -y
 ```
 
 ## Linux

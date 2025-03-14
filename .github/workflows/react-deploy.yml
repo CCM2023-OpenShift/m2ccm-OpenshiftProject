@@ -1,0 +1,80 @@
+name: Build and Deploy React on Openshift
+
+on:
+  pull_request:
+    paths:
+      - 'static/**'
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+#      - name: Setup Node
+#        uses: actions/setup-node@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+            node-version: '20.9.0'
+        working-directory: static/front
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: static/front
+
+      - name: Build project
+        run: npm run build
+        working-directory: static/front
+
+      # npm run build génère les fichiers de production dans ./dist
+      - name: Upload production-ready build files
+        uses: actions/upload-artifact@v4
+        with:
+          name: save-production-files
+          path: static/front/dist
+
+#  deploy:
+#    steps:
+#      - name: Download artifact
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: save-production-files
+#          path: ./dist
+
+
+  deploy:
+    name: Deploy to OpenShift
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install OpenShift CLI
+        run: |
+          curl -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz | tar -xz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        run: oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_SERVER }}
+
+      - name: Set OpenShift Project
+        run: oc project {{ secrets.OPENSHIFT_PROJECT }}
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: save-production-files
+          path: ./dist
+
+      - name: Deploy to OpenShift
+        run: |
+          oc new-build --binary --name=react-app || true
+          oc start-build react-app --from-dir=./dist --follow
+          oc new-app react-app
+          oc expose svc/react-app

@@ -1,0 +1,15 @@
+# Resources
+## GET
+```shell
+oc get deployments -n prohart80-dev
+```
+
+# PVC
+## GET
+```shell
+oc get pvc -n prohart80-dev postgresql-pvc
+```
+## DELETE
+```shell
+oc delete pvc -n prohart80-dev postgresql-pvc
+```
