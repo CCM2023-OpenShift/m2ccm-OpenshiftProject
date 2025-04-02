@@ -1,0 +1,70 @@
+name: Build and Deploy React App to OpenShift
+
+on:
+  pull_request:
+    paths:
+      - 'static/**'
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to OpenShift
+        run: |
+          oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_SERVER }}
+          oc project ${{ secrets.OPENSHIFT_PROJECT }}
+
+      - name: Build & Push Docker Image
+        run: |
+          oc new-build --name=react-app --dockerfile="$(cat static/front/Dockerfile.node)" --strategy=docker || echo "Build already exists"
+          oc start-build react-app --follow
+
+      - name: Deploy to OpenShift
+        run: |
+          oc new-app react-app || echo "App already exists, updating..."
+          oc rollout latest dc/react-app
+
+      - name: Expose Frontend Service
+        run: |
+          oc expose svc/react-app || echo "Route already exists"
+
+      - name: Verify Deployment
+        run: |
+          oc get pods
+          oc get routes
+
+
+
+#jobs:
+#  build:
+#    name: Build
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout repo
+#        uses: actions/checkout@v4
+#
+#      - name: Setup Node.js
+#        uses: actions/setup-node@v2
+#        with:
+#          node-version: '20.9.0'
+#
+#      - name: Install dependencies
+#        run: npm install
+#        working-directory: static/front
+#
+#      - name: Build project
+#        run: npm run build
+#        working-directory: static/front
+#
+#      - name: Upload production-ready build files
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: save-production-files
+#          path: static/front/dist
