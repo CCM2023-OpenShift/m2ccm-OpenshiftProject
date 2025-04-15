@@ -22,7 +22,8 @@ jobs:
 
       - name: Build & Push Docker Image
         run: |
-          oc new-build --name=react-app --dockerfile="$(cat static/front/Dockerfile.node)" --strategy=docker || echo "Build already exists"
+          cd static/front
+          oc new-build --name=vite-oc --binary --strategy=docker || echo "Build already exists"
           oc start-build react-app --follow
 
       - name: Deploy to OpenShift
@@ -32,7 +33,7 @@ jobs:
 
       - name: Expose Frontend Service
         run: |
-          oc expose svc/react-app || echo "Route already exists"
+          oc expose svc/react-app --port=3000 || echo "Route already exists"
 
       - name: Verify Deployment
         run: |
