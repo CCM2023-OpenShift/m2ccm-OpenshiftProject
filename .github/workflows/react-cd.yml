@@ -1,0 +1,33 @@
+name: Deploy React App to OpenShift
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to OpenShift
+        run: |
+          oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_SERVER }}
+          oc project ${{ secrets.OPENSHIFT_PROJECT }}
+
+      - name: Deploy to OpenShift
+        run: |
+          oc new-app vite-oc || echo "App already exists, updating..."
+          oc rollout latest dc/vite-oc
+
+      - name: Expose Frontend Service
+        run: |
+          oc expose svc/vite-oc --port=3000 || echo "Route already exists"
+
+      - name: Verify Deployment
+        run: |
+          oc get pods
+          oc get routes

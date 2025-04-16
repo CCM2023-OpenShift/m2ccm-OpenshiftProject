@@ -1,17 +1,9 @@
-FROM node:20.9.0
-
-WORKDIR /app
-
-COPY package.json .
-
-RUN npm install
-
-RUN npm i -g serve
-
-COPY . .
-
+FROM node:20-alpine3.20 As build
+WORKDIR /usr/src/app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY ./ ./
 RUN npm run build
-
+RUN npm install -g serve
+CMD ["serve", "-s", "dist", "-l", "3000", "--single"]
 EXPOSE 3000
-
-CMD [ "serve", "-s", "dist" ]
