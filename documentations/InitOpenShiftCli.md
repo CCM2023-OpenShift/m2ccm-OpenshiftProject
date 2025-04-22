@@ -46,6 +46,6 @@ oc project
 
 ## Utiliser le bon porjet
 ```shell
-oc project prohart80-dev
+oc project lmagniez03-dev
 ```
  

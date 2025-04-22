@@ -1,4 +1,4 @@
-# OpenShift Clients
+# Quarkus demo: Hibernate ORM and RESTEasy  
 
 The OpenShift client `oc` simplifies working with Kubernetes and OpenShift
 clusters, offering a number of advantages over `kubectl` such as easy login,
