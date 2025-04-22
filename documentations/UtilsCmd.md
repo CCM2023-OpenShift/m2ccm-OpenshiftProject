@@ -1,7 +1,12 @@
 # TESTS
 ## Database
+#### COMPTE SANS DROIT
 ```shell
-oc exec -it $(oc get pods -l app=postgresql -o jsonpath='{.items[0].metadata.name}') -- psql -U admin -d mydatabase
+oc exec -it postgresql-deployment-667798fc49-4crtk -- psql -U myuser -d mydb
+```
+#### COMPTE ADMIN
+```shell
+oc exec -it postgresql-deployment-667798fc49-4crtk -- psql -U postgres -d mydb
 ```
 ```sql
 SELECT version();
