@@ -2,6 +2,8 @@ name: Build & Deploy Quarkus on OpenShift
 
 on:
   push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -101,3 +103,10 @@ jobs:
         run: |
           oc set image deployment/quarkus-app quarkus-app=image-registry.openshift-image-registry.svc:5000/$OPENSHIFT_PROJECT/quarkus-app:latest
           oc rollout restart deployment/quarkus-app
+
+      - name: Display API Route URL
+        env:
+          OPENSHIFT_PROJECT: ${{ vars.OPENSHIFT_PROJECT }}
+        run: |
+          ROUTE=$(oc get route quarkus-app -n $OPENSHIFT_PROJECT -o jsonpath='{.spec.host}')
+          echo "🔗 Your API is available at: http://$ROUTE"
