@@ -108,5 +108,5 @@ jobs:
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
-          ROUTE=$(oc get route quarkus-app -n $OPENSHIFT_PROJECT -o jsonpath='{.spec.host}')
+          ROUTE=$(oc get route quarkus-route -n $OPENSHIFT_PROJECT -o jsonpath='{.spec.host}')
           echo "🔗 Your API is available at: http://$ROUTE"
