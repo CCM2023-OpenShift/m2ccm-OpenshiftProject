@@ -1,11 +1,3 @@
-# TESTS
-## Database
-```shell
-oc exec -it $(oc get pods -l app=postgresql -o jsonpath='{.items[0].metadata.name}') -- psql -U admin -d mydatabase
-```
-```sql
-SELECT version();
-```
 # Resources
 ## GET
 ```shell
