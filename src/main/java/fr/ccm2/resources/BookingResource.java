@@ -1,6 +1,7 @@
 package fr.ccm2.resources;
 
-import fr.ccm2.dto.BookingDTO;
+import fr.ccm2.dto.booking.BookingCreateDTO;
+import fr.ccm2.dto.booking.BookingUpdateDTO;
 import fr.ccm2.entities.Booking;
 import fr.ccm2.services.BookingService;
 import jakarta.inject.Inject;
@@ -19,13 +20,76 @@ public class BookingResource {
     BookingService bookingService;
 
     @GET
-    public List<Booking> list() {
-        return bookingService.getAllBookings();
+    public Response list() {
+        return Response.ok(bookingService.getAllBookings()).build();
+    }
+
+    @GET
+    @Path("/{id}")
+    public Response get(@PathParam("id") Long id) {
+        Booking booking = bookingService.getBookingById(id);
+        if (booking == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(booking).build();
     }
 
     @POST
-    public Response create(BookingDTO dto) {
-        bookingService.createBooking(dto);
-        return Response.status(Response.Status.CREATED).build();
+    public Response create(@FormParam("title") String title,
+                           @FormParam("roomId") Long roomId,
+                           @FormParam("startTime") String startTime,
+                           @FormParam("endTime") String endTime,
+                           @FormParam("attendees") int attendees,
+                           @FormParam("equipment") List<Long> equipment,
+                           @FormParam("organizer") String organizer) {
+        BookingCreateDTO dto = new BookingCreateDTO();
+        dto.title = title;
+        dto.roomId = roomId;
+        dto.startTime = startTime;
+        dto.endTime = endTime;
+        dto.attendees = attendees;
+        dto.equipment = equipment;
+        dto.organizer = organizer;
+
+        Booking booking = bookingService.createBooking(dto);
+        if (booking == null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Equipment creation failed").build();
+        }
+        return Response.status(Response.Status.CREATED).entity(booking).build();
     }
+
+    @PUT
+    @Path("/{id}")
+    public Response update(@PathParam("id") Long id,
+                           @FormParam("title") String title,
+                           @FormParam("roomId") Long roomId,
+                           @FormParam("startTime") String startTime,
+                           @FormParam("endTime") String endTime,
+                           @FormParam("attendees") int attendees,
+                           @FormParam("equipment") List<Long> equipment,
+                           @FormParam("organizer") String organizer) {
+        BookingUpdateDTO dto = new BookingUpdateDTO();
+        dto.title = title;
+        dto.roomId = roomId;
+        dto.startTime = startTime;
+        dto.endTime = endTime;
+        dto.attendees = attendees;
+        dto.equipment = equipment;
+        dto.organizer = organizer;
+
+        Booking booking = bookingService.updateBooking(id, dto);
+        if (booking == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(booking).build();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public Response delete(@PathParam("id") Long id) {
+        bookingService.deleteBooking(id);
+        return Response.noContent().build();
+    }
+
+
 }
