@@ -33,7 +33,14 @@ public class EquipmentResource {
     }
 
     @POST
-    public Response create(EquipmentCreateDTO dto) {
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response create(
+            @FormParam("name") String name,
+            @FormParam("description") String description) {
+        EquipmentCreateDTO dto = new EquipmentCreateDTO();
+        dto.name = name;
+        dto.description = description;
+
         Equipment equipment = equipmentService.createEquipment(dto);
         if (equipment == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Equipment creation failed").build();
@@ -43,7 +50,14 @@ public class EquipmentResource {
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") Long id, EquipmentUpdateDTO dto) {
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response update(@PathParam("id") Long id,
+                           @FormParam("name") String name,
+                           @FormParam("description") String description) {
+        EquipmentUpdateDTO dto = new EquipmentUpdateDTO();
+        dto.name = name;
+        dto.description = description;
+
         Equipment equipment = equipmentService.updateEquipment(id, dto);
         if (equipment == null) {
             return Response.status(Response.Status.NOT_FOUND).build();

@@ -34,6 +34,7 @@ public class RoomResource {
     }
 
     @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response create(@FormParam("name") String name,
                            @FormParam("capacity") Integer capacity,
                            @FormParam("equipment") List<Long> equipmentIds) {
@@ -51,6 +52,7 @@ public class RoomResource {
 
     @PUT
     @Path("/{id}")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response update(@PathParam("id") Long id,
                            @FormParam("name") String name,
                            @FormParam("capacity") Integer capacity,

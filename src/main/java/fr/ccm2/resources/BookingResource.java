@@ -35,6 +35,7 @@ public class BookingResource {
     }
 
     @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response create(@FormParam("title") String title,
                            @FormParam("roomId") Long roomId,
                            @FormParam("startTime") String startTime,
@@ -60,6 +61,7 @@ public class BookingResource {
 
     @PUT
     @Path("/{id}")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response update(@PathParam("id") Long id,
                            @FormParam("title") String title,
                            @FormParam("roomId") Long roomId,
