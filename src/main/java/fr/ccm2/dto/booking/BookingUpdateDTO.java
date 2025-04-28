@@ -8,6 +8,5 @@ public class BookingUpdateDTO {
     public String startTime;
     public String endTime;
     public int attendees;
-    public List<Long> equipment;
     public String organizer;
 }

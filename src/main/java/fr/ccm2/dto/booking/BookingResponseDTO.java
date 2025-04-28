@@ -10,6 +10,5 @@ public class BookingResponseDTO {
     public String startTime;
     public String endTime;
     public int attendees;
-    public List<Equipment> equipment;
     public String organizer;
 }

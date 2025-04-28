@@ -41,7 +41,6 @@ public class BookingResource {
                            @FormParam("startTime") String startTime,
                            @FormParam("endTime") String endTime,
                            @FormParam("attendees") int attendees,
-                           @FormParam("equipment") List<Long> equipment,
                            @FormParam("organizer") String organizer) {
         BookingCreateDTO dto = new BookingCreateDTO();
         dto.title = title;
@@ -49,12 +48,19 @@ public class BookingResource {
         dto.startTime = startTime;
         dto.endTime = endTime;
         dto.attendees = attendees;
-        dto.equipment = equipment;
         dto.organizer = organizer;
+
+        System.out.println("Create booking called with:");
+        System.out.println("title: " + title);
+        System.out.println("roomId: " + roomId);
+        System.out.println("startTime: " + startTime);
+        System.out.println("endTime: " + endTime);
+        System.out.println("attendees: " + attendees);
+        System.out.println("organizer: " + organizer);
 
         Booking booking = bookingService.createBooking(dto);
         if (booking == null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Equipment creation failed").build();
+            return Response.status(Response.Status.BAD_REQUEST).entity("Booking creation failed").build();
         }
         return Response.status(Response.Status.CREATED).entity(booking).build();
     }
@@ -68,7 +74,6 @@ public class BookingResource {
                            @FormParam("startTime") String startTime,
                            @FormParam("endTime") String endTime,
                            @FormParam("attendees") int attendees,
-                           @FormParam("equipment") List<Long> equipment,
                            @FormParam("organizer") String organizer) {
         BookingUpdateDTO dto = new BookingUpdateDTO();
         dto.title = title;
@@ -76,7 +81,6 @@ public class BookingResource {
         dto.startTime = startTime;
         dto.endTime = endTime;
         dto.attendees = attendees;
-        dto.equipment = equipment;
         dto.organizer = organizer;
 
         Booking booking = bookingService.updateBooking(id, dto);
