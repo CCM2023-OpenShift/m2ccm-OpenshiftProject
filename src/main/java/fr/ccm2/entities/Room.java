@@ -14,13 +14,16 @@ public class Room {
     private String name;
     private Integer capacity;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.REMOVE)
     @JoinTable(
             name = "room_equipment",
             joinColumns = @JoinColumn(name = "room_id"),
             inverseJoinColumns = @JoinColumn(name = "equipment_id")
     )
     private List<Equipment> equipment;
+
+    @OneToMany(mappedBy = "room", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Booking> bookings;
 
     // Getters et Setters
     public Long getId() {
@@ -49,5 +52,9 @@ public class Room {
 
     public void setEquipment(List<Equipment> equipment) {
         this.equipment = equipment;
+    }
+
+    public List<Booking> getBookings() {
+        return bookings;
     }
 }

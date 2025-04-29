@@ -79,7 +79,6 @@ public class BookingService {
     }
 
     public Booking getBookingByIdWithRelations(Long id) {
-        // Exemple avec JPQL
         return em.createQuery(
                         "SELECT b FROM Booking b " +
                                 "LEFT JOIN FETCH b.room r " +
@@ -91,9 +90,9 @@ public class BookingService {
 
     public List<Booking> getBookingsWithRelations() {
         return em.createQuery(
-                        "SELECT b FROM Booking b " +
+                        "SELECT DISTINCT b FROM Booking b " +
                                 "LEFT JOIN FETCH b.room r " +
-                                "LEFT JOIN FETCH r.equipment ", Booking.class)
+                                "LEFT JOIN FETCH r.equipment", Booking.class)
                 .getResultList();
     }
 }

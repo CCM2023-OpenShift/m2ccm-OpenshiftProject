@@ -59,4 +59,6 @@ public class EquipmentService {
             em.remove(equipment);
         }
     }
+
+    
 }

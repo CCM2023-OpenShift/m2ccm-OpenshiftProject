@@ -1,0 +1,14 @@
+package fr.ccm2.mapper;
+
+import fr.ccm2.dto.equipment.EquipmentResponseDTO;
+import fr.ccm2.entities.Equipment;
+
+public class EquipmentMapper {
+    public static EquipmentResponseDTO toResponse(Equipment equipment) {
+        EquipmentResponseDTO dto = new EquipmentResponseDTO();
+        dto.id = equipment.getId();
+        dto.name = equipment.getName();
+        dto.description = equipment.getDescription();
+        return dto;
+    }
+}

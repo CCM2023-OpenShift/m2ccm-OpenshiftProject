@@ -3,6 +3,7 @@ package fr.ccm2.services;
 import fr.ccm2.dto.room.RoomResponseDTO;
 import fr.ccm2.dto.room.RoomCreateDTO;
 import fr.ccm2.dto.room.RoomUpdateDTO;
+import fr.ccm2.entities.Booking;
 import fr.ccm2.entities.Equipment;
 import fr.ccm2.entities.Room;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -68,7 +69,28 @@ public class RoomService {
     public void deleteRoom(Long id) {
         Room room = em.find(Room.class, id);
         if (room != null) {
+            for (Booking booking : room.getBookings()) {
+                booking.setRoom(null);
+            }
+            room.getEquipment().clear();
             em.remove(room);
         }
+    }
+
+
+    public Room getRoomByIdWithRelations(Long id) {
+        return em.createQuery(
+                        "SELECT r FROM Room r " +
+                                "LEFT JOIN FETCH r.equipment " +
+                                "WHERE r.id = :id", Room.class)
+                .setParameter("id", id)
+                .getSingleResult();
+    }
+
+    public List<Room> getRoomsWithRelations() {
+        return em.createQuery(
+                        "SELECT DISTINCT r FROM Room r " +
+                                "LEFT JOIN FETCH r.equipment", Room.class)
+                .getResultList();
     }
 }
