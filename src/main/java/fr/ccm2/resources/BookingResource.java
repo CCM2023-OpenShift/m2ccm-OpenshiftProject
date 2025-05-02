@@ -1,5 +1,6 @@
 package fr.ccm2.resources;
 
+import fr.ccm2.dto.ErrorResponseDTO;
 import fr.ccm2.dto.booking.BookingCreateDTO;
 import fr.ccm2.dto.booking.BookingResponseDTO;
 import fr.ccm2.dto.booking.BookingUpdateDTO;
@@ -52,15 +53,24 @@ public class BookingResource {
         dto.attendees = attendees;
         dto.organizer = organizer;
 
-        Booking booking = bookingService.createBooking(dto);
-        if (booking == null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Booking creation failed").build();
+        try {
+            Booking booking = bookingService.createBooking(dto);
+            booking = bookingService.getBookingByIdWithRelations(booking.getId());
+            BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
+            return Response.status(Response.Status.CREATED).entity(responseDTO).build();
+
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.CONFLICT)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(new ErrorResponseDTO(e.getMessage()))
+                    .build();
+
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(new ErrorResponseDTO(e.getMessage()))
+                    .build();
         }
-
-        booking = bookingService.getBookingByIdWithRelations(booking.getId());
-        BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
-
-        return Response.status(Response.Status.CREATED).entity(responseDTO).build();
     }
 
     @PUT

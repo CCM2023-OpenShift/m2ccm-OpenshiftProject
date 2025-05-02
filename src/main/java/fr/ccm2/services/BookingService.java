@@ -31,26 +31,42 @@ public class BookingService {
         return em.find(Booking.class, id);
     }
 
+    public boolean isRoomAvailable(Long roomId, LocalDateTime start, LocalDateTime end) {
+        List<Booking> conflicts = em.createQuery(
+                        "SELECT b FROM Booking b WHERE b.room.id = :roomId " +
+                                "AND b.endTime > :start AND b.startTime < :end", Booking.class)
+                .setParameter("roomId", roomId)
+                .setParameter("start", start)
+                .setParameter("end", end)
+                .getResultList();
+
+        return conflicts.isEmpty();
+    }
+
     @Transactional
     public Booking createBooking(BookingCreateDTO dto) {
-        Booking booking = new Booking();
-
         Room room = em.find(Room.class, dto.roomId);
         if (room == null) {
             throw new IllegalArgumentException("Room not found with ID: " + dto.roomId);
         }
 
+        LocalDateTime start = DateUtils.parseDateOrNull(dto.startTime);
+        LocalDateTime end = DateUtils.parseDateOrNull(dto.endTime);
+
+        if (!isRoomAvailable(room.getId(), start, end)) {
+            throw new IllegalStateException("La salle est déjà réservée pour ce créneau.");
+        }
+
+        Booking booking = new Booking();
         booking.setTitle(dto.title);
-        booking.setStartTime(DateUtils.parseDateOrNull(dto.startTime));
-        booking.setEndTime(DateUtils.parseDateOrNull(dto.endTime));
+        booking.setStartTime(start);
+        booking.setEndTime(end);
         booking.setAttendees(dto.attendees);
         booking.setOrganizer(dto.organizer);
         booking.setRoom(room);
 
         em.persist(booking);
         em.flush();
-
-        System.out.println("Booking created with ID: " + booking.getId());
 
         return booking;
     }
