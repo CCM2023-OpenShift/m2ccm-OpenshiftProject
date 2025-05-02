@@ -22,7 +22,7 @@ public class BookingMapper {
         dto.organizer = booking.getOrganizer();
 
         if (includeRoom && booking.getRoom() != null) {
-            dto.room = RoomMapper.toResponse(booking.getRoom(), includeEquipment); // inclut équipement
+            dto.room = RoomMapper.toResponse(booking.getRoom(), includeEquipment);
         }
 
         return dto;
