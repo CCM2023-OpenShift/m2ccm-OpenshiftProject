@@ -47,27 +47,37 @@ public class BookingService {
     public Booking createBooking(BookingCreateDTO dto) {
         Room room = em.find(Room.class, dto.roomId);
         if (room == null) {
-            throw new IllegalArgumentException("Room not found with ID: " + dto.roomId);
+            throw new IllegalArgumentException("Salle introuvable (ID=" + dto.roomId + ")");
         }
 
-        LocalDateTime start = DateUtils.parseDateOrNull(dto.startTime);
-        LocalDateTime end = DateUtils.parseDateOrNull(dto.endTime);
+        if (dto.startTime.isAfter(dto.endTime)) {
+            throw new IllegalArgumentException("La date de début ne peut pas être après la date de fin.");
+        }
 
-        if (!isRoomAvailable(room.getId(), start, end)) {
-            throw new IllegalStateException("La salle est déjà réservée pour ce créneau.");
+        if (dto.attendees > room.getCapacity()) {
+            throw new IllegalArgumentException(
+                    "Nombre de participants (" + dto.attendees +
+                            ") > capacité de la salle (" + room.getCapacity() + ")."
+            );
+        }
+
+        if (!isRoomAvailable(room.getId(), dto.startTime, dto.endTime)) {
+            throw new IllegalStateException(
+                    "La salle est déjà réservée entre " +
+                            dto.startTime + " et " + dto.endTime + "."
+            );
         }
 
         Booking booking = new Booking();
         booking.setTitle(dto.title);
-        booking.setStartTime(start);
-        booking.setEndTime(end);
+        booking.setStartTime(dto.startTime);
+        booking.setEndTime(dto.endTime);
         booking.setAttendees(dto.attendees);
         booking.setOrganizer(dto.organizer);
         booking.setRoom(room);
 
         em.persist(booking);
         em.flush();
-
         return booking;
     }
 

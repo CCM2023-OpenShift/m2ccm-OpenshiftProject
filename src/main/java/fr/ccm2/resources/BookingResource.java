@@ -1,6 +1,5 @@
 package fr.ccm2.resources;
 
-import fr.ccm2.dto.ErrorResponseDTO;
 import fr.ccm2.dto.booking.BookingCreateDTO;
 import fr.ccm2.dto.booking.BookingResponseDTO;
 import fr.ccm2.dto.booking.BookingUpdateDTO;
@@ -8,6 +7,7 @@ import fr.ccm2.entities.Booking;
 import fr.ccm2.mapper.BookingMapper;
 import fr.ccm2.services.BookingService;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -37,40 +37,15 @@ public class BookingResource {
     }
 
     @POST
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response create(@FormParam("title") String title,
-                           @FormParam("roomId") Long roomId,
-                           @FormParam("startTime") String startTime,
-                           @FormParam("endTime") String endTime,
-                           @FormParam("attendees") int attendees,
-                           @FormParam("organizer") String organizer) {
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response create(@Valid BookingCreateDTO dto) {
+        Booking booking = bookingService.createBooking(dto);
 
-        BookingCreateDTO dto = new BookingCreateDTO();
-        dto.title = title;
-        dto.roomId = roomId;
-        dto.startTime = startTime;
-        dto.endTime = endTime;
-        dto.attendees = attendees;
-        dto.organizer = organizer;
+        booking = bookingService.getBookingByIdWithRelations(booking.getId());
 
-        try {
-            Booking booking = bookingService.createBooking(dto);
-            booking = bookingService.getBookingByIdWithRelations(booking.getId());
-            BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
-            return Response.status(Response.Status.CREATED).entity(responseDTO).build();
+        BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
 
-        } catch (IllegalStateException e) {
-            return Response.status(Response.Status.CONFLICT)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(new ErrorResponseDTO(e.getMessage()))
-                    .build();
-
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(new ErrorResponseDTO(e.getMessage()))
-                    .build();
-        }
+        return Response.status(Response.Status.CREATED).entity(responseDTO).build();
     }
 
     @PUT
