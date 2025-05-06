@@ -1,19 +1,14 @@
 package fr.ccm2.services;
 
-import fr.ccm2.dto.room.RoomResponseDTO;
 import fr.ccm2.dto.room.RoomCreateDTO;
 import fr.ccm2.dto.room.RoomUpdateDTO;
-import fr.ccm2.entities.Booking;
-import fr.ccm2.entities.Equipment;
-import fr.ccm2.entities.Room;
+import fr.ccm2.entities.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @ApplicationScoped
 public class RoomService {
@@ -32,35 +27,63 @@ public class RoomService {
     @Transactional
     public Room createRoom(RoomCreateDTO dto) {
         Room room = new Room();
-
         room.setName(dto.name);
         room.setCapacity(dto.capacity);
-        List<Equipment> equipmentList = dto.equipment.stream()
-                .map(id -> em.find(Equipment.class, id))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        room.setEquipment(equipmentList);
 
         em.persist(room);
         em.flush();
 
+        if (dto.equipmentWithQuantities != null) {
+            for (var eq : dto.equipmentWithQuantities) {
+                Equipment equipment = em.find(Equipment.class, eq.equipmentId);
+                if (equipment == null || equipment.isMobile()) continue;
+
+                RoomEquipment re = new RoomEquipment();
+                re.setRoom(room);
+                re.setEquipment(equipment);
+                re.setQuantity(eq.quantity);
+                em.persist(re);
+            }
+        }
+
+        em.flush();
         return room;
     }
 
     @Transactional
     public Room updateRoom(Long id, RoomUpdateDTO dto) {
         Room room = em.find(Room.class, id);
-        if (room != null) {
-            room.setName(dto.name);
-            room.setCapacity(dto.capacity);
-            List<Equipment> equipmentList = dto.equipment.stream()
-                    .map(equipment -> em.find(Equipment.class, equipment))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+        if (room == null) return null;
 
-            room.setEquipment(equipmentList);
+        room.setName(dto.name);
+        room.setCapacity(dto.capacity);
+
+        List<RoomEquipment> currentEquipments = em.createQuery(
+                        "SELECT re FROM RoomEquipment re WHERE re.room.id = :roomId", RoomEquipment.class)
+                .setParameter("roomId", room.getId())
+                .getResultList();
+
+        for (RoomEquipment re : currentEquipments) {
+            em.remove(re);
         }
+
+        if (dto.equipmentWithQuantities != null) {
+            for (var eq : dto.equipmentWithQuantities) {
+                Equipment equipment = em.find(Equipment.class, eq.equipmentId);
+                if (equipment == null || equipment.isMobile()) continue;
+
+                RoomEquipment re = new RoomEquipment();
+                re.setRoom(room);
+                re.setEquipment(equipment);
+                re.setQuantity(eq.quantity);
+                em.persist(re);
+            }
+        }
+
+        room = em.createQuery(
+                        "SELECT r FROM Room r LEFT JOIN FETCH r.roomEquipments WHERE r.id = :id", Room.class)
+                .setParameter("id", room.getId())
+                .getSingleResult();
 
         return room;
     }
@@ -72,16 +95,23 @@ public class RoomService {
             for (Booking booking : room.getBookings()) {
                 booking.setRoom(null);
             }
-            room.getEquipment().clear();
+
+            List<RoomEquipment> roomEquipments = em.createQuery(
+                            "SELECT re FROM RoomEquipment re WHERE re.room.id = :roomId", RoomEquipment.class)
+                    .setParameter("roomId", id)
+                    .getResultList();
+
+            for (RoomEquipment re : roomEquipments) {
+                em.remove(re);
+            }
+
             em.remove(room);
         }
     }
 
-
     public Room getRoomByIdWithRelations(Long id) {
         return em.createQuery(
                         "SELECT r FROM Room r " +
-                                "LEFT JOIN FETCH r.equipment " +
                                 "WHERE r.id = :id", Room.class)
                 .setParameter("id", id)
                 .getSingleResult();
@@ -89,8 +119,7 @@ public class RoomService {
 
     public List<Room> getRoomsWithRelations() {
         return em.createQuery(
-                        "SELECT DISTINCT r FROM Room r " +
-                                "LEFT JOIN FETCH r.equipment", Room.class)
+                        "SELECT r FROM Room r LEFT JOIN FETCH r.roomEquipments", Room.class)
                 .getResultList();
     }
 }

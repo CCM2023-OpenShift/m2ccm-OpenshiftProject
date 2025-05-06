@@ -2,7 +2,7 @@ package fr.ccm2.services;
 
 import fr.ccm2.dto.booking.BookingCreateDTO;
 import fr.ccm2.dto.booking.BookingUpdateDTO;
-import fr.ccm2.dto.room.RoomResponseDTO;
+import fr.ccm2.entities.BookingEquipment;
 import fr.ccm2.entities.Booking;
 import fr.ccm2.entities.Equipment;
 import fr.ccm2.entities.Room;
@@ -14,7 +14,6 @@ import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -41,6 +40,36 @@ public class BookingService {
                 .getResultList();
 
         return conflicts.isEmpty();
+    }
+
+    private void checkEquipmentAvailability(List<BookingEquipment> requestedEquipments, LocalDateTime start, LocalDateTime end) {
+        for (BookingEquipment requested : requestedEquipments) {
+            Equipment equipment = em.find(Equipment.class, requested.getEquipment().getId());
+
+            if (equipment == null) {
+                throw new IllegalArgumentException("Équipement non trouvé (ID=" + requested.getEquipment().getId() + ")");
+            }
+
+            if (equipment.isMobile()) {
+                Long reservedQuantity = em.createQuery(
+                                "SELECT COALESCE(SUM(be.quantity), 0) FROM BookingEquipment be " +
+                                        "JOIN be.booking b " +
+                                        "WHERE be.equipment.id = :equipmentId " +
+                                        "AND b.endTime > :start AND b.startTime < :end", Long.class)
+                        .setParameter("equipmentId", equipment.getId())
+                        .setParameter("start", start)
+                        .setParameter("end", end)
+                        .getSingleResult();
+
+                if (reservedQuantity + requested.getQuantity() > equipment.getQuantity()) {
+                    throw new IllegalStateException(
+                            "Quantité insuffisante pour l'équipement mobile '" + equipment.getName() + "'. " +
+                                    "Demandé: " + requested.getQuantity() + ", Disponible: " +
+                                    (equipment.getQuantity() - reservedQuantity)
+                    );
+                }
+            }
+        }
     }
 
     @Transactional
@@ -77,6 +106,25 @@ public class BookingService {
         booking.setRoom(room);
 
         em.persist(booking);
+
+        if (dto.bookingEquipments != null) {
+            List<BookingEquipment> beList = dto.bookingEquipments.stream().map(beDto -> {
+                BookingEquipment be = new BookingEquipment();
+                be.setEquipment(em.find(Equipment.class, beDto.equipmentId));
+                be.setQuantity(beDto.quantity);
+                be.setBooking(booking);
+
+                return be;
+            }).collect(Collectors.toList());
+
+            checkEquipmentAvailability(beList, dto.startTime, dto.endTime);
+            booking.setBookingEquipments(beList);
+
+            for (BookingEquipment be : beList) {
+                em.persist(be);
+            }
+        }
+
         em.flush();
         return booking;
     }
@@ -87,8 +135,8 @@ public class BookingService {
         if (booking != null) {
             booking.setTitle(dto.title);
             booking.setRoom(em.find(Room.class, dto.roomId));
-            booking.setStartTime(DateUtils.parseDateOrNull(dto.startTime));
-            booking.setEndTime(DateUtils.parseDateOrNull(dto.endTime));
+            booking.setStartTime(dto.startTime);
+            booking.setEndTime(dto.endTime);
             booking.setAttendees(dto.attendees);
             booking.setOrganizer(dto.organizer);
         }
@@ -106,9 +154,10 @@ public class BookingService {
 
     public Booking getBookingByIdWithRelations(Long id) {
         return em.createQuery(
-                        "SELECT b FROM Booking b " +
-                                "LEFT JOIN FETCH b.room r " +
-                                "LEFT JOIN FETCH r.equipment " +
+                        "SELECT DISTINCT b FROM Booking b " +
+                                "LEFT JOIN FETCH b.room " +
+                                "LEFT JOIN FETCH b.bookingEquipments be " +
+                                "LEFT JOIN FETCH be.equipment " +
                                 "WHERE b.id = :id", Booking.class)
                 .setParameter("id", id)
                 .getSingleResult();
@@ -117,8 +166,9 @@ public class BookingService {
     public List<Booking> getBookingsWithRelations() {
         return em.createQuery(
                         "SELECT DISTINCT b FROM Booking b " +
-                                "LEFT JOIN FETCH b.room r " +
-                                "LEFT JOIN FETCH r.equipment", Booking.class)
+                                "LEFT JOIN FETCH b.room " +
+                                "LEFT JOIN FETCH b.bookingEquipments be " +
+                                "LEFT JOIN FETCH be.equipment", Booking.class)
                 .getResultList();
     }
 }

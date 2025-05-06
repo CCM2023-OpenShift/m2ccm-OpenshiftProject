@@ -7,10 +7,11 @@ import fr.ccm2.entities.Booking;
 import fr.ccm2.mapper.BookingMapper;
 import fr.ccm2.services.BookingService;
 import jakarta.inject.Inject;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import java.time.LocalDateTime;
 
 @Path("/bookings")
 @Produces(MediaType.APPLICATION_JSON)
@@ -38,13 +39,11 @@ public class BookingResource {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response create(@Valid BookingCreateDTO dto) {
+    public Response create(BookingCreateDTO dto) {
         Booking booking = bookingService.createBooking(dto);
-
         booking = bookingService.getBookingByIdWithRelations(booking.getId());
 
         BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
-
         return Response.status(Response.Status.CREATED).entity(responseDTO).build();
     }
 
@@ -62,8 +61,8 @@ public class BookingResource {
         BookingUpdateDTO dto = new BookingUpdateDTO();
         dto.title = title;
         dto.roomId = roomId;
-        dto.startTime = startTime;
-        dto.endTime = endTime;
+        dto.startTime = LocalDateTime.parse(startTime);
+        dto.endTime = LocalDateTime.parse(endTime);
         dto.attendees = attendees;
         dto.organizer = organizer;
 
@@ -73,7 +72,6 @@ public class BookingResource {
         }
 
         BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
-
         return Response.ok(responseDTO).build();
     }
 

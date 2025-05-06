@@ -30,10 +30,23 @@ public class EquipmentService {
 
     @Transactional
     public Equipment createEquipment(EquipmentCreateDTO dto) {
-        Equipment equipment = new Equipment();
+        if (dto.name == null || dto.name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Le nom de l'équipement est obligatoire.");
+        }
 
+        if (dto.description == null || dto.description.trim().isEmpty()) {
+            throw new IllegalArgumentException("La description de l'équipement est obligatoire.");
+        }
+
+        if (dto.quantity < 0) {
+            throw new IllegalArgumentException("La quantité ne peut pas être négative.");
+        }
+
+        Equipment equipment = new Equipment();
         equipment.setName(dto.name);
         equipment.setDescription(dto.description);
+        equipment.setQuantity(dto.quantity);
+        equipment.setMobile(dto.mobile);
 
         em.persist(equipment);
         em.flush();
@@ -47,8 +60,9 @@ public class EquipmentService {
         if (equipment != null) {
             equipment.setName(dto.name);
             equipment.setDescription(dto.description);
+            equipment.setQuantity(dto.quantity);
+            equipment.setMobile(dto.mobile);
         }
-
         return equipment;
     }
 

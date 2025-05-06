@@ -10,6 +10,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/equipment")
 @Produces(MediaType.APPLICATION_JSON)
@@ -21,7 +23,11 @@ public class EquipmentResource {
 
     @GET
     public Response list() {
-        return Response.ok(equipmentService.getAllEquipments()).build();
+        List<EquipmentResponseDTO> dtoList = equipmentService.getAllEquipments()
+                .stream()
+                .map(EquipmentMapper::toResponse)
+                .collect(Collectors.toList());
+        return Response.ok(dtoList).build();
     }
 
     @GET
@@ -36,15 +42,8 @@ public class EquipmentResource {
     }
 
     @POST
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response create(
-            @FormParam("name") String name,
-            @FormParam("description") String description) {
-
-        EquipmentCreateDTO dto = new EquipmentCreateDTO();
-        dto.name = name;
-        dto.description = description;
-
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response create(EquipmentCreateDTO dto) {
         Equipment equipment = equipmentService.createEquipment(dto);
         if (equipment == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Equipment creation failed").build();
@@ -59,11 +58,15 @@ public class EquipmentResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response update(@PathParam("id") Long id,
                            @FormParam("name") String name,
-                           @FormParam("description") String description) {
+                           @FormParam("description") String description,
+                           @FormParam("quantity") int quantity,
+                           @FormParam("mobile") boolean mobile) {
 
         EquipmentUpdateDTO dto = new EquipmentUpdateDTO();
         dto.name = name;
         dto.description = description;
+        dto.quantity = quantity;
+        dto.mobile = mobile;
 
         Equipment equipment = equipmentService.updateEquipment(id, dto);
         if (equipment == null) {

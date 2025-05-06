@@ -1,8 +1,6 @@
 package fr.ccm2.resources;
 
-import fr.ccm2.dto.room.RoomCreateDTO;
-import fr.ccm2.dto.room.RoomResponseDTO;
-import fr.ccm2.dto.room.RoomUpdateDTO;
+import fr.ccm2.dto.room.*;
 import fr.ccm2.entities.Room;
 import fr.ccm2.mapper.RoomMapper;
 import fr.ccm2.services.RoomService;
@@ -12,6 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/rooms")
 @Produces(MediaType.APPLICATION_JSON)
@@ -23,7 +22,12 @@ public class RoomResource {
 
     @GET
     public Response list() {
-        return Response.ok(roomService.getRoomsWithRelations()).build();
+        List<Room> rooms = roomService.getRoomsWithRelations();
+        List<RoomResponseDTO> response = rooms.stream()
+                .map(room -> RoomMapper.toResponse(room, true))
+                .collect(Collectors.toList());
+
+        return Response.ok(response).build();
     }
 
     @GET
@@ -33,24 +37,15 @@ public class RoomResource {
         if (room == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        // Mapper la chambre vers un DTO de réponse avec ses relations
-        RoomResponseDTO responseDTO = RoomMapper.toResponse(room, true);
+        RoomResponseDTO responseDTO = RoomMapper.toResponse(room, true); // On inclut les équipements ici aussi
         return Response.ok(responseDTO).build();
     }
 
     @POST
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response create(@FormParam("name") String name,
-                           @FormParam("capacity") Integer capacity,
-                           @FormParam("equipment") List<Long> equipmentIds) {
-        RoomCreateDTO dto = new RoomCreateDTO();
-        dto.name = name;
-        dto.capacity = capacity;
-        dto.equipment = equipmentIds;
-
+    public Response create(RoomCreateDTO dto) {
         Room room = roomService.createRoom(dto);
         if (room == null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Room creation failed").build();
+            return Response.status(Response.Status.BAD_REQUEST).entity("La création de la salle a échoué.").build();
         }
 
         RoomResponseDTO responseDTO = RoomMapper.toResponse(room, true);
@@ -59,23 +54,19 @@ public class RoomResource {
 
     @PUT
     @Path("/{id}")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response update(@PathParam("id") Long id,
-                           @FormParam("name") String name,
-                           @FormParam("capacity") Integer capacity,
-                           @FormParam("equipment") List<Long> equipmentIds) {
-        RoomUpdateDTO dto = new RoomUpdateDTO();
-        dto.name = name;
-        dto.capacity = capacity;
-        dto.equipment = equipmentIds;
+    public Response update(@PathParam("id") Long id, RoomUpdateDTO dto) {
+        try {
+            Room room = roomService.updateRoom(id, dto);
+            if (room == null) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Salle non trouvée.").build();
+            }
 
-        Room room = roomService.updateRoom(id, dto);
-        if (room == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            RoomResponseDTO responseDTO = RoomMapper.toResponse(room, true);
+            return Response.ok(responseDTO).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Erreur serveur : " + e.getMessage()).build();
         }
-
-        RoomResponseDTO responseDTO = RoomMapper.toResponse(room, true);
-        return Response.ok(responseDTO).build();
     }
 
     @DELETE
