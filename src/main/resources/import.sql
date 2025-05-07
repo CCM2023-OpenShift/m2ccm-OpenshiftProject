@@ -42,20 +42,35 @@ INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (18, 5, 
 INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (18, 10, 23, 1); -- Station de recharge
 
 -- Réservations
-INSERT INTO booking (id, title, start_time, end_time, attendees, organizer, room_id)
-VALUES (1, 'Conférence sur IA', '2025-06-10 09:00:00', '2025-06-10 12:00:00', 50, 'Prof. Dupont', 8);  -- Réservation de la salle J204
+INSERT INTO booking (title, start_time, end_time, attendees, organizer, room_id)
+VALUES
+    ('Workshop rétro', CURRENT_DATE - INTERVAL '10 days' + TIME '09:00', CURRENT_DATE - INTERVAL '10 days' + TIME '11:00', 12, 'Alice Dupuis', 6),
+    ('Réunion bilan', CURRENT_DATE - INTERVAL '3 days' + TIME '14:00', CURRENT_DATE - INTERVAL '3 days' + TIME '16:00', 10, 'Jean Roy', 3),
+    ('Démo produit', CURRENT_DATE - INTERVAL '3 days' + TIME '09:00', CURRENT_DATE - INTERVAL '3 days' + TIME '10:30', 6, 'Carla Meunier', 1),
+    ('Présentation budget', CURRENT_DATE - INTERVAL '3 days' + TIME '11:00', CURRENT_DATE - INTERVAL '3 days' + TIME '12:00', 14, 'Marc Petit', 4),
+    ('Brief RH', CURRENT_DATE - INTERVAL '7 days' + TIME '08:00', CURRENT_DATE - INTERVAL '7 days' + TIME '09:30', 9, 'Valérie Giraud', 7),
+    ('Séance photo', CURRENT_DATE - INTERVAL '10 days' + TIME '11:30', CURRENT_DATE - INTERVAL '10 days' + TIME '13:00', 5, 'Julien Besson', 9),
+    ('Enregistrement podcast', CURRENT_DATE - INTERVAL '10 days' + TIME '14:00', CURRENT_DATE - INTERVAL '10 days' + TIME '16:00', 4, 'Nina Dufour', 5);
 
-INSERT INTO booking (id, title, start_time, end_time, attendees, organizer, room_id)
-VALUES (2, 'Séminaire sur le développement durable', '2025-06-11 14:00:00', '2025-06-11 17:00:00', 30, 'Mme. Lefèvre', 1);  -- Réservation de la salle A001
+INSERT INTO booking (title, start_time, end_time, attendees, organizer, room_id)
+VALUES
+    ('Formation Python', CURRENT_DATE + TIME '08:30', CURRENT_DATE + TIME '11:30', 18, 'Lucie Morel', 2),
+    ('Réunion pédagogique', CURRENT_DATE + TIME '15:00', CURRENT_DATE + TIME '16:30', 8, 'David Colin', 7),
+    ('Test matériel', CURRENT_DATE + TIME '09:00', CURRENT_DATE + TIME '10:00', 6, 'Sandra Muller', 3),
+    ('Présentation projet X', CURRENT_DATE + TIME '11:00', CURRENT_DATE + TIME '12:00', 20, 'Olivier Henry', 8),
+    ('Consultation planning', CURRENT_DATE + TIME '13:00', CURRENT_DATE + TIME '13:45', 2, 'Bruno Klein', 6),
+    ('Atelier graphisme', CURRENT_DATE + TIME '14:00', CURRENT_DATE + TIME '15:30', 12, 'Anna Blanchard', 4),
+    ('Réunion express', CURRENT_DATE + TIME '17:00', CURRENT_DATE + TIME '17:30', 5, 'Camille Faure', 10);
 
-INSERT INTO booking (id, title, start_time, end_time, attendees, organizer, room_id)
-VALUES (3, 'Cours de programmation', '2025-06-12 08:00:00', '2025-06-12 10:00:00', 20, 'M. Durand', 2);  -- Réservation de la salle D101
-
-INSERT INTO booking (id, title, start_time, end_time, attendees, organizer, room_id)
-VALUES (4, 'Réunion administrative', '2025-06-15 10:00:00', '2025-06-15 12:00:00', 15, 'Dr. Martin', 3);  -- Réservation de la salle B201
-
-INSERT INTO booking (id, title, start_time, end_time, attendees, organizer, room_id)
-VALUES (5, 'Atelier création de projets', '2025-06-17 13:00:00', '2025-06-17 16:00:00', 25, 'Mme. Lemoine', 4);  -- Réservation de la salle C101
+INSERT INTO booking (title, start_time, end_time, attendees, organizer, room_id)
+VALUES
+    ('Séminaire cybersécurité', CURRENT_DATE + INTERVAL '5 days' + TIME '10:00', CURRENT_DATE + INTERVAL '5 days' + TIME '12:30', 15, 'Nathalie Vasseur', 9),
+    ('Hackathon IA', CURRENT_DATE + INTERVAL '15 days' + TIME '09:00', CURRENT_DATE + INTERVAL '15 days' + TIME '18:00', 45, 'Eric Besson', 8),
+    ('Journée des anciens', CURRENT_DATE + INTERVAL '1 month' + TIME '10:00', CURRENT_DATE + INTERVAL '1 month' + TIME '16:00', 40, 'Claire Thibault', 10),
+    ('Conférence UX', CURRENT_DATE + INTERVAL '1 month' + TIME '09:00', CURRENT_DATE + INTERVAL '1 month' + TIME '11:00', 20, 'Mélanie Robert', 5),
+    ('Coaching dev perso', CURRENT_DATE + INTERVAL '5 days' + TIME '14:00', CURRENT_DATE + INTERVAL '5 days' + TIME '16:00', 10, 'Paul Lambert', 2),
+    ('Démonstration produit', CURRENT_DATE + INTERVAL '5 days' + TIME '09:00', CURRENT_DATE + INTERVAL '5 days' + TIME '09:45', 4, 'Sophie Aubry', 6),
+    ('Rencontre inter-départements', CURRENT_DATE + INTERVAL '15 days' + TIME '14:00', CURRENT_DATE + INTERVAL '15 days' + TIME '16:00', 35, 'Jean-Marc Noël', 4);
 
 -- Met à jour la séquence de la table room
 SELECT setval('room_id_seq', (SELECT MAX(id) FROM room));
