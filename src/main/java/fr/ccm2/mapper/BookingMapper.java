@@ -45,6 +45,8 @@ public class BookingMapper {
         BookingEquipmentResponseDTO dto = new BookingEquipmentResponseDTO();
         dto.equipmentId = bookingEquipment.getEquipment().getId();
         dto.quantity = bookingEquipment.getQuantity();
+        dto.startTime = bookingEquipment.getStartTime().toString();
+        dto.endTime = bookingEquipment.getEndTime().toString();
         return dto;
     }
 

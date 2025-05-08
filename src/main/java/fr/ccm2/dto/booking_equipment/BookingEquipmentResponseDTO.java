@@ -5,4 +5,6 @@ public class BookingEquipmentResponseDTO {
     public Long equipmentId;
     public Long bookingId;
     public int quantity;
+    public String startTime;
+    public String endTime;
 }

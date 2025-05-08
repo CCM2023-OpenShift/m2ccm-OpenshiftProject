@@ -6,14 +6,16 @@ import fr.ccm2.entities.BookingEquipment;
 import fr.ccm2.entities.Booking;
 import fr.ccm2.entities.Equipment;
 import fr.ccm2.entities.Room;
-import fr.ccm2.utils.DateUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -113,6 +115,8 @@ public class BookingService {
                 be.setEquipment(em.find(Equipment.class, beDto.equipmentId));
                 be.setQuantity(beDto.quantity);
                 be.setBooking(booking);
+                be.setStartTime(beDto.startTime);
+                be.setEndTime(beDto.endTime);
 
                 return be;
             }).collect(Collectors.toList());
@@ -170,5 +174,47 @@ public class BookingService {
                                 "LEFT JOIN FETCH b.bookingEquipments be " +
                                 "LEFT JOIN FETCH be.equipment", Booking.class)
                 .getResultList();
+    }
+
+    public List<Map<String, Object>> getAvailableEquipmentsForPeriod(LocalDateTime start, LocalDateTime end) {
+        // Récupérer tous les équipements mobiles
+        List<Equipment> allMobileEquipments = em.createQuery(
+                        "SELECT e FROM Equipment e WHERE e.mobile = true", Equipment.class)
+                .getResultList();
+
+        // Récupérer tous les BookingEquipment qui chevauchent l'intervalle
+        List<BookingEquipment> overlappingBookings = em.createQuery(
+                        "SELECT be FROM BookingEquipment be WHERE be.startTime < :end AND be.endTime > :start", BookingEquipment.class)
+                .setParameter("start", start)
+                .setParameter("end", end)
+                .getResultList();
+
+        // Calcul de la quantité réservée
+        Map<Long, Integer> usedQuantities = new HashMap<>();
+        for (BookingEquipment be : overlappingBookings) {
+            Long equipmentId = be.getEquipment().getId();
+            usedQuantities.put(equipmentId,
+                    usedQuantities.getOrDefault(equipmentId, 0) + be.getQuantity());
+        }
+
+        // Résultat structuré
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Equipment eq : allMobileEquipments) {
+            int total = eq.getQuantity();
+            int used = usedQuantities.getOrDefault(eq.getId(), 0);
+            int available = Math.max(0, total - used);
+
+            Map<String, Object> equipmentData = new HashMap<>();
+            equipmentData.put("equipmentId", eq.getId());
+            equipmentData.put("name", eq.getName());
+            equipmentData.put("description", eq.getDescription());
+            equipmentData.put("total", total);
+            equipmentData.put("reserved", used);
+            equipmentData.put("available", available);
+
+            result.add(equipmentData);
+        }
+
+        return result;
     }
 }
