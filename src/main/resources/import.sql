@@ -33,13 +33,13 @@ INSERT INTO room (id, name, capacity) VALUES (9, 'K301', 15);
 INSERT INTO room (id, name, capacity) VALUES (10, 'L102', 40);
 
 -- Liens Room - Equipment
-INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (6, 3, 6, 1);  -- Imprimante
-INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (13, 9, 15, 1); -- Scanner
-INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (16, 5, 11, 1); -- Routeur Wi-Fi
-INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (17, 8, 18, 20); -- Chaises ergonomiques
-INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (18, 2, 23, 1); -- Station de recharge
-INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (18, 5, 23, 1); -- Station de recharge
-INSERT INTO room_equipment (id, room_id, equipment_id, quantity) VALUES (18, 10, 23, 1); -- Station de recharge
+INSERT INTO room_equipment (room_id, equipment_id, quantity) VALUES ( 3, 6, 1);  -- Imprimante
+INSERT INTO room_equipment (room_id, equipment_id, quantity) VALUES ( 9, 15, 1); -- Scanner
+INSERT INTO room_equipment (room_id, equipment_id, quantity) VALUES ( 5, 11, 1); -- Routeur Wi-Fi
+INSERT INTO room_equipment (room_id, equipment_id, quantity) VALUES ( 8, 18, 20); -- Chaises ergonomiques
+INSERT INTO room_equipment (room_id, equipment_id, quantity) VALUES ( 2, 23, 1); -- Station de recharge
+INSERT INTO room_equipment (room_id, equipment_id, quantity) VALUES ( 5, 23, 1); -- Station de recharge
+INSERT INTO room_equipment (room_id, equipment_id, quantity) VALUES (10, 23, 1); -- Station de recharge
 
 -- Réservations
 INSERT INTO booking (title, start_time, end_time, attendees, organizer, room_id)

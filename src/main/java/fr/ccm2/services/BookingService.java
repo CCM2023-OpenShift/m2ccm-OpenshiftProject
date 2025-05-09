@@ -6,17 +6,14 @@ import fr.ccm2.entities.BookingEquipment;
 import fr.ccm2.entities.Booking;
 import fr.ccm2.entities.Equipment;
 import fr.ccm2.entities.Room;
+import fr.ccm2.utils.DateUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @ApplicationScoped
 public class BookingService {
@@ -32,16 +29,14 @@ public class BookingService {
         return em.find(Booking.class, id);
     }
 
-    public boolean isRoomAvailable(Long roomId, LocalDateTime start, LocalDateTime end) {
-        List<Booking> conflicts = em.createQuery(
-                        "SELECT b FROM Booking b WHERE b.room.id = :roomId " +
+    public List<Booking> getAvailableRoom(Long roomId, LocalDateTime start, LocalDateTime end) {
+        return em.createQuery(
+                        "SELECT DISTINCT b FROM Booking b WHERE b.room.id = :roomId " +
                                 "AND b.endTime > :start AND b.startTime < :end", Booking.class)
                 .setParameter("roomId", roomId)
                 .setParameter("start", start)
                 .setParameter("end", end)
                 .getResultList();
-
-        return conflicts.isEmpty();
     }
 
     private void checkEquipmentAvailability(List<BookingEquipment> requestedEquipments, LocalDateTime start, LocalDateTime end) {
@@ -74,9 +69,12 @@ public class BookingService {
         }
     }
 
+
     @Transactional
     public Booking createBooking(BookingCreateDTO dto) {
         Room room = em.find(Room.class, dto.roomId);
+        System.out.println("Salle recherchée : " + dto.roomId);
+
         if (room == null) {
             throw new IllegalArgumentException("Salle introuvable (ID=" + dto.roomId + ")");
         }
@@ -92,14 +90,23 @@ public class BookingService {
             );
         }
 
-        if (!isRoomAvailable(room.getId(), dto.startTime, dto.endTime)) {
-            throw new IllegalStateException(
-                    "La salle est déjà réservée entre " +
-                            dto.startTime + " et " + dto.endTime + "."
-            );
+        List<Booking> conflicts = getAvailableRoom(room.getId(), dto.startTime, dto.endTime);
+        if (!conflicts.isEmpty()) {
+            StringBuilder message = new StringBuilder("La salle est déjà réservée pour les périodes suivantes :\n");
+            for (Booking conflict : conflicts) {
+                message.append("Du ")
+                        .append(DateUtils.formatForUser(conflict.getStartTime()))
+                        .append(" au ")
+                        .append(DateUtils.formatForUser(conflict.getEndTime()))
+                        .append("\n");
+            }
+            System.out.println("Conflits détectés : " + message);
+            throw new IllegalStateException(message.toString());
         }
 
         Booking booking = new Booking();
+        System.out.println("Réservation créée : " + booking);
+
         booking.setTitle(dto.title);
         booking.setStartTime(dto.startTime);
         booking.setEndTime(dto.endTime);
@@ -107,26 +114,39 @@ public class BookingService {
         booking.setOrganizer(dto.organizer);
         booking.setRoom(room);
 
+        booking.setBookingEquipments(new ArrayList<>());
+
         em.persist(booking);
+        System.out.println("Réservation persistée avec succès : " + booking.getId());
 
         if (dto.bookingEquipments != null) {
-            List<BookingEquipment> beList = dto.bookingEquipments.stream().map(beDto -> {
-                BookingEquipment be = new BookingEquipment();
-                be.setEquipment(em.find(Equipment.class, beDto.equipmentId));
-                be.setQuantity(beDto.quantity);
-                be.setBooking(booking);
-                be.setStartTime(beDto.startTime);
-                be.setEndTime(beDto.endTime);
+            Map<Long, BookingEquipment> equipmentMap = new HashMap<>();
 
-                return be;
-            }).collect(Collectors.toList());
+            for (var beDto : dto.bookingEquipments) {
+                String key = beDto.equipmentId + "-" + beDto.startTime + "-" + beDto.endTime;
 
-            checkEquipmentAvailability(beList, dto.startTime, dto.endTime);
-            booking.setBookingEquipments(beList);
+                if (!equipmentMap.containsKey(beDto.equipmentId)) {
+                    Equipment equipment = em.find(Equipment.class, beDto.equipmentId);
+                    if (equipment == null) {
+                        continue;
+                    }
 
-            for (BookingEquipment be : beList) {
-                em.persist(be);
+                    BookingEquipment be = new BookingEquipment();
+                    be.setEquipment(equipment);
+                    be.setQuantity(beDto.quantity);
+                    be.setBooking(booking);
+                    be.setStartTime(beDto.startTime);
+                    be.setEndTime(beDto.endTime);
+
+                    equipmentMap.put(beDto.equipmentId, be);
+
+                    booking.getBookingEquipments().add(be);
+
+                    em.persist(be);
+                }
             }
+
+            checkEquipmentAvailability(new ArrayList<>(equipmentMap.values()), dto.startTime, dto.endTime);
         }
 
         em.flush();
