@@ -34,15 +34,6 @@ jobs:
         run: |
           oc apply -f infrastructure/keycloak/keycloak-postgresql-deployment.yaml -n ${{ secrets.OPENSHIFT_PROJECT }}
 
-      - name: Get Frontend Route and Inject into Keycloak Deployment
-        run: |
-          FRONT_ROUTE=$(oc get route vite-oc -n ${{ secrets.OPENSHIFT_PROJECT }} -o jsonpath='{.spec.host}')
-          FRONT_URL="http://$FRONT_ROUTE"
-          echo "🌐 Frontend URL detected: $FRONT_URL"
-          # Remplacer la valeur dans le fichier keycloak-deployment.yaml
-          sed -i "s|value: \"http://localhost:3000\"|value: \"$FRONT_URL\"|g" infrastructure/keycloak/keycloak-deployment.yaml
-          sed -i "s|value: \"http://localhost:3000\"|value: \"$FRONT_URL\"|g" infrastructure/keycloak/keycloak-realm-config.yaml
-
       - name: Deploy Keycloak Server
         run: |
           oc apply -f infrastructure/keycloak/keycloak-deployment.yaml -n ${{ secrets.OPENSHIFT_PROJECT }}

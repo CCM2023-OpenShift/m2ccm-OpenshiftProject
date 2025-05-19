@@ -30,10 +30,10 @@ data:
         {
           "clientId": "my-app",
           "redirectUris": [
-            "http://localhost:3000/*"
+            "https://vite-oc-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/*"
           ],
           "webOrigins": [
-            "http://localhost:3000"
+            "https://vite-oc-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com"
           ],
           "publicClient": true,
           "directAccessGrantsEnabled": true
