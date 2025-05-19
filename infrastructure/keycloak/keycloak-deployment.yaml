@@ -36,8 +36,6 @@ spec:
               value: "true"
             - name: KC_PROXY
               value: "edge"
-            - name: KC_FRONTEND_URL
-              value: "https://keycloak-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com"
             - name: KEYCLOAK_CORS
               value: "true"
             - name: KEYCLOAK_CORS_ALLOWED_ORIGINS

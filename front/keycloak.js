@@ -6,4 +6,9 @@ const keycloak = new Keycloak({
     clientId: 'my-app',
 });
 
+keycloak.init({
+    onLoad: 'login-required',
+    checkLoginIframe: false,
+});
+
 export default keycloak;
