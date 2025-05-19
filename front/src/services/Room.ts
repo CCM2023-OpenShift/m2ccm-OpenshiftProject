@@ -8,7 +8,7 @@ export class Room {
 
     errors!: object;
 
-    private static baseURL: string = `http://localhost:8080/rooms`;
+    private static baseURL: string = `https://quarkus-route-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/rooms`;
 
     public resetErrors(): void {
         this.errors = {};

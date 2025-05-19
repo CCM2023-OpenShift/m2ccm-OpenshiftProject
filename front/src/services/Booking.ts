@@ -13,7 +13,7 @@ export class Booking {
 
     errors!: object;
 
-    private static baseURL: string = `http://localhost:8080/bookings`;
+    private static baseURL: string = `https://quarkus-route-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/bookings`;
 
     public resetErrors(): void {
         this.errors = {};
