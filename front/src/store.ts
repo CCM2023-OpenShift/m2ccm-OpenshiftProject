@@ -8,23 +8,23 @@ export const useStore = create<AppState>((set) => ({
     equipment: [],
     bookings: [],
     fetchRooms: async () => {
-        const response = await fetch('http://localhost:8080/rooms');
+        const response = await fetch('https://quarkus-route-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/rooms');
         const data = await response.json();
         set({ rooms: data });
     },
     fetchEquipment: async () => {
-        const response = await fetch('http://localhost:8080/equipment');
+        const response = await fetch('https://quarkus-route-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/equipment');
         const data = await response.json();
         set({ equipment: data });
     },
     fetchEquipmentFixed: async () => {
-        const response = await fetch('http://localhost:8080/equipment');
+        const response = await fetch('https://quarkus-route-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/equipment');
         const data = await response.json();
         const fixedEquipment = data.filter((equip: Equipment) => !equip.mobile);
         set({ equipment: fixedEquipment });
     },
     fetchBookings: async () => {
-        const response = await fetch('http://localhost:8080/bookings');
+        const response = await fetch('https://quarkus-route-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/bookings');
         const data = await response.json();
         set({ bookings: data });
     },
