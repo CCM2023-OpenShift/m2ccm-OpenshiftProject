@@ -38,6 +38,8 @@ spec:
               value: "edge"
             - name: KEYCLOAK_CORS
               value: "true"
+            - name: KC_FRONTEND_URL
+              value: "https://keycloak-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com"
             - name: KEYCLOAK_CORS_ALLOWED_ORIGINS
               value: "https://vite-oc-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com"
             - name: KEYCLOAK_CONTENT_SECURITY_POLICY
