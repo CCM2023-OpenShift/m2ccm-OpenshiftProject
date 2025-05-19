@@ -40,10 +40,3 @@ jobs:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
           oc apply -f infrastructure/postgresql-deployment.yaml -n $OPENSHIFT_PROJECT
-
-      - name: Wait for PostgreSQL to be Ready
-        env:
-          OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
-        run: |
-          echo "⌛ Waiting for PostgreSQL pod to be ready..."
-          oc wait --for=condition=Available deployment/postgresql --timeout=120s -n $OPENSHIFT_PROJECT || echo "⚠️ PostgreSQL might not be ready yet."

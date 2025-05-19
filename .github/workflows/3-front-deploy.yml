@@ -1,0 +1,50 @@
+name: Deploy app front on OpenShift
+
+on:
+  workflow_run:
+    workflows: [ "Build & Deploy Quarkus on OpenShift" ]
+    types:
+      - completed
+    paths:
+      - 'front/**'
+jobs:
+  build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        run: |
+          oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_SERVER }}
+          oc project ${{ secrets.OPENSHIFT_PROJECT }}
+
+      - name: Deploy to OpenShift
+        run: |
+          oc get deployment vite-oc >/dev/null 2>&1 \
+          && echo "Deployment already exists, updating..." \
+          || oc new-app vite-oc
+          oc rollout restart deployment/vite-oc
+
+      - name: Expose Frontend Service
+        run: |
+          set -e
+          if ! oc get svc vite-oc >/dev/null 2>&1; then
+            echo "Service vite-oc not found, skipping expose."
+          else
+            oc get route vite-oc >/dev/null 2>&1 \
+            && echo "Route already exists" \
+            || oc expose svc/vite-oc --port=3000
+          fi
+
+      - name: Verify Deployment
+        run: |
+          oc get pods
+          oc get routes
