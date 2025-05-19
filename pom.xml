@@ -81,7 +81,6 @@
             <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
 
-
         <!-- Testing: -->
         <dependency>
             <groupId>io.quarkus</groupId>
