@@ -1,18 +1,14 @@
 name: Build & Deploy Quarkus on OpenShift
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'src/main/**'
-      - 'infrastructure/quarkus-deployment.yaml'
+  workflow_run:
+    workflows: [ "Deploy PostgreSQL on OpenShift" ]
+    types:
+      - completed
 
 jobs:
   build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -70,6 +66,7 @@ jobs:
           oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT
 
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
