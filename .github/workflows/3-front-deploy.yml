@@ -11,6 +11,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -27,23 +28,28 @@ jobs:
 
       - name: Deploy to OpenShift
         run: |
-          oc get deployment vite-oc >/dev/null 2>&1 \
-          && echo "Deployment already exists, updating..." \
-          || oc new-app vite-oc
+          oc get deployment vite-oc >/dev/null 2>&1 && echo "Deployment already exists, updating..." || oc new-app vite-oc
           oc rollout restart deployment/vite-oc
 
-      - name: Expose Frontend Service
+      - name: Create or Update HTTPS Route for Frontend
         run: |
-          set -e
-          if ! oc get svc vite-oc >/dev/null 2>&1; then
-            echo "Service vite-oc not found, skipping expose."
-          else
-            oc get route vite-oc >/dev/null 2>&1 \
-            && echo "Route already exists" \
-            || oc expose svc/vite-oc --port=3000
-          fi
+          cat <<EOF | oc apply -f -
+          apiVersion: route.openshift.io/v1
+          kind: Route
+          metadata:
+            name: vite-oc
+            namespace: ${{ secrets.OPENSHIFT_PROJECT }}
+          spec:
+            to:
+              kind: Service
+              name: vite-oc
+            port:
+              targetPort: 3000
+            tls:
+              termination: edge
+          EOF
 
-      - name: Verify Deployment
+      - name: Verify Deployment and Route
         run: |
           oc get pods
           oc get routes
