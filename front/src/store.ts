@@ -1,51 +1,75 @@
 import { create } from 'zustand';
-import { AppState, Room, Equipment, Booking } from './types.ts';
-
-// Données initiales pour les salles
-const initialRooms: Room[] = [
-    {
-        id: '1',
-        name: 'Salle A101',
-        capacity: 30,
-        equipment: ['1', '2'],
-    },
-    {
-        id: '2',
-        name: 'Salle B202',
-        capacity: 20,
-        equipment: ['1'],
-    },
-];
-
-// Données initiales pour les équipements
-const initialEquipment: Equipment[] = [
-    {
-        id: '1',
-        name: 'Projecteur',
-        description: 'Projecteur HD avec connexion HDMI',
-    },
-    {
-        id: '2',
-        name: 'Tableau blanc',
-        description: 'Tableau blanc magnétique 2m x 1.5m',
-    },
-];
+import { AppState, Room, Equipment } from './types.ts';
+import { Room as RoomService } from './services/Room.ts';
+import { Equipment as EquipmentService } from './services/Equipment.ts';
 
 export const useStore = create<AppState>((set) => ({
-    rooms: initialRooms,
-    equipment: initialEquipment,
+    rooms: [],
+    equipment: [],
     bookings: [],
+    fetchRooms: async () => {
+        const response = await fetch('http://localhost:8080/rooms');
+        const data = await response.json();
+        set({ rooms: data });
+    },
+    fetchEquipment: async () => {
+        const response = await fetch('http://localhost:8080/equipment');
+        const data = await response.json();
+        set({ equipment: data });
+    },
+    fetchEquipmentFixed: async () => {
+        const response = await fetch('http://localhost:8080/equipment');
+        const data = await response.json();
+        const fixedEquipment = data.filter((equip: Equipment) => !equip.mobile);
+        set({ equipment: fixedEquipment });
+    },
+    fetchBookings: async () => {
+        const response = await fetch('http://localhost:8080/bookings');
+        const data = await response.json();
+        set({ bookings: data });
+    },
+    addRoom: async (room: Partial<Room>) => {
+        const newRoom = new RoomService();
+        Object.assign(newRoom, room);
+        const createdRoom = await newRoom.create();
+        set((state) => ({ rooms: [...state.rooms, createdRoom] }));
+    },
+    updateRoom: async (room: Room) => {
+        const roomInstance = new RoomService();
+        Object.assign(roomInstance, room);
+        const updatedRoom = await roomInstance.update();
+        set((state) => ({
+            rooms: state.rooms.map((r) => (r.id === updatedRoom.id ? updatedRoom : r)),
+        }));
+    },
+    deleteRoom: async (roomId: string) => {
+        const roomService = new RoomService();
+        roomService.id = roomId;
+        await roomService.delete();
+        set((state) => ({
+            rooms: state.rooms.filter((r) => r.id !== roomId),
+        }));
+    },
+    addEquipment: async (equipment: Partial<Equipment>) => {
+        const newEquipment = new EquipmentService();
+        Object.assign(newEquipment, equipment);
+        const createdEquipment = await newEquipment.create();
+        set((state) => ({ equipment: [...state.equipment, createdEquipment] }));
+    },
+    updateEquipment: async (equipment: Equipment) => {
+        const equipmentService = new EquipmentService();
+        Object.assign(equipmentService, equipment);
+        const updatedEquipment = await equipmentService.update();
+        set((state) => ({
+            equipment: state.equipment.map((e) => (e.id === updatedEquipment.id ? updatedEquipment : e)),
+        }));
+    },
+    deleteEquipment: async (equipmentId: string) => {
+        const equipmentService = new EquipmentService();
+        equipmentService.id = equipmentId;
+        await equipmentService.delete();
+        set((state) => ({
+            equipment: state.equipment.filter((e) => e.id !== equipmentId),
+        }));
+    },
 }));
-
-// Actions
-export const addBooking = (booking: Booking) => {
-    useStore.setState((state) => ({
-        bookings: [...state.bookings, booking],
-    }));
-};
-
-export const deleteBooking = (bookingId: string) => {
-    useStore.setState((state) => ({
-        bookings: state.bookings.filter((booking) => booking.id !== bookingId),
-    }));
-};

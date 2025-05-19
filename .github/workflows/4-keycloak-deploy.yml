@@ -47,6 +47,11 @@ jobs:
         run: |
           oc apply -f infrastructure/keycloak/keycloak-deployment.yaml -n ${{ secrets.OPENSHIFT_PROJECT }}
 
+      - name: Restart Keycloak if needed
+        run: |
+          echo "🔁 Restarting Keycloak deployment..."
+          oc rollout restart deployment/keycloak -n ${{ secrets.OPENSHIFT_PROJECT }}
+
       - name: Apply Realm Config (if needed)
         run: |
           oc apply -f infrastructure/keycloak/keycloak-realm-config.yaml -n ${{ secrets.OPENSHIFT_PROJECT }}

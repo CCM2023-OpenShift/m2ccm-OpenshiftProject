@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint ../../m2ccm-OpenShift-front",
+    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-keycloak/web": "^3.4.0",
+    "keycloak-js": "^26.2.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
