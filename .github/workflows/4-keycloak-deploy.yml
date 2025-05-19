@@ -4,8 +4,7 @@ on:
     workflows: [ "Deploy app front on OpenShift" ]
     types:
       - completed
-    paths:
-      - 'infrastructure/keycloak/**'
+
 jobs:
   build-and-push:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}

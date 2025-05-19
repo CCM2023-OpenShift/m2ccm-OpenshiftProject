@@ -4,13 +4,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'infrastructure/postgresql-deployment.yaml'
   pull_request:
     branches:
       - main
-    paths:
-      - 'infrastructure/postgresql-deployment.yaml'
 
 jobs:
   deploy-postgresql:
