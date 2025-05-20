@@ -6,9 +6,9 @@ import fr.ccm2.dto.booking.BookingCreateDTO;
 import fr.ccm2.dto.booking.BookingUpdateDTO;
 import fr.ccm2.entities.Booking;
 import fr.ccm2.entities.BookingEquipment;
+import fr.ccm2.entities.Equipment;
 import fr.ccm2.entities.Room;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class BookingMapper {
@@ -30,25 +30,33 @@ public class BookingMapper {
 
         // Si on inclut les équipements, on les ajoute
         if (includeEquipments && booking.getBookingEquipments() != null) {
-            List<BookingEquipmentResponseDTO> equipmentDTOs = booking.getBookingEquipments().stream()
+            dto.bookingEquipments = booking.getBookingEquipments().stream()
                     .map(BookingMapper::mapBookingEquipment)
                     .collect(Collectors.toList());
-            dto.bookingEquipments = equipmentDTOs;
         }
 
         return dto;
     }
 
-
-    // Mapper les équipements associés à la réservation
     private static BookingEquipmentResponseDTO mapBookingEquipment(BookingEquipment bookingEquipment) {
         BookingEquipmentResponseDTO dto = new BookingEquipmentResponseDTO();
-        dto.equipmentId = bookingEquipment.getEquipment().getId();
+        dto.id = bookingEquipment.getId(); //
+        dto.bookingId = bookingEquipment.getBooking().getId();
+
+        Equipment equipment = bookingEquipment.getEquipment();
+        if (equipment != null) {
+            dto.equipment = EquipmentMapper.toResponse(equipment);
+        } else {
+            dto.equipmentId = bookingEquipment.getEquipment().getId();
+        }
+
         dto.quantity = bookingEquipment.getQuantity();
+        dto.startTime = bookingEquipment.getStartTime().toString();
+        dto.endTime = bookingEquipment.getEndTime().toString();
         return dto;
     }
 
-    // Convertir un BookingCreateDTO en entité Booking
+    // Convertir un BookingCreateDTO en entité Booking aaz
     public static Booking fromCreateDTO(BookingCreateDTO dto) {
         Booking booking = new Booking();
         booking.setTitle(dto.title);
