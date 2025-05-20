@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Room } from '../services/Room.ts';
-import { Booking } from '../services/Booking.ts';
+import { Room } from '../services/Room';
+import { Booking } from '../services/Booking';
 import { Calendar, Users, BookOpen } from 'lucide-react';
 
 export const Dashboard = () => {

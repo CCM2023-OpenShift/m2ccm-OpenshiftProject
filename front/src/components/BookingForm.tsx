@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Room } from '../services/Room.ts';
-import { Booking } from '../services/Booking.ts';
-import {useStore} from "../store.ts";
-import {Equipment} from "../services/Equipment.ts";
-import {RoomEquipment} from "../services/RoomEquipment.ts";
+import { useStore } from "../store.ts";
+import { Room } from '../services/Room';
+import { Booking } from '../services/Booking';
+import { Equipment } from "../services/Equipment.ts";
+import { RoomEquipment } from "../services/RoomEquipment.ts";
+import { roundUpToNextHalfHour, formatDateTimeLocal } from '../composable/formatTimestamp.ts';
 
 export const BookingForm = () => {
     const { fetchEquipment } = useStore();
@@ -12,33 +13,35 @@ export const BookingForm = () => {
     const [availableEquipments, setAvailableEquipments] = useState<any[]>([]);
     const [availableEquipmentsMobile, setAvailableEquipmentsMobile] = useState<any[]>([]);
 
-    const [formData, setFormData] = useState({
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    const roundedNow = roundUpToNextHalfHour(now);
+    const roundedOneHourLater = roundUpToNextHalfHour(oneHourLater);
+    const formattedStartTime = formatDateTimeLocal(roundedNow);
+    const formattedEndTime = formatDateTimeLocal(roundedOneHourLater);
+
+    const initialBookingData = {
         title: '',
         roomId: '',
-        startTime: '',
-        endTime: '',
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
         attendees: '',
-        bookingEquipments: [] as { equipmentId: string, quantity: number }[],
+        bookingEquipments: [] as {
+            equipmentId: string;
+            quantity: number;
+            startTime: string;
+            endTime: string;
+        }[],
         organizer: '',
-    });
+    };
+
+    const [formData, setFormData] = useState(initialBookingData);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const roomsData = await Room.getAll();
                 setRooms(roomsData);
-
-                const allEquipments = await Equipment.getAll();
-                const mobileAvailableEquipments = allEquipments.filter(
-                    (eq) => eq.mobile && (eq.quantity ?? 0) > 0
-                );
-                setAvailableEquipmentsMobile(
-                    mobileAvailableEquipments.map((eq) => ({
-                        equipment: eq,
-                        equipmentId: eq.id,
-                        quantity: eq.quantity ?? 0
-                    }))
-                );
             } catch (error) {
                 console.error('Erreur lors du chargement des données', error);
             }
@@ -82,6 +85,24 @@ export const BookingForm = () => {
         void getEquipments();
     }, [formData.roomId, rooms, fetchEquipment]);
 
+    useEffect(() => {
+        const fetchAvailableEquipments = async () => {
+            if (!formData.startTime || !formData.endTime) return;
+
+            try {
+                const availableEquipment = await Booking.getAvailableEquipments(formData.startTime, formData.endTime);
+                const filteredAndMapped = availableEquipment
+                    .filter((e) => e.available > 0)
+                setAvailableEquipmentsMobile(filteredAndMapped);
+            } catch (error) {
+                console.error("Erreur lors du chargement des équipements disponibles :", error);
+                setAvailableEquipmentsMobile([]);
+            }
+        };
+
+        void fetchAvailableEquipments();
+    }, [formData.startTime, formData.endTime]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -98,10 +119,14 @@ export const BookingForm = () => {
             attendees: parseInt(formData.attendees),
             organizer: formData.organizer,
             room: selectedRoom,
-            bookingEquipments: formData.bookingEquipments.map((be) => ({
-                equipmentId: String(be.equipmentId),
-                quantity: be.quantity,
-            })),
+            bookingEquipments: formData.bookingEquipments
+                .filter((be) => be.quantity > 0)
+                .map((be) => ({
+                    equipmentId: String(be.equipmentId),
+                    quantity: be.quantity,
+                    startTime: formData.startTime,
+                    endTime: formData.endTime,
+                })),
         };
 
         try {
@@ -111,15 +136,7 @@ export const BookingForm = () => {
 
             alert("Réservation créée avec succès!");
             setErrorMessage('');
-            setFormData({
-                title: '',
-                roomId: '',
-                startTime: '',
-                endTime: '',
-                attendees: '',
-                bookingEquipments: [],
-                organizer: '',
-            });
+            setFormData(initialBookingData);
         } catch (error) {
             console.error("Error creating booking:", error);
             if (error instanceof Error) {
@@ -142,7 +159,7 @@ export const BookingForm = () => {
                     <input
                         type="text"
                         value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        onChange={(e) => setFormData({...formData, title: e.target.value})}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     />
@@ -154,7 +171,7 @@ export const BookingForm = () => {
                     </label>
                     <select
                         value={formData.roomId}
-                        onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
+                        onChange={(e) => setFormData({...formData, roomId: e.target.value})}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     >
@@ -193,7 +210,10 @@ export const BookingForm = () => {
                         <input
                             type="datetime-local"
                             value={formData.startTime}
-                            onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({...formData, startTime: e.target.value})
+                            }
+                            min={formatDateTimeLocal(new Date())}
                             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                         />
@@ -206,7 +226,10 @@ export const BookingForm = () => {
                         <input
                             type="datetime-local"
                             value={formData.endTime}
-                            onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({...formData, endTime: e.target.value})
+                            }
+                            min={formData.startTime}
                             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                         />
@@ -220,7 +243,7 @@ export const BookingForm = () => {
                     <input
                         type="number"
                         value={formData.attendees}
-                        onChange={(e) => setFormData({ ...formData, attendees: e.target.value })}
+                        onChange={(e) => setFormData({...formData, attendees: e.target.value})}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         min="1"
@@ -234,84 +257,90 @@ export const BookingForm = () => {
                     <input
                         type="text"
                         value={formData.organizer}
-                        onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
+                        onChange={(e) => setFormData({...formData, organizer: e.target.value})}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     />
                 </div>
 
-                {availableEquipmentsMobile.filter((req) => req.equipment.mobile).length > 0 && (
+                {formData.startTime && formData.endTime ? (
                     <div className="mb-6">
                         <label className="block text-gray-700 font-semibold mb-2">
                             Équipements mobiles disponibles à la réservation (pour ce créneau)
                         </label>
                         <div className="max-h-64 overflow-y-auto border rounded p-2">
-                            {availableEquipmentsMobile
-                                .filter((req) => req.equipment.mobile)
-                                .map((req) => {
-                                    const equipment = req.equipment;
-                                    const quantity = req.quantity || 0;
-                                    const existing = formData.bookingEquipments.find(e => e.equipmentId === req.equipmentId);
+                            {availableEquipmentsMobile.map((req) => {
+                                const quantity = req.available || 0;
+                                const existing = formData.bookingEquipments.find(e => e.equipmentId === req.equipmentId) || {
+                                    equipmentId: req.equipmentId,
+                                    quantity: 0,
+                                    startTime: formData.startTime,
+                                    endTime: formData.endTime,
+                                };
 
-                                    return (
-                                        <div key={req.equipmentId} className="flex items-center justify-between mb-2">
-                                            <label className="flex items-center space-x-2 w-full">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!existing}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                bookingEquipments: [
-                                                                    ...prev.bookingEquipments,
-                                                                    { equipmentId: req.equipmentId, quantity: 1 },
-                                                                ],
-                                                            }));
-                                                        } else {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                bookingEquipments: prev.bookingEquipments.filter(
-                                                                    (eq) => eq.equipmentId !== req.equipmentId
-                                                                ),
-                                                            }));
-                                                        }
-                                                    }}
-                                                />
-                                                <span className="flex-1">
-                                                    {equipment.name} (Disponible : {quantity})
-                                                </span>
-                                            </label>
-                                            {existing && (
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max={quantity}
-                                                    className="w-16 border rounded px-1 ml-2"
-                                                    value={existing.quantity}
-                                                    onChange={(e) => {
-                                                        const qty = Number(e.target.value);
-                                                        setFormData((prev) => ({
+                                return (
+                                    <div key={req.equipmentId} className="flex items-center justify-between mb-2">
+                                        <span className="flex-1">
+                                            {req.name}
+                                        </span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max={quantity}
+                                            className="w-20 border rounded px-1 ml-2"
+                                            value={existing.quantity}
+                                            onChange={(e) => {
+                                                const qty = Number(e.target.value);
+                                                setFormData((prev) => {
+                                                    const exists = prev.bookingEquipments.find(eq => eq.equipmentId === req.equipmentId);
+                                                    if (exists) {
+                                                        return {
                                                             ...prev,
                                                             bookingEquipments: prev.bookingEquipments.map((eq) =>
                                                                 eq.equipmentId === req.equipmentId
-                                                                    ? { ...eq, quantity: qty }
+                                                                    ? {...eq, quantity: qty}
                                                                     : eq
                                                             ),
-                                                        }));
-                                                    }}
-                                                />
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                                        };
+                                                    } else {
+                                                        return {
+                                                            ...prev,
+                                                            bookingEquipments: [
+                                                                ...prev.bookingEquipments,
+                                                                {
+                                                                    equipmentId: req.equipmentId,
+                                                                    quantity: qty,
+                                                                    startTime: prev.startTime,
+                                                                    endTime: prev.endTime,
+                                                                },
+                                                            ],
+                                                        };
+                                                    }
+                                                });
+                                            }}
+                                        />
+                                        <span className="text-gray-600"> / {quantity}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
+                    </div>
+                ) : (
+                    <div className="mb-6 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+                        Veuillez sélectionner une date de début et de fin pour voir les équipements mobiles disponibles.
                     </div>
                 )}
 
                 {errorMessage && (
                     <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                        {errorMessage}
+                        {errorMessage
+                            .split('\n')
+                            .filter(line => line.trim() !== '')
+                            .map((line, index) => (
+                                <p key={index} className={index > 0 ? 'ml-4' : ''}>
+                                    {index === 0 ? line : `- ${line}`}
+                                </p>
+                            ))}
                     </div>
                 )}
 

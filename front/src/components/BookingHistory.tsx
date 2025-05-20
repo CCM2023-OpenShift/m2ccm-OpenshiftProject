@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Booking } from '../services/Booking.ts';
+import { Booking } from '../services/Booking';
 
 export const BookingHistory = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
