@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'static/**'
+      - 'front/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'static/**'
+      - 'front/**'
 
 jobs:
   build:
