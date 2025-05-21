@@ -19,6 +19,7 @@ function ProtectedRoute({ children, allowedRoles }) {
     return hasAccess ? children : <Navigate to="/unauthorized" replace />;
 }
 
+// SIDEBAR COMPONENT
 function Sidebar() {
     const { keycloak } = useKeycloak();
     const roles = keycloak.tokenParsed?.realm_access?.roles || [];
