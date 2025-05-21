@@ -32,6 +32,7 @@ public class Booking {
     private Room room;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @JsonIgnoreProperties("bookings")
     private List<BookingEquipment> bookingEquipments;
 
     // Getters et Setters

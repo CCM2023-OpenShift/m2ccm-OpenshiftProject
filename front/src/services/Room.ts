@@ -1,4 +1,4 @@
-import { RoomEquipment } from './RoomEquipment.ts';
+import { RoomEquipment } from './RoomEquipment';
 
 export class Room {
     public id!: string;
@@ -8,7 +8,7 @@ export class Room {
 
     errors!: object;
 
-    private static baseURL: string = `https://quarkus-route-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/rooms`;
+    private static baseURL: string = `http://localhost:8080/rooms`;
 
     public resetErrors(): void {
         this.errors = {};

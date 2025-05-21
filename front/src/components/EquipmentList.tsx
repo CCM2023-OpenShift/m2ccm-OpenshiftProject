@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useStore } from '../store.ts';
+import { useStore } from '../store';
 import { Monitor, Plus, Edit, Trash, X } from 'lucide-react';
-import { Equipment } from '../types.ts';
+import { Equipment } from '../types';
 
 export const EquipmentList = () => {
     const { equipment, fetchEquipment, addEquipment, updateEquipment, deleteEquipment } = useStore();

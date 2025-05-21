@@ -81,4 +81,21 @@ public class BookingResource {
         bookingService.deleteBooking(id);
         return Response.noContent().build();
     }
+
+    @GET
+    @Path("/available-equipments")
+    public Response getAvailableEquipments(@QueryParam("start") String start,
+                                           @QueryParam("end") String end) {
+        if (start == null || end == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Les paramètres 'start' et 'end' sont requis.")
+                    .build();
+        }
+
+        LocalDateTime startTime = LocalDateTime.parse(start);
+        LocalDateTime endTime = LocalDateTime.parse(end);
+
+        var availabilityList = bookingService.getAvailableEquipmentsForPeriod(startTime, endTime);
+        return Response.ok(availabilityList).build();
+    }
 }

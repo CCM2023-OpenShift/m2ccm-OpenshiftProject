@@ -3,4 +3,6 @@ export interface BookingEquipment {
     equipmentId: string;
     bookingId: string;
     quantity: number;
+    startTime: string;
+    endTime: string;
 }

@@ -36,6 +36,8 @@ export interface BookingEquipment {
     quantity: number;
     equipmentId: string;
     bookingId: string;
+    startTime: string;
+    endTime: string;
 }
 
 export interface AppState {

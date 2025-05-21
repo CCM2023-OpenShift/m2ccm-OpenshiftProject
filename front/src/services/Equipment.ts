@@ -7,7 +7,7 @@ export class Equipment {
 
     errors!: object;
 
-    private static baseURL: string = `https://quarkus-route-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com/equipment`;
+    private static baseURL: string = `http://localhost:8080/equipment`;
 
     public resetErrors(): void {
         this.errors = {};
