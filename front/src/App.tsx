@@ -1,17 +1,79 @@
-import { useState } from 'react';
+import { useKeycloak } from '@react-keycloak/web';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+
 import { Dashboard } from './components/Dashboard';
 import { RoomList } from './components/RoomList';
 import { EquipmentList } from './components/EquipmentList';
 import { BookingForm } from './components/BookingForm';
-//import { Login } from './components/Login';
 import { BookingHistory } from './components/BookingHistory';
 import { BookingCalendar } from './components/BookingCalendar';
+import { NotAuthorized } from './components/NotAuthorized';
+
 import { LayoutGrid, Calendar, BookOpen, Monitor, History } from 'lucide-react';
-import { useKeycloak } from '@react-keycloak/web';
+
+function ProtectedRoute({ children, allowedRoles }) {
+    const { keycloak } = useKeycloak();
+    const roles = keycloak.tokenParsed?.realm_access?.roles || [];
+    const hasAccess = allowedRoles.some((role) => roles.includes(role));
+
+    return hasAccess ? children : <Navigate to="/unauthorized" replace />;
+}
+
+function Sidebar() {
+    const { keycloak } = useKeycloak();
+    const roles = keycloak.tokenParsed?.realm_access?.roles || [];
+
+    const hasRole = (role) => roles.includes(role);
+
+    return (
+        <div className="w-64 bg-white shadow-md p-6">
+            <h1 className="text-2xl font-bold text-gray-800 mb-8">Réservation</h1>
+            <nav className="flex flex-col gap-2">
+                <Link to="/" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <LayoutGrid className="w-5 h-5 mr-3" />
+                    Tableau de bord
+                </Link>
+                {(hasRole('user') || hasRole('admin')) && (
+                    <>
+                        <Link to="/calendar" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <Calendar className="w-5 h-5 mr-3" />
+                            Calendrier
+                        </Link>
+                        <Link to="/history" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <History className="w-5 h-5 mr-3" />
+                            Historique
+                        </Link>
+                        <Link to="/booking" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <Calendar className="w-5 h-5 mr-3" />
+                            Réserver
+                        </Link>
+                    </>
+                )}
+                {hasRole('admin') && (
+                    <>
+                        <Link to="/rooms" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <BookOpen className="w-5 h-5 mr-3" />
+                            Salles
+                        </Link>
+                        <Link to="/equipment" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <Monitor className="w-5 h-5 mr-3" />
+                            Équipements
+                        </Link>
+                    </>
+                )}
+                <button
+                    onClick={() => keycloak.logout()}
+                    className="mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                >
+                    Se déconnecter
+                </button>
+            </nav>
+        </div>
+    );
+}
 
 function App() {
     const { keycloak, initialized } = useKeycloak();
-    const [currentPage, setCurrentPage] = useState<'dashboard' | 'rooms' | 'equipment' | 'booking' | 'history' | 'calendar' >('dashboard');
 
     if (!initialized) return <div>Chargement…</div>;
     if (!keycloak.authenticated) {
@@ -19,119 +81,62 @@ function App() {
         return null;
     }
 
-    const renderPage = () => {
-        switch (currentPage) {
-            case 'dashboard':
-                return <Dashboard />;
-            case 'rooms':
-                return <RoomList />;
-            case 'equipment':
-                return <EquipmentList />;
-            case 'booking':
-                return <BookingForm />;
-            case 'history':
-                return <BookingHistory />;
-            case 'calendar':
-                return <BookingCalendar />;
-            default:
-                return <Dashboard />;
-        }
-    };
-
-    // if (!isAuthenticated) {
-    //     return <Login onLogin={handleLogin} />;
-    // }
-
     return (
-        <div className="min-h-screen bg-gray-100 flex">
-            <div className="w-64 bg-white shadow-md">
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-8">Réservation</h1>
-                    <nav>
-                        <button
-                            onClick={() => setCurrentPage('dashboard')}
-                            className={`w-full flex items-center px-4 py-2 rounded-lg mb-2 ${
-                                currentPage === 'dashboard'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                        >
-                            <LayoutGrid className="w-5 h-5 mr-3"/>
-                            Tableau de bord
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage('calendar')}
-                            className={`w-full flex items-center px-4 py-2 rounded-lg mb-2 ${
-                                currentPage === 'booking'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                        >
-                            <Calendar className="w-5 h-5 mr-3"/>
-                            Calendrier des réservations
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage('history')}
-                            className={`w-full flex items-center px-4 py-2 rounded-lg mb-2 ${
-                                currentPage === 'history'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                        >
-                            <History className="w-5 h-5 mr-3"/>
-                            Historique
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage('rooms')}
-                            className={`w-full flex items-center px-4 py-2 rounded-lg mb-2 ${
-                                currentPage === 'rooms'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                        >
-                            <BookOpen className="w-5 h-5 mr-3"/>
-                            Salles
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage('equipment')}
-                            className={`w-full flex items-center px-4 py-2 rounded-lg mb-2 ${
-                                currentPage === 'equipment'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                        >
-                            <Monitor className="w-5 h-5 mr-3"/>
-                            Équipements
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage('booking')}
-                            className={`w-full flex items-center px-4 py-2 rounded-lg mb-2 ${
-                                currentPage === 'booking'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                        >
-                            <Calendar className="w-5 h-5 mr-3"/>
-                            Réserver
-                        </button>
-                    </nav>
+        <Router>
+            <div className="flex min-h-screen">
+                <Sidebar />
+                <div className="flex-1 p-4">
+                    <Routes>
+                        <Route path="/" element={<Dashboard />} />
+
+                        <Route
+                            path="/calendar"
+                            element={
+                                <ProtectedRoute allowedRoles={['user', 'admin']}>
+                                    <BookingCalendar />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/history"
+                            element={
+                                <ProtectedRoute allowedRoles={['user', 'admin']}>
+                                    <BookingHistory />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/booking"
+                            element={
+                                <ProtectedRoute allowedRoles={['user', 'admin']}>
+                                    <BookingForm />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/rooms"
+                            element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                    <RoomList />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/equipment"
+                            element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                    <EquipmentList />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route path="/unauthorized" element={<NotAuthorized />} />
+                        <Route path="*" element={<Navigate to="/" />} />
+                    </Routes>
                 </div>
             </div>
-            <div className="flex-1">{renderPage()}</div>
-        </div>
+        </Router>
     );
 }
-
-const SidebarButton = ({ label, icon, page, currentPage, setCurrentPage }) => (
-    <button
-        onClick={() => setCurrentPage(page)}
-        className={`w-full flex items-center px-4 py-2 rounded-lg mb-2 ${
-            currentPage === page ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-        }`}
-    >
-        <span className="w-5 h-5 mr-3">{icon}</span>
-        {label}
-    </button>
-);
 
 export default App;
