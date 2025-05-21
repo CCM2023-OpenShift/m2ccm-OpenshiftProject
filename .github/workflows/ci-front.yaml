@@ -39,6 +39,7 @@ jobs:
       - name: Create or Update Build
         run: |
           set -e
+          cd front
           if ! oc get bc vite-oc >/dev/null 2>&1; then
             oc new-build --name=vite-oc --binary --strategy=docker
           else
@@ -48,4 +49,5 @@ jobs:
       - name: Start Build
         run: |
           set -e
+          cd front
           oc start-build vite-oc --from-dir=. --follow
