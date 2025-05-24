@@ -51,7 +51,7 @@ data:
           "protocol": "openid-connect",
           "publicClient": false,
           "bearerOnly": false,
-          "directAccessGrantsEnabled": false,
+          "directAccessGrantsEnabled": true,
           "standardFlowEnabled": false,
           "serviceAccountsEnabled": true,
           "redirectUris": [],
