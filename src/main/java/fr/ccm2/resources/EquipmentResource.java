@@ -6,6 +6,7 @@ import fr.ccm2.dto.equipment.EquipmentUpdateDTO;
 import fr.ccm2.entities.Equipment;
 import fr.ccm2.mapper.EquipmentMapper;
 import fr.ccm2.services.EquipmentService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -22,6 +23,7 @@ public class EquipmentResource {
     EquipmentService equipmentService;
 
     @GET
+    @RolesAllowed({"user", "admin"})
     public Response list() {
         List<EquipmentResponseDTO> dtoList = equipmentService.getAllEquipments()
                 .stream()
@@ -32,6 +34,7 @@ public class EquipmentResource {
 
     @GET
     @Path("/{id}")
+    @RolesAllowed({"user", "admin"})
     public Response get(@PathParam("id") Long id) {
         Equipment equipment = equipmentService.getEquipmentById(id);
         if (equipment == null) {
@@ -43,6 +46,7 @@ public class EquipmentResource {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin"})
     public Response create(EquipmentCreateDTO dto) {
         Equipment equipment = equipmentService.createEquipment(dto);
         if (equipment == null) {
@@ -56,6 +60,7 @@ public class EquipmentResource {
     @PUT
     @Path("/{id}")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @RolesAllowed({"admin"})
     public Response update(@PathParam("id") Long id,
                            @FormParam("name") String name,
                            @FormParam("description") String description,
@@ -79,6 +84,7 @@ public class EquipmentResource {
 
     @DELETE
     @Path("/{id}")
+    @RolesAllowed({"admin"})
     public Response delete(@PathParam("id") Long id) {
         equipmentService.deleteEquipment(id);
         return Response.noContent().build();
