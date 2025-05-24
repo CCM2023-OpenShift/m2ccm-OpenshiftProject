@@ -39,6 +39,18 @@ public class BookingService {
                 .getResultList();
     }
 
+    public List<Booking> getBookingsByOrganizer(String organizer) {
+        return em.createQuery(
+                        "SELECT DISTINCT b FROM Booking b " +
+                                "LEFT JOIN FETCH b.room " +
+                                "LEFT JOIN FETCH b.bookingEquipments be " +
+                                "LEFT JOIN FETCH be.equipment " +
+                                "WHERE b.organizer = :organizer " +
+                                "ORDER BY b.startTime DESC", Booking.class)
+                .setParameter("organizer", organizer)
+                .getResultList();
+    }
+
     private void checkEquipmentAvailability(List<BookingEquipment> requestedEquipments, LocalDateTime start, LocalDateTime end) {
         for (BookingEquipment requested : requestedEquipments) {
             Equipment equipment = em.find(Equipment.class, requested.getEquipment().getId());

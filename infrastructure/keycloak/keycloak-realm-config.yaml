@@ -14,6 +14,12 @@ data:
           "enabled": true,
           "credentials": [{ "type": "password", "value": "password1" }],
           "realmRoles": ["user"]
+        },
+        {
+          "username": "admin1",
+          "enabled": true,
+          "credentials": [{ "type": "password", "value": "admin1" }],
+          "realmRoles": ["admin"]
         }
       ],
       "roles": {
@@ -38,6 +44,18 @@ data:
           "publicClient": true,
           "directAccessGrantsEnabled": true,
           "standardFlowEnabled": true
+        },
+        {
+          "clientId": "my-backend",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "bearerOnly": true,
+          "directAccessGrantsEnabled": false,
+          "standardFlowEnabled": false,
+          "serviceAccountsEnabled": true,
+          "redirectUris": [],
+          "webOrigins": []
         }
       ]
     }

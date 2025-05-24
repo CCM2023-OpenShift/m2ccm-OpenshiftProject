@@ -21,6 +21,11 @@ spec:
           env:
             - name: QUARKUS_PROFILE
               value: "prod"
+            - name: KEYCLOAK_CLIENT_BACKEND_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-client-backend
+                  key: KEYCLOAK_CLIENT_BACKEND_SECRET
           resources:
             requests:
               memory: "512Mi"
