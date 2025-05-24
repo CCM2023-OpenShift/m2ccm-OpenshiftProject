@@ -50,7 +50,7 @@ data:
           "enabled": true,
           "protocol": "openid-connect",
           "publicClient": false,
-          "bearerOnly": true,
+          "bearerOnly": false,
           "directAccessGrantsEnabled": false,
           "standardFlowEnabled": false,
           "serviceAccountsEnabled": true,
