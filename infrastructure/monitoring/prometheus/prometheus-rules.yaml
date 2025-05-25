@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: lmagniez03-dev
+data:
+  example-rule.yaml: |
+    groups:
+      - name: example
+        rules:
+          - alert: ExampleAlert
+            expr: up == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Instance {{ $labels.instance }} down"

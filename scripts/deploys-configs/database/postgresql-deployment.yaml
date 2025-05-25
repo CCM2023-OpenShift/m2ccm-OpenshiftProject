@@ -6,6 +6,7 @@ metadata:
     app: postgresql
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: postgresql
@@ -17,6 +18,12 @@ spec:
       containers:
         - name: postgresql
           image: postgres:15
+
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
           env:
             - name: POSTGRES_USER
               value: postgres
@@ -24,12 +31,9 @@ spec:
               value: mon_password_fixe
             - name: POSTGRES_DB
               value: mon_database
-          ports:
-            - containerPort: 5432
-          volumeMounts:
-            - name: postgresql-storage
-              mountPath: /var/lib/postgresql/data
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
       volumes:
-        - name: postgresql-storage
+        - name: postgredb
           persistentVolumeClaim:
             claimName: postgresql-pvc

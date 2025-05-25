@@ -4,6 +4,7 @@ metadata:
   name: keycloak
   namespace: lmagniez03-dev
 spec:
+  revisionHistoryLimit: 2
   replicas: 1
   selector:
     matchLabels:
@@ -53,8 +54,6 @@ spec:
         - name: realm-config
           configMap:
             name: keycloak-realm-config
-
-
 ---
 apiVersion: v1
 kind: Service
@@ -68,7 +67,6 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
-
 ---
 apiVersion: route.openshift.io/v1
 kind: Route

@@ -4,6 +4,7 @@ metadata:
   name: keycloak-postgresql
   namespace: lmagniez03-dev
 spec:
+  revisionHistoryLimit: 2
   replicas: 1
   selector:
     matchLabels:
@@ -34,9 +35,7 @@ spec:
       volumes:
         - name: postgres-storage
           emptyDir: {}
-
 ---
-
 apiVersion: v1
 kind: Service
 metadata:

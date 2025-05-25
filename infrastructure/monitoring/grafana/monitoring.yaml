@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana
+  namespace: lmagniez03-dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: lmagniez03-dev
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: lmagniez03-dev
+spec:
+  revisionHistoryLimit: 2
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      serviceAccountName: grafana
+      containers:
+        - name: grafana
+          image: grafana/grafana
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: grafana-dashboard-provider-config
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: grafana-dashboard-config
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: grafana-dashboard-provider-config
+          configMap:
+            name: grafana-dashboard-provider-config
+        - name: grafana-dashboard-config
+          configMap:
+            name: grafana-dashboard-config

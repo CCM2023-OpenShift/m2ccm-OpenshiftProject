@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: lmagniez03-dev
+spec:
+  revisionHistoryLimit: 2
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      serviceAccountName: grafana
+      containers:
+        - name: grafana
+          image: grafana/grafana
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            # Montage du ConfigMap provider
+            - name: dashboard-provider-config
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            # Montage du ConfigMap dashboards JSON
+            - name: grafana-dashboards
+              mountPath: /etc/grafana/dashboards
+              readOnly: true
+      volumes:
+        - name: dashboard-provider-config
+          configMap:
+            name: grafana-dashboard-provider-config
+        - name: grafana-dashboards
+          configMap:
+            name: grafana-dashboard-config
