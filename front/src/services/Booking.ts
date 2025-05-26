@@ -1,5 +1,6 @@
+import ApiService from './apiService';
 import { Room } from './Room';
-import {BookingEquipment} from "./BookingEquipment.ts";
+import { BookingEquipment } from "./BookingEquipment";
 
 export class Booking {
     public id!: string;
@@ -13,7 +14,7 @@ export class Booking {
 
     errors!: object;
 
-    private static baseURL: string = `http://localhost:8080/bookings`;
+    private static baseEndpoint: string = `/bookings`;
 
     public resetErrors(): void {
         this.errors = {};
@@ -59,19 +60,7 @@ export class Booking {
 
     public async create(): Promise<Booking> {
         try {
-            const response = await fetch(Booking.baseURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(this.toUpdate()),
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                const msg = errorBody.message || `Erreur inconnue (code ${response.status})`;
-                throw new Error(msg);
-            }
-
-            const bookingJSON = await response.json();
+            const bookingJSON = await ApiService.post(Booking.baseEndpoint, this.toUpdate());
             return this.fromJSON(bookingJSON);
         } catch (error) {
             console.error('Error creating booking:', error);
@@ -81,19 +70,7 @@ export class Booking {
 
     public async update(): Promise<Booking> {
         try {
-            const response = await fetch(`${Booking.baseURL}/${this.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(this.toUpdate()),
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                const msg = errorBody.message || `Erreur inconnue (code ${response.status})`;
-                throw new Error(msg);
-            }
-
-            const bookingJSON = await response.json();
+            const bookingJSON = await ApiService.put(`${Booking.baseEndpoint}/${this.id}`, this.toUpdate());
             return this.fromJSON(bookingJSON);
         } catch (error) {
             console.error('Error updating booking:', error);
@@ -103,12 +80,7 @@ export class Booking {
 
     public async delete(): Promise<void> {
         try {
-            const response = await fetch(`${Booking.baseURL}/${this.id}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            await ApiService.delete(`${Booking.baseEndpoint}/${this.id}`);
         } catch (error) {
             console.error('Error deleting booking:', error);
             throw error;
@@ -117,35 +89,21 @@ export class Booking {
 
     public static async getAll(): Promise<Booking[]> {
         try {
-            const response = await fetch(`${Booking.baseURL}`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-            const bookings = await response.json();
+            const bookings = await ApiService.get(Booking.baseEndpoint);
             return bookings.map((b: any) => new Booking().fromJSON(b));
         } catch (error) {
             console.error('Error fetching bookings:', error);
-            return [];
+            throw error; // Propager l'erreur pour la gérer dans le composant
         }
     }
 
     public static async getAvailableEquipments(start: string, end: string): Promise<any[]> {
         try {
-            const url = `${Booking.baseURL}/available-equipments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-            });
-
-            if (!response.ok) throw new Error(`Erreur lors de la récupération des équipements disponibles`);
-
-            return await response.json();
+            const url = `${Booking.baseEndpoint}/available-equipments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+            return await ApiService.get(url);
         } catch (error) {
             console.error('Erreur getAvailableEquipments:', error);
-            return [];
+            throw error;
         }
     }
 
