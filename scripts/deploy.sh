@@ -188,14 +188,15 @@ deploy_quarkus() {
   fi
 
   log INFO "Build Quarkus OpenShift..."
+  cp "$ROOT_DIR/src/main/docker/Dockerfile.legacy-jar" "$ROOT_DIR/Dockerfile"
   run "oc start-build quarkus-app --from-dir=$ROOT_DIR --follow -n $NAMESPACE"
 
   log INFO "Déploiement Quarkus..."
   if ! $DRY_RUN; then
-    sed "s/__NAMESPACE__/$NAMESPACE/g" "$ROOT_DIR/infrastructure/quarkus-deployment.yaml" | oc apply -n $NAMESPACE -f -
+    sed "s/__NAMESPACE__/$NAMESPACE/g" "$ROOT_DIR/infrastructure/quarkus/quarkus-deployment.yaml" | oc apply -n $NAMESPACE -f -
   fi
-  run "oc apply -f $ROOT_DIR/infrastructure/quarkus-service.yaml -n $NAMESPACE"
-  run "oc apply -f $ROOT_DIR/infrastructure/quarkus-route.yaml -n $NAMESPACE"
+  run "oc apply -f $ROOT_DIR/infrastructure/quarkus/quarkus-service.yaml -n $NAMESPACE"
+  run "oc apply -f $ROOT_DIR/infrastructure/quarkus/quarkus-route.yaml -n $NAMESPACE"
 }
 
 deploy_frontend() {

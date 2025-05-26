@@ -139,3 +139,85 @@
 [2025-05-26 18:34:25] INFO: BuildConfig quarkus-app existe déjà
 [2025-05-26 18:34:25] INFO: Build Quarkus OpenShift...
 [2025-05-26 18:35:12] INFO: Déploiement Quarkus...
+[2025-05-26 18:47:49] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:49:06] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:49:09] INFO: Nettoyage Quarkus...
+[2025-05-26 18:49:12] INFO: Compilation Maven en legacy-jar...
+[2025-05-26 18:50:04] INFO: Création de la BuildConfig Quarkus si nécessaire...
+[2025-05-26 18:50:05] INFO: BuildConfig quarkus-app existe déjà
+[2025-05-26 18:50:05] INFO: Build Quarkus OpenShift...
+[2025-05-26 18:50:26] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:50:32] ERROR: Le namespace 'lmagniez03-dev' n'existe pas.
+[2025-05-26 18:50:35] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:50:45] INFO: Déploiement Quarkus...
+[2025-05-26 18:50:45] ERROR: Le namespace 'lmagniez03-dev' n'existe pas.
+[2025-05-26 18:51:21] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:51:28] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:51:31] INFO: Nettoyage Quarkus...
+[2025-05-26 18:51:34] INFO: Compilation Maven en legacy-jar...
+[2025-05-26 18:52:22] INFO: Création de la BuildConfig Quarkus si nécessaire...
+[2025-05-26 18:52:23] INFO: BuildConfig quarkus-app existe déjà
+[2025-05-26 18:52:23] INFO: Build Quarkus OpenShift...
+[2025-05-26 18:53:02] INFO: Déploiement Quarkus...
+[2025-05-26 18:54:04] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:54:12] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:54:15] INFO: Nettoyage Quarkus...
+[2025-05-26 18:54:18] INFO: Compilation Maven en legacy-jar...
+[2025-05-26 18:55:07] INFO: Création de la BuildConfig Quarkus si nécessaire...
+[2025-05-26 18:55:09] INFO: BuildConfig quarkus-app existe déjà
+[2025-05-26 18:55:09] INFO: Build Quarkus OpenShift...
+[2025-05-26 18:55:48] INFO: Déploiement Quarkus...
+[2025-05-26 18:55:52] INFO: Attente que tous les pods soient prêts dans le namespace lmagniez03-dev...
+[2025-05-26 18:55:53] INFO: Attente, pods non prêts : 6... (0/120 sec)
+[2025-05-26 18:55:59] INFO: Attente, pods non prêts : 7... (5/120 sec)
+[2025-05-26 18:56:06] INFO: Attente, pods non prêts : 7... (10/120 sec)
+[2025-05-26 18:56:12] INFO: Attente, pods non prêts : 7... (15/120 sec)
+[2025-05-26 18:56:18] INFO: Attente, pods non prêts : 7... (20/120 sec)
+[2025-05-26 18:56:24] INFO: Attente, pods non prêts : 7... (25/120 sec)
+[2025-05-26 18:56:30] INFO: Attente, pods non prêts : 7... (30/120 sec)
+[2025-05-26 18:56:36] INFO: Attente, pods non prêts : 7... (35/120 sec)
+[2025-05-26 18:56:42] INFO: Attente, pods non prêts : 7... (40/120 sec)
+[2025-05-26 18:56:49] INFO: Attente, pods non prêts : 7... (45/120 sec)
+[2025-05-26 18:56:55] INFO: Attente, pods non prêts : 7... (50/120 sec)
+[2025-05-26 18:57:01] INFO: Attente, pods non prêts : 7... (55/120 sec)
+[2025-05-26 18:57:07] INFO: Attente, pods non prêts : 7... (60/120 sec)
+[2025-05-26 18:57:13] INFO: Attente, pods non prêts : 7... (65/120 sec)
+[2025-05-26 18:57:19] INFO: Attente, pods non prêts : 7... (70/120 sec)
+[2025-05-26 18:57:25] INFO: Attente, pods non prêts : 7... (75/120 sec)
+[2025-05-26 18:57:31] INFO: Attente, pods non prêts : 7... (80/120 sec)
+[2025-05-26 18:57:37] INFO: Attente, pods non prêts : 7... (85/120 sec)
+[2025-05-26 18:57:43] INFO: Attente, pods non prêts : 7... (90/120 sec)
+[2025-05-26 18:57:51] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:57:56] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:57:59] INFO: Nettoyage Quarkus...
+[2025-05-26 18:58:02] INFO: Compilation Maven en legacy-jar...
+[2025-05-26 18:58:53] INFO: Création de la BuildConfig Quarkus si nécessaire...
+[2025-05-26 18:58:54] INFO: BuildConfig quarkus-app existe déjà
+[2025-05-26 18:58:54] INFO: Build Quarkus OpenShift...
+[2025-05-26 19:00:18] INFO: Déploiement Quarkus...
+[2025-05-26 19:00:22] INFO: Attente que tous les pods soient prêts dans le namespace lmagniez03-dev...
+[2025-05-26 19:00:23] INFO: Attente, pods non prêts : 8... (0/120 sec)
+[2025-05-26 19:00:29] INFO: Attente, pods non prêts : 7... (5/120 sec)
+[2025-05-26 19:00:35] INFO: Attente, pods non prêts : 7... (10/120 sec)
+[2025-05-26 19:00:42] INFO: Attente, pods non prêts : 7... (15/120 sec)
+[2025-05-26 19:00:48] INFO: Attente, pods non prêts : 8... (20/120 sec)
+[2025-05-26 19:00:54] INFO: Attente, pods non prêts : 7... (25/120 sec)
+[2025-05-26 19:01:00] INFO: Attente, pods non prêts : 7... (30/120 sec)
+[2025-05-26 19:01:06] INFO: Attente, pods non prêts : 7... (35/120 sec)
+[2025-05-26 19:01:12] INFO: Attente, pods non prêts : 8... (40/120 sec)
+[2025-05-26 19:01:18] INFO: Attente, pods non prêts : 8... (45/120 sec)
+[2025-05-26 19:01:24] INFO: Attente, pods non prêts : 8... (50/120 sec)
+[2025-05-26 19:01:30] INFO: Attente, pods non prêts : 7... (55/120 sec)
+[2025-05-26 19:01:36] INFO: Attente, pods non prêts : 7... (60/120 sec)
+[2025-05-26 19:01:42] INFO: Attente, pods non prêts : 7... (65/120 sec)
+[2025-05-26 19:01:48] INFO: Attente, pods non prêts : 8... (70/120 sec)
+[2025-05-26 19:01:55] INFO: Attente, pods non prêts : 8... (75/120 sec)
+[2025-05-26 19:02:01] INFO: Attente, pods non prêts : 8... (80/120 sec)
+[2025-05-26 19:02:07] INFO: Attente, pods non prêts : 8... (85/120 sec)
+[2025-05-26 19:02:13] INFO: Attente, pods non prêts : 8... (90/120 sec)
+[2025-05-26 19:02:19] INFO: Attente, pods non prêts : 7... (95/120 sec)
+[2025-05-26 19:02:25] INFO: Attente, pods non prêts : 7... (100/120 sec)
+[2025-05-26 19:02:31] INFO: Attente, pods non prêts : 7... (105/120 sec)
+[2025-05-26 19:02:37] INFO: Attente, pods non prêts : 8... (110/120 sec)
+[2025-05-26 19:02:43] INFO: Attente, pods non prêts : 8... (115/120 sec)
+[2025-05-26 19:02:49] WARN: Timeout atteint, certains pods ne sont pas prêts :

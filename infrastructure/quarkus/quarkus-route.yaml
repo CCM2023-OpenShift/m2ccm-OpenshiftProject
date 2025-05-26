@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: quarkus-route
+  namespace: lmagniez03-dev  # remplace par ton namespace
+spec:
+  to:
+    kind: Service
+    name: quarkus-service
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

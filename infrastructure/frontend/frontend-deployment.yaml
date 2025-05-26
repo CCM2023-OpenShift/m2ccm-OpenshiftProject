@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
+  name: vite-oc
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: frontend
+      app: vite-oc
   template:
     metadata:
       labels:
-        app: frontend
+        app: vite-oc
     spec:
       containers:
-        - name: frontend
-          image: image-registry.openshift-image-registry.svc:5000/lmagniez03-dev/frontend:latest
+        - name: vite-oc
+          image: image-registry.openshift-image-registry.svc:5000/lmagniez03-dev/vite-oc:latest
           ports:
             - containerPort: 3000
