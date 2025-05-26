@@ -21,13 +21,14 @@ spec:
           ports:
             - containerPort: 3000
           volumeMounts:
-            # Montage du ConfigMap provider
             - name: dashboard-provider-config
               mountPath: /etc/grafana/provisioning/dashboards
               readOnly: true
-            # Montage du ConfigMap dashboards JSON
             - name: grafana-dashboards
-              mountPath: /etc/grafana/dashboards
+              mountPath: /var/lib/grafana/dashboards
+              readOnly: true
+            - name: grafana-datasource-config
+              mountPath: /etc/grafana/provisioning/datasources
               readOnly: true
       volumes:
         - name: dashboard-provider-config
@@ -36,3 +37,6 @@ spec:
         - name: grafana-dashboards
           configMap:
             name: grafana-dashboard-config
+        - name: grafana-datasource-config
+          configMap:
+            name: grafana-datasource-config

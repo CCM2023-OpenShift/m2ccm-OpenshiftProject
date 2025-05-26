@@ -4,7 +4,7 @@ metadata:
   name: grafana-dashboard-config
   namespace: lmagniez03-dev
 data:
-  example-dashboard.json: |
+  frontend-dashboard.json: |
     {
       "annotations": {
         "list": [
@@ -26,7 +26,7 @@ data:
       "links": [],
       "panels": [
         {
-          "datasource": null,
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {},
             "overrides": []
@@ -37,30 +37,33 @@ data:
             "x": 0,
             "y": 0
           },
-          "id": 2,
-          "options": {
-            "showHeader": true
-          },
-          "pluginVersion": "7.5.5",
-          "targets": [],
-          "title": "Example Panel",
-          "type": "text"
+          "id": 1,
+          "targets": [
+            {
+              "expr": "up{job=\"frontend\"}",
+              "interval": "",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Disponibilité du frontend",
+          "type": "graph"
         }
       ],
-      "refresh": "5s",
+      "refresh": "10s",
       "schemaVersion": 27,
       "style": "dark",
-      "tags": [],
+      "tags": ["frontend", "monitoring"],
       "templating": {
         "list": []
       },
       "time": {
-        "from": "now-6h",
+        "from": "now-30m",
         "to": "now"
       },
       "timepicker": {},
-      "timezone": "",
-      "title": "Example Dashboard",
-      "uid": "example-dashboard",
+      "timezone": "browser",
+      "title": "Frontend Monitoring",
+      "uid": "frontend-monitoring",
       "version": 1
     }

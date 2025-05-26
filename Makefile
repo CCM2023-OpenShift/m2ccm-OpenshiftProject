@@ -4,7 +4,7 @@
 SCRIPTS_DIR := ./scripts
 
 # Namespace par défaut (modifiable via la ligne de commande)
-NAMESPACE ?= dev
+NAMESPACE ?= lmagniez03-dev
 
 # Aide
 .PHONY: help

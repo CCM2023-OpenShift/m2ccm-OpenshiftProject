@@ -5,3 +5,9 @@
 [2025-05-25 19:47:53] INFO: 🔻 Suppression Monitoring (Prometheus + Grafana)...
 [2025-05-25 19:48:02] INFO: 🔻 Suppression Quarkus...
 [2025-05-25 19:48:05] SUCCESS: ✅ Nettoyage terminé dans le namespace lmagniez03-dev.
+[2025-05-26 17:43:42] INFO: 🧹 Bienvenue dans le script de nettoyage OpenShift
+[2025-05-26 17:43:57] ERROR: Le namespace 'lmagniez03-dev' n'existe pas.
+[2025-05-26 17:45:31] INFO: 🧹 Bienvenue dans le script de nettoyage OpenShift
+[2025-05-26 17:45:42] INFO: 🎯 Namespace cible : lmagniez03-dev
+[2025-05-26 17:45:54] INFO: 🔻 Suppression Monitoring (Prometheus + Grafana)...
+[2025-05-26 17:46:04] SUCCESS: ✅ Nettoyage terminé dans le namespace lmagniez03-dev.

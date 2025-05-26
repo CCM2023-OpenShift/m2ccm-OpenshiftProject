@@ -12,3 +12,130 @@
 [2025-05-25 19:49:14] INFO: Déploiement Grafana...
 [2025-05-25 19:49:15] INFO: Nettoyage Quarkus...
 [2025-05-25 19:49:18] INFO: Compilation Maven en legacy-jar...
+[2025-05-26 17:46:04] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 17:46:14] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 17:46:22] INFO: Nettoyage Monitoring (Prometheus, Grafana)...
+[2025-05-26 17:46:28] INFO: Déploiement ConfigMaps Prometheus...
+[2025-05-26 17:46:30] INFO: Déploiement Prometheus...
+[2025-05-26 17:46:32] INFO: Déploiement ConfigMaps Grafana...
+[2025-05-26 17:46:34] INFO: Déploiement Grafana...
+[2025-05-26 17:46:36] INFO: Attente que tous les pods soient prêts dans le namespace lmagniez03-dev...
+[2025-05-26 17:46:37] INFO: Attente, pods non prêts : 2... (0/120 sec)
+[2025-05-26 17:46:43] INFO: Attente, pods non prêts : 2... (5/120 sec)
+[2025-05-26 17:46:49] INFO: Attente, pods non prêts : 1... (10/120 sec)
+[2025-05-26 17:46:55] INFO: Attente, pods non prêts : 1... (15/120 sec)
+[2025-05-26 17:47:01] INFO: Attente, pods non prêts : 1... (20/120 sec)
+[2025-05-26 17:47:07] INFO: Attente, pods non prêts : 1... (25/120 sec)
+[2025-05-26 17:47:14] INFO: Attente, pods non prêts : 1... (30/120 sec)
+[2025-05-26 17:47:20] INFO: Attente, pods non prêts : 1... (35/120 sec)
+[2025-05-26 17:47:26] INFO: Attente, pods non prêts : 1... (40/120 sec)
+[2025-05-26 17:47:32] INFO: Attente, pods non prêts : 1... (45/120 sec)
+[2025-05-26 17:47:38] INFO: Attente, pods non prêts : 1... (50/120 sec)
+[2025-05-26 17:47:44] INFO: Attente, pods non prêts : 1... (55/120 sec)
+[2025-05-26 17:47:50] INFO: Attente, pods non prêts : 1... (60/120 sec)
+[2025-05-26 17:47:56] INFO: Attente, pods non prêts : 1... (65/120 sec)
+[2025-05-26 17:48:03] INFO: Attente, pods non prêts : 1... (70/120 sec)
+[2025-05-26 17:48:09] INFO: Attente, pods non prêts : 1... (75/120 sec)
+[2025-05-26 17:48:15] INFO: Attente, pods non prêts : 1... (80/120 sec)
+[2025-05-26 17:48:21] INFO: Attente, pods non prêts : 1... (85/120 sec)
+[2025-05-26 17:48:27] INFO: Attente, pods non prêts : 1... (90/120 sec)
+[2025-05-26 17:48:33] INFO: Attente, pods non prêts : 1... (95/120 sec)
+[2025-05-26 17:48:39] INFO: Attente, pods non prêts : 1... (100/120 sec)
+[2025-05-26 17:48:46] INFO: Attente, pods non prêts : 1... (105/120 sec)
+[2025-05-26 17:48:52] INFO: Attente, pods non prêts : 1... (110/120 sec)
+[2025-05-26 17:48:58] INFO: Attente, pods non prêts : 1... (115/120 sec)
+[2025-05-26 17:49:04] WARN: Timeout atteint, certains pods ne sont pas prêts :
+[2025-05-26 18:07:37] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:07:44] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:07:48] INFO: Nettoyage Monitoring (Prometheus, Grafana)...
+[2025-05-26 18:07:54] INFO: Déploiement ConfigMaps Prometheus...
+[2025-05-26 18:07:56] INFO: Déploiement Prometheus...
+[2025-05-26 18:07:58] INFO: Déploiement ConfigMaps Grafana...
+[2025-05-26 18:08:01] INFO: Déploiement Grafana...
+[2025-05-26 18:08:02] INFO: Attente que tous les pods soient prêts dans le namespace lmagniez03-dev...
+[2025-05-26 18:08:03] INFO: Attente, pods non prêts : 2... (0/120 sec)
+[2025-05-26 18:08:09] INFO: Attente, pods non prêts : 1... (5/120 sec)
+[2025-05-26 18:08:16] INFO: Attente, pods non prêts : 1... (10/120 sec)
+[2025-05-26 18:08:22] INFO: Attente, pods non prêts : 1... (15/120 sec)
+[2025-05-26 18:08:29] INFO: Attente, pods non prêts : 1... (20/120 sec)
+[2025-05-26 18:08:35] INFO: Attente, pods non prêts : 1... (25/120 sec)
+[2025-05-26 18:08:42] INFO: Attente, pods non prêts : 1... (30/120 sec)
+[2025-05-26 18:08:48] INFO: Attente, pods non prêts : 1... (35/120 sec)
+[2025-05-26 18:08:54] INFO: Attente, pods non prêts : 1... (40/120 sec)
+[2025-05-26 18:09:01] INFO: Attente, pods non prêts : 1... (45/120 sec)
+[2025-05-26 18:09:07] INFO: Attente, pods non prêts : 1... (50/120 sec)
+[2025-05-26 18:09:13] INFO: Attente, pods non prêts : 1... (55/120 sec)
+[2025-05-26 18:09:19] INFO: Attente, pods non prêts : 1... (60/120 sec)
+[2025-05-26 18:09:25] INFO: Attente, pods non prêts : 1... (65/120 sec)
+[2025-05-26 18:09:32] INFO: Attente, pods non prêts : 1... (70/120 sec)
+[2025-05-26 18:09:38] INFO: Attente, pods non prêts : 1... (75/120 sec)
+[2025-05-26 18:09:44] INFO: Attente, pods non prêts : 1... (80/120 sec)
+[2025-05-26 18:09:50] INFO: Attente, pods non prêts : 1... (85/120 sec)
+[2025-05-26 18:09:57] INFO: Attente, pods non prêts : 1... (90/120 sec)
+[2025-05-26 18:10:03] INFO: Attente, pods non prêts : 1... (95/120 sec)
+[2025-05-26 18:10:10] INFO: Attente, pods non prêts : 1... (100/120 sec)
+[2025-05-26 18:10:16] INFO: Attente, pods non prêts : 1... (105/120 sec)
+[2025-05-26 18:10:22] INFO: Attente, pods non prêts : 1... (110/120 sec)
+[2025-05-26 18:10:28] INFO: Attente, pods non prêts : 1... (115/120 sec)
+[2025-05-26 18:10:34] WARN: Timeout atteint, certains pods ne sont pas prêts :
+[2025-05-26 18:13:53] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:14:01] ERROR: Le namespace 'lmagniez03-dev[3~' n'existe pas.
+[2025-05-26 18:14:07] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:14:15] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:14:20] INFO: Nettoyage Monitoring (Prometheus, Grafana)...
+[2025-05-26 18:14:26] INFO: Déploiement ConfigMaps Prometheus...
+[2025-05-26 18:14:29] INFO: Déploiement Prometheus...
+[2025-05-26 18:14:31] INFO: Déploiement ConfigMaps Grafana...
+[2025-05-26 18:14:33] INFO: Déploiement Grafana...
+[2025-05-26 18:14:35] INFO: Attente que tous les pods soient prêts dans le namespace lmagniez03-dev...
+[2025-05-26 18:14:36] INFO: Attente, pods non prêts : 2... (0/120 sec)
+[2025-05-26 18:14:43] INFO: Attente, pods non prêts : 1... (5/120 sec)
+[2025-05-26 18:14:49] INFO: Attente, pods non prêts : 1... (10/120 sec)
+[2025-05-26 18:14:55] INFO: Attente, pods non prêts : 1... (15/120 sec)
+[2025-05-26 18:15:01] INFO: Attente, pods non prêts : 1... (20/120 sec)
+[2025-05-26 18:15:07] INFO: Attente, pods non prêts : 1... (25/120 sec)
+[2025-05-26 18:15:13] INFO: Attente, pods non prêts : 1... (30/120 sec)
+[2025-05-26 18:15:20] INFO: Attente, pods non prêts : 1... (35/120 sec)
+[2025-05-26 18:15:26] INFO: Attente, pods non prêts : 1... (40/120 sec)
+[2025-05-26 18:15:32] INFO: Attente, pods non prêts : 1... (45/120 sec)
+[2025-05-26 18:15:38] INFO: Attente, pods non prêts : 1... (50/120 sec)
+[2025-05-26 18:15:44] INFO: Attente, pods non prêts : 1... (55/120 sec)
+[2025-05-26 18:15:51] INFO: Attente, pods non prêts : 1... (60/120 sec)
+[2025-05-26 18:15:57] INFO: Attente, pods non prêts : 1... (65/120 sec)
+[2025-05-26 18:16:03] INFO: Attente, pods non prêts : 1... (70/120 sec)
+[2025-05-26 18:16:09] INFO: Attente, pods non prêts : 1... (75/120 sec)
+[2025-05-26 18:16:15] INFO: Attente, pods non prêts : 1... (80/120 sec)
+[2025-05-26 18:16:22] INFO: Attente, pods non prêts : 1... (85/120 sec)
+[2025-05-26 18:16:28] INFO: Attente, pods non prêts : 1... (90/120 sec)
+[2025-05-26 18:16:34] INFO: Attente, pods non prêts : 1... (95/120 sec)
+[2025-05-26 18:16:41] INFO: Attente, pods non prêts : 1... (100/120 sec)
+[2025-05-26 18:16:47] INFO: Attente, pods non prêts : 1... (105/120 sec)
+[2025-05-26 18:16:53] INFO: Attente, pods non prêts : 1... (110/120 sec)
+[2025-05-26 18:16:59] INFO: Attente, pods non prêts : 1... (115/120 sec)
+[2025-05-26 18:17:05] WARN: Timeout atteint, certains pods ne sont pas prêts :
+[2025-05-26 18:22:45] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:22:54] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:22:56] INFO: Nettoyage Monitoring (Prometheus, Grafana)...
+[2025-05-26 18:23:02] INFO: Déploiement ConfigMaps Prometheus...
+[2025-05-26 18:23:05] INFO: Déploiement Prometheus...
+[2025-05-26 18:23:06] INFO: Déploiement ConfigMaps Grafana...
+[2025-05-26 18:23:09] INFO: Déploiement Grafana...
+[2025-05-26 18:23:10] INFO: Attente que tous les pods soient prêts dans le namespace lmagniez03-dev...
+[2025-05-26 18:23:12] INFO: Attente, pods non prêts : 1... (0/120 sec)
+[2025-05-26 18:23:18] SUCCESS: Tous les pods sont prêts.
+[2025-05-26 18:23:18] SUCCESS: Déploiement terminé dans le namespace : lmagniez03-dev
+[2025-05-26 18:26:20] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:26:27] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:26:30] INFO: Nettoyage Quarkus...
+[2025-05-26 18:26:33] INFO: Compilation Maven en legacy-jar...
+[2025-05-26 18:27:47] INFO: Création de la BuildConfig Quarkus si nécessaire...
+[2025-05-26 18:27:48] INFO: BuildConfig quarkus-app existe déjà
+[2025-05-26 18:27:48] INFO: Build Quarkus OpenShift...
+[2025-05-26 18:32:54] INFO: Bienvenue dans le script de déploiement OpenShift
+[2025-05-26 18:33:01] INFO: Namespace choisi : lmagniez03-dev
+[2025-05-26 18:33:03] INFO: Nettoyage Quarkus...
+[2025-05-26 18:33:06] INFO: Compilation Maven en legacy-jar...
+[2025-05-26 18:34:24] INFO: Création de la BuildConfig Quarkus si nécessaire...
+[2025-05-26 18:34:25] INFO: BuildConfig quarkus-app existe déjà
+[2025-05-26 18:34:25] INFO: Build Quarkus OpenShift...
+[2025-05-26 18:35:12] INFO: Déploiement Quarkus...

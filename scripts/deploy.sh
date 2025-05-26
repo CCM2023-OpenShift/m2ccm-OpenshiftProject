@@ -188,7 +188,7 @@ deploy_quarkus() {
   fi
 
   log INFO "Build Quarkus OpenShift..."
-  run "oc start-build quarkus-app --from-dir=$ROOT_DIR --dockerfile=src/main/docker/Dockerfile.legacy-jar --follow -n $NAMESPACE"
+  run "oc start-build quarkus-app --from-dir=$ROOT_DIR --follow -n $NAMESPACE"
 
   log INFO "Déploiement Quarkus..."
   if ! $DRY_RUN; then
