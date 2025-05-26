@@ -1,0 +1,47 @@
+name: 5-network-policies.yml
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/networkpolicies.yaml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/networkpolicies.yaml'
+
+jobs:
+  network-policies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+          OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
+        run: |
+          oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+          oc project $OPENSHIFT_PROJECT
+
+      - name: Apply Network Policies
+        run: |
+          oc apply -f infrastructure/networkpolicies.yaml
+
+      - name: Verify Network Policies
+        run: |
+          oc get networkpolicies -n ${{ secrets.OPENSHIFT_PROJECT }}
+      - name: networkpolicies details
+        run: |
+          oc describe networkpolicy isolate-postgresql -n lmagniez03-dev
