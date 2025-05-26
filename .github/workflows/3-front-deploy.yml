@@ -1,10 +1,16 @@
 name: Deploy app front on OpenShift
 
 on:
-  workflow_run:
-    workflows: [ "Build & Deploy Quarkus on OpenShift" ]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+    paths:
+      - 'front/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'front/**'
 
 jobs:
   build-and-push:
