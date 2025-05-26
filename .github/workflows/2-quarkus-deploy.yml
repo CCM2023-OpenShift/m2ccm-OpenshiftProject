@@ -91,6 +91,12 @@ jobs:
           oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
           oc project $OPENSHIFT_PROJECT
 
+      - name: Apply OpenShift BuildConfig YAML
+        env:
+          OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
+        run: |
+          oc apply -f infrastructure/quarkus-buildconfig.yaml -n $OPENSHIFT_PROJECT
+
       - name: Apply OpenShift Deployment YAML
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
