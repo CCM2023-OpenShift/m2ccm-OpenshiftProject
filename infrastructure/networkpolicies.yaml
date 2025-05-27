@@ -27,13 +27,6 @@ spec:
   podSelector:
     matchLabels:
       app: quarkus-app
-  policyTypes:
-    - Egress
+  policyTypes: [Egress]
   egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app: postgresql
-      ports:
-        - protocol: TCP
-          port: 5432
+  - {}
