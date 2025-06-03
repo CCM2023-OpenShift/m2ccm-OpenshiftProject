@@ -1,3 +1,5 @@
+import ApiService from './apiService';
+
 export class Equipment {
     public id!: string;
     public name!: string;
@@ -7,7 +9,7 @@ export class Equipment {
 
     errors!: object;
 
-    private static baseURL: string = `http://localhost:8080/equipment`;
+    private static baseEndpoint: string = `/equipment`;
 
     public resetErrors(): void {
         this.errors = {};
@@ -42,26 +44,9 @@ export class Equipment {
 
     public async create(): Promise<Equipment> {
         try {
-            const payload = {
-                name: this.name,
-                description: this.description,
-                quantity: this.quantity,
-                mobile: this.mobile,
-            };
+            const payload = this.toCreate();
 
-            const response = await fetch(`${Equipment.baseURL}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                const msg = errorBody.message || `Erreur inconnue (code ${response.status})`;
-                throw new Error(msg);
-            }
-
-            const json = await response.json();
+            const json = await ApiService.post(Equipment.baseEndpoint, payload);
             return this.fromJSON(json);
         } catch (error) {
             console.error('Error creating equipment:', error);
@@ -71,22 +56,7 @@ export class Equipment {
 
     public async update(): Promise<Equipment> {
         try {
-            const formEquipment = new FormData();
-            formEquipment.append('name', this.name);
-            formEquipment.append('description', this.description);
-            formEquipment.append('quantity', this.quantity.toString()); // Ensure quantity is sent as string
-            formEquipment.append('mobile', this.mobile.toString()); // Ensure mobile is sent as string
-
-            const response = await fetch(`${Equipment.baseURL}/${this.id}`, {
-                method: 'PUT',
-                body: formEquipment
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to update equipment: ${response.status}`);
-            }
-
-            const json = await response.json();
+            const json = await ApiService.put(`${Equipment.baseEndpoint}/${this.id}`, this.toUpdate());
             return this.fromJSON(json);
         } catch (error) {
             console.error('Error updating equipment:', error);
@@ -96,14 +66,7 @@ export class Equipment {
 
     public async delete(): Promise<void> {
         try {
-            const response = await fetch(`${Equipment.baseURL}/${this.id}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to delete equipment: ${response.status}`);
-            }
+            await ApiService.delete(`${Equipment.baseEndpoint}/${this.id}`);
         } catch (error) {
             console.error('Error deleting equipment:', error);
             throw error;
@@ -112,25 +75,15 @@ export class Equipment {
 
     public static async getAll(): Promise<Equipment[]> {
         try {
-            const response = await fetch(`${Equipment.baseURL}`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch equipment: ${response.status}`);
-            }
-
-            const list = await response.json();
-
+            const list = await ApiService.get(Equipment.baseEndpoint);
             return (list || []).map((item: any) => new Equipment().fromJSON(item));
         } catch (error) {
             console.error('Error fetching equipment:', error);
-            return [];
+            throw error;
         }
     }
 
-    // Optional getters (can be used in frontend templates)
+    // Getters
     public getId(): string {
         return this.id;
     }
@@ -144,10 +97,10 @@ export class Equipment {
     }
 
     public getQuantity(): number {
-        return this.quantity; // Getter for quantity
+        return this.quantity;
     }
 
     public getMobile(): boolean {
-        return this.mobile; // Getter for mobile
+        return this.mobile;
     }
 }

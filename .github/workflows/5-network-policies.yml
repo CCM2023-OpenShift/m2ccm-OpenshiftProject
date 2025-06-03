@@ -1,19 +1,19 @@
-name: Deploy PostgreSQL on OpenShift
+name: 5-network-policies.yml
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'infrastructure/postgresql-deployment.yaml'
+      - 'infrastructure/networkpolicies.yaml'
   pull_request:
     branches:
       - main
     paths:
-      - 'infrastructure/postgresql-deployment.yaml'
+      - 'infrastructure/networkpolicies.yaml'
 
 jobs:
-  deploy-postgresql:
+  network-policies:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,8 +35,13 @@ jobs:
           oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
           oc project $OPENSHIFT_PROJECT
 
-      - name: Apply PostgreSQL Deployment YAML
-        env:
-          OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
+      - name: Apply Network Policies
         run: |
-          oc apply -f infrastructure/postgresql-deployment.yaml -n $OPENSHIFT_PROJECT
+          oc apply -f infrastructure/networkpolicies.yaml
+
+      - name: Verify Network Policies
+        run: |
+          oc get networkpolicies -n ${{ secrets.OPENSHIFT_PROJECT }}
+      - name: networkpolicies details
+        run: |
+          oc describe networkpolicy isolate-postgresql -n lmagniez03-dev

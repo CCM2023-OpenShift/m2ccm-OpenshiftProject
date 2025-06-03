@@ -1,3 +1,4 @@
+import ApiService from './apiService';
 import { RoomEquipment } from './RoomEquipment';
 
 export class Room {
@@ -8,7 +9,7 @@ export class Room {
 
     errors!: object;
 
-    private static baseURL: string = `http://localhost:8080/rooms`;
+    private static baseEndpoint: string = `/rooms`;
 
     public resetErrors(): void {
         this.errors = {};
@@ -48,17 +49,7 @@ export class Room {
                 }))
             };
 
-            const response = await fetch(`${Room.baseURL}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to create room: ${response.status}`);
-            }
-
-            const json = await response.json();
+            const json = await ApiService.post(Room.baseEndpoint, payload);
             return this.fromJSON(json);
         } catch (error) {
             console.error('Error creating room:', error);
@@ -77,17 +68,7 @@ export class Room {
                 }))
             };
 
-            const response = await fetch(`${Room.baseURL}/${this.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to update room: ${response.status}`);
-            }
-
-            const json = await response.json();
+            const json = await ApiService.put(`${Room.baseEndpoint}/${this.id}`, payload);
             return this.fromJSON(json);
         } catch (error) {
             console.error('Error updating room:', error);
@@ -97,14 +78,7 @@ export class Room {
 
     public async delete(): Promise<void> {
         try {
-            const response = await fetch(`${Room.baseURL}/${this.id}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to delete room: ${response.status}`);
-            }
+            await ApiService.delete(`${Room.baseEndpoint}/${this.id}`);
         } catch (error) {
             console.error('Error deleting room:', error);
             throw error;
@@ -113,25 +87,15 @@ export class Room {
 
     public static async getAll(): Promise<Room[]> {
         try {
-            const response = await fetch(`${Room.baseURL}`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch rooms: ${response.status}`);
-            }
-
-            const list = await response.json();
-
+            const list = await ApiService.get(Room.baseEndpoint);
             return (list || []).map((item: any) => new Room().fromJSON(item));
         } catch (error) {
             console.error('Error fetching rooms:', error);
-            return [];
+            throw error;
         }
     }
 
-    // Optional getters
+    // Getters
     public getId(): string {
         return this.id;
     }
