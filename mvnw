@@ -74,7 +74,6 @@ if [ -z "$JAVA_HOME" ]; then
     JAVA_HOME=$(java-config --jre-home)
   fi
 fi
-
 # For Cygwin, ensure paths are in UNIX format before anything is touched
 if $cygwin; then
   [ -n "$JAVA_HOME" ] \
