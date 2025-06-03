@@ -1,7 +1,7 @@
 import keycloak from '../../keycloak.js';
 
 class ApiService {
-    private static baseUrl = 'http://localhost:8080'; // URL de votre backend
+    private static baseUrl = 'https://quarkus-route-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com'; // URL de votre backend
 
     /**
      * Méthode pour vérifier l'état d'authentification
