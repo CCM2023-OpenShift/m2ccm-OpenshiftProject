@@ -37,6 +37,16 @@ jobs:
           oc get deployment vite-oc >/dev/null 2>&1 && echo "Deployment already exists, updating..." || oc new-app vite-oc
           oc rollout restart deployment/vite-oc
 
+      - name: Expose Route
+        run: |
+          oc expose svc/vite-oc --port=3000 --name=vite-oc \
+          --hostname=vite-oc-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com
+
+      - name: Add TLS
+        run: |
+          oc patch route vite-oc -p '{"spec":{"tls":{"termination":"edge"}}}
+  
+
       - name: Create or Update HTTPS Route for Frontend
         run: |
           cat <<EOF | oc apply -f -

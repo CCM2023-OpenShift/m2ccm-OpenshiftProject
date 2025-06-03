@@ -1,7 +1,7 @@
 import Keycloak from 'keycloak-js';
 
 const keycloak = new Keycloak({
-    url: 'https://keycloak-lmagniez03-dev.apps.rm2.thpm.p1.openshiftapps.com',
+    url: 'https://keycloak-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com',
     realm: 'myrealm',
     clientId: 'my-app',
 });
