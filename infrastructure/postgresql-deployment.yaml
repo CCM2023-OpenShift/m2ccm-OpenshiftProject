@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgresql-deployment
-  namespace: lmagniez03-dev
+  namespace: gregorydhmccm-dev
   labels:
     app: postgresql
 spec:
@@ -45,7 +45,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgresql-service
-  namespace: lmagniez03-dev
+  namespace: gregorydhmccm-dev
   labels:
     app: postgresql
 spec:

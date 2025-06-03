@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: quarkus-app
-  namespace: lmagniez03-dev
+  namespace: gregorydhmccm-dev
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: quarkus-app
-          image: image-registry.openshift-image-registry.svc:5000/lmagniez03-dev/quarkus-app:latest
+          image: image-registry.openshift-image-registry.svc:5000/gregorydhmccm-dev/quarkus-app:latest
           ports:
             - containerPort: 8080
           env:
@@ -38,7 +38,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: quarkus-service
-  namespace: lmagniez03-dev
+  namespace: gregorydhmccm-dev
 spec:
   selector:
     app: quarkus-app
@@ -52,7 +52,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: quarkus-route
-  namespace: lmagniez03-dev
+  namespace: gregorydhmccm-dev
 spec:
   to:
     kind: Service
