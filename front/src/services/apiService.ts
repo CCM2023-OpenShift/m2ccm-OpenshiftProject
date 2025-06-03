@@ -59,7 +59,8 @@ class ApiService {
         }
 
         // Construire l'URL complète
-        const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+        // const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+        const url = endpoint.startsWith('https') ? endpoint : `${this.baseUrl}${endpoint}`;
 
         // Ajouter l'en-tête d'autorisation avec le token
         const headers = {
