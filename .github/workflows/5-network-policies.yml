@@ -44,4 +44,4 @@ jobs:
           oc get networkpolicies -n ${{ secrets.OPENSHIFT_PROJECT }}
       - name: networkpolicies details
         run: |
-          oc describe networkpolicy isolate-postgresql -n lmagniez03-dev
+          oc describe networkpolicy isolate-postgresql -n gregorydhmccm-dev

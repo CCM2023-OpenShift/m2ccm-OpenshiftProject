@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: isolate-postgresql
-  namespace: lmagniez03-dev
+  namespace: gregorydhmccm-dev
 spec:
   podSelector:
     matchLabels:
@@ -22,7 +22,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: restrict-quarkus-egress
-  namespace: lmagniez03-dev
+  namespace: gregorydhmccm-dev
 spec:
   podSelector:
     matchLabels:
