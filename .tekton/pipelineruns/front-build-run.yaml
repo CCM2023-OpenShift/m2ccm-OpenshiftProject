@@ -4,7 +4,7 @@ metadata:
   generateName: front-build-run-
   annotations:
     pipelinesascode.tekton.dev/on-event: "[push, pull_request]"
-    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-target-branch: ".*"
     pipelinesascode.tekton.dev/when-modified: ["front/**"]
 spec:
   pipelineRef:
