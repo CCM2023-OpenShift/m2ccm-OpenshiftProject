@@ -21,7 +21,7 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
     const { keycloak } = useKeycloak();
     const roles = keycloak.tokenParsed?.realm_access?.roles || [];
     const hasAccess = allowedRoles.some((role) => roles.includes(role));
-    ///GKJLR
+    ///GKJLRsffdgdsgff
 
     return hasAccess ? children : <Navigate to="/unauthorized" replace />;
 }
