@@ -1,11 +1,11 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: front-build-run-
+  name: front-build-run-2
   annotations:
-    pipelinesascode.tekton.dev/on-event: [push, pull_request]
-    pipelinesascode.tekton.dev/on-target-branch: [".*"]
-    pipelinesascode.tekton.dev/when-modified: ["front/**"]
+    pipelinesascode.tekton.dev/on-event: "push,pull_request"
+    pipelinesascode.tekton.dev/on-target-branch: ".*"
+    pipelinesascode.tekton.dev/when-modified: "front/**"
 spec:
   pipelineRef:
     name: front-build-pipeline
@@ -14,3 +14,6 @@ spec:
       value: https://github.com/CCM2023-OpenShift/m2ccm-OpenshiftProject.git
     - name: revision
       value: main
+  workspaces:
+    - name: shared-data
+      emptyDir: {}

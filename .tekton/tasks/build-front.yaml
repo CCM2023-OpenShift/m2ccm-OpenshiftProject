@@ -3,6 +3,8 @@ kind: Task
 metadata:
   name: build-front
 spec:
+  workspaces:
+    - name: shared-data
   steps:
     - name: build
       image: quay.io/openshift/origin-cli:latest

@@ -1,9 +1,9 @@
 name: Deploy Keycloak on OpenShift
 
-#on:
-#  pull_request:
-#    paths:
-#      - 'infrastructure/keycloak/**'
+on:
+  pull_request:
+    paths:
+      - 'infrastructure/keycloak/**'
 
 jobs:
   deploy-keycloak:

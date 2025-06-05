@@ -9,17 +9,24 @@ spec:
     - name: revision
       type: string
       default: main
+  workspaces:
+    - name: shared-data
+      description: Shared workspace for cloning and building
   tasks:
     - name: clone
       taskRef:
         name: git-clone
       params:
-        - name: url
+        - name: repo-url
           value: $(params.repo-url)
         - name: revision
           value: $(params.revision)
-        - name: subdirectory
-          value: front
+      workspaces:
+        - name: shared-data
+          workspace: shared-data
     - name: build
       taskRef:
         name: build-front
+      workspaces:
+        - name: shared-data
+          workspace: shared-data
