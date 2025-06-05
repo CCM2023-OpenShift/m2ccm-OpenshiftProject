@@ -1,0 +1,19 @@
+# Task
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: apply-networkpolicies
+spec:
+  workspaces:
+    - name: creds
+  params:
+    - name: openshift-project
+      type: string
+  steps:
+    - name: apply
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        #!/bin/sh
+        oc apply -f infrastructure/networkpolicies.yaml
+        oc get networkpolicies
+        oc describe networkpolicy isolate-postgresql

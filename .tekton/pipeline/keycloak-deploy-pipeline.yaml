@@ -1,0 +1,14 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: keycloak-deploy-pipeline
+spec:
+  params:
+    - name: openshift-server
+      type: string
+    - name: openshift-token
+      type: string
+  tasks:
+    - name: deploy
+      taskRef:
+        name: deploy-keycloak

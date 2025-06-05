@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: front-pipeline
+spec:
+  params:
+    - name: repo-url
+      type: string
+    - name: revision
+      type: string
+      default: main
+  tasks:
+    - name: clone
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+        - name: subdirectory
+          value: front
+    - name: build
+      taskRef:
+        name: build-front

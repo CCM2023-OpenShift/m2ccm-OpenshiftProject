@@ -1,0 +1,11 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-postgres
+spec:
+  steps:
+    - name: oc-apply
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        #!/bin/bash
+        oc apply -f infrastructure/postgresql-deployment.yaml

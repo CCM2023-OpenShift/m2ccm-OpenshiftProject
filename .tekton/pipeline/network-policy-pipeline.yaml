@@ -1,0 +1,19 @@
+# Pipeline
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: network-policy-pipeline
+spec:
+  params:
+    - name: openshift-project
+      type: string
+  tasks:
+    - name: apply
+      taskRef:
+        name: apply-networkpolicies
+      params:
+        - name: openshift-project
+          value: $(params.openshift-project)
+      workspaces:
+        - name: creds
+          workspace: creds

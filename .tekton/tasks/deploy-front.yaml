@@ -1,0 +1,16 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-front
+spec:
+  steps:
+    - name: deploy
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        if oc get deployment vite-oc >/dev/null 2>&1; then
+          oc rollout restart deployment/vite-oc
+        else
+          oc new-app vite-oc
+        fi
+        oc expose svc/vite-oc --port=3000 --name=vite-oc || true
+        oc patch route vite-oc -p '{"spec":{"tls":{"termination":"edge"}}}'

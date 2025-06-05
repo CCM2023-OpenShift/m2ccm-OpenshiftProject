@@ -1,0 +1,9 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: front-deploy-pipeline
+spec:
+  tasks:
+    - name: deploy
+      taskRef:
+        name: deploy-front

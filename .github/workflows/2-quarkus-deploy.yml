@@ -1,16 +1,16 @@
 name: Build & Deploy Quarkus on OpenShift
 
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'src/**'
+#on:
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - 'src/**'
+#  pull_request:
+#    branches:
+#      - main
+#    paths:
+#      - 'src/**'
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

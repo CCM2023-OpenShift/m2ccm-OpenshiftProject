@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: quarkus-pipeline
+spec:
+  params:
+    - name: image-name
+      type: string
+      default: quarkus-app
+    - name: dockerfile-path
+      type: string
+      default: src/main/docker/Dockerfile.jvm
+  tasks:
+    - name: build-quarkus
+      taskRef:
+        name: build-quarkus
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: build-image
+      runAfter: [build-quarkus]
+      taskRef:
+        name: build-image
+      params:
+        - name: image-name
+          value: $(params.image-name)
+        - name: dockerfile-path
+          value: $(params.dockerfile-path)
+    - name: deploy
+      runAfter: [build-image]
+      taskRef:
+        name: deploy-quarkus
+  workspaces:
+    - name: shared-workspace

@@ -1,0 +1,9 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: postgres-pipeline
+spec:
+  tasks:
+    - name: deploy-postgres
+      taskRef:
+        name: deploy-postgres

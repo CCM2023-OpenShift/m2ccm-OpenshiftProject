@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-quarkus
+spec:
+  steps:
+    - name: build
+      image: maven:3.9.6-eclipse-temurin-21
+      workingDir: /workspace/src
+      script: |
+        #!/bin/bash
+        ./mvnw clean package -DskipTests

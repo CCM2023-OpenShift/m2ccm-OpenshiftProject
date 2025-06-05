@@ -1,0 +1,14 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-front
+spec:
+  steps:
+    - name: build
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        cd front
+        if ! oc get bc vite-oc >/dev/null 2>&1; then
+          oc new-build --name=vite-oc --binary --strategy=docker
+        fi
+        oc start-build vite-oc --from-dir=. --follow

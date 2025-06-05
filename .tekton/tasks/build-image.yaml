@@ -1,0 +1,15 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-image
+spec:
+  params:
+    - name: image-name
+    - name: dockerfile-path
+  steps:
+    - name: build-image
+      image: quay.io/buildah/stable
+      script: |
+        #!/bin/bash
+        buildah bud -t image-registry.openshift-image-registry.svc:5000/$(params.image-name) -f $(params.dockerfile-path) .
+        buildah push image-registry.openshift-image-registry.svc:5000/$(params.image-name)

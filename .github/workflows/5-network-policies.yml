@@ -1,16 +1,16 @@
 name: 5-network-policies.yml
 
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'infrastructure/networkpolicies.yaml'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'infrastructure/networkpolicies.yaml'
+#on:
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - 'infrastructure/networkpolicies.yaml'
+#  pull_request:
+#    branches:
+#      - main
+#    paths:
+#      - 'infrastructure/networkpolicies.yaml'
 
 jobs:
   network-policies:

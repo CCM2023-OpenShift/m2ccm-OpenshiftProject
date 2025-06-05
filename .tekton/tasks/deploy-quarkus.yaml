@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-quarkus
+spec:
+  steps:
+    - name: deploy
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        #!/bin/bash
+        oc apply -f infrastructure/quarkus-deployment.yaml
+        oc set image deployment/quarkus-app quarkus-app=image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/quarkus-app:latest
+        oc rollout restart deployment/quarkus-app

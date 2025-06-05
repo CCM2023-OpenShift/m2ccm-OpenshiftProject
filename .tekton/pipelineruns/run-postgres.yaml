@@ -1,0 +1,16 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: postgres-deploy-run-
+  annotations:
+    pipelinesascode.tekton.dev/on-event: "[push, pull_request]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/when-modified: ["infrastructure/postgresql-deployment.yaml"]
+spec:
+  pipelineRef:
+    name: deploy-postgres
+  params:
+    - name: repo-url
+      value: https://github.com/CCM2023-OpenShift/m2ccm-OpenshiftProject.git
+    - name: revision
+      value: main

@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-keycloak
+spec:
+  params:
+    - name: openshift-server
+      type: string
+    - name: openshift-token
+      type: string
+  steps:
+    - name: deploy
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        oc apply -f infrastructure/keycloak/keycloak-postgresql-deployment.yaml
+        oc apply -f infrastructure/keycloak/keycloak-deployment.yaml
+        oc rollout restart deployment/keycloak
+        oc apply -f infrastructure/keycloak/keycloak-realm-config.yaml
+        oc wait --for=condition=Available deployment/keycloak --timeout=120s || echo "Keycloak might not be ready yet"
