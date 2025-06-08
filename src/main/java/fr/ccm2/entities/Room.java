@@ -15,6 +15,9 @@ public class Room {
     private String name;
     private Integer capacity;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @OneToMany(mappedBy = "room", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<RoomEquipment> roomEquipments;
 
@@ -29,6 +32,8 @@ public class Room {
     public void setName(String name) { this.name = name; }
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public List<Booking> getBookings() { return bookings; }
     public List<RoomEquipment> getRoomEquipments() { return roomEquipments; }
     public void setRoomEquipments(List<RoomEquipment> roomEquipments) { this.roomEquipments = roomEquipments; }
