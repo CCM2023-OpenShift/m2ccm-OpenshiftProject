@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { AppState, Room, Equipment } from './types';
-import { Room } from './services/Room';
-import { Equipment } from './services/Equipment';
+import { Room as RoomService } from './services/Room';
+import { Equipment as EquipmentService } from './services/Equipment';
 
 export const useStore = create<AppState>((set) => ({
     rooms: [],
@@ -9,8 +9,7 @@ export const useStore = create<AppState>((set) => ({
     bookings: [],
     fetchRooms: async () => {
         try {
-            // Assuming Room class has a similar getAll static method
-            const data = await Room.getAll();
+            const data = await RoomService.getAll();
             set({ rooms: data });
         } catch (error) {
             console.error('Error fetching rooms:', error);
@@ -18,7 +17,7 @@ export const useStore = create<AppState>((set) => ({
     },
     fetchEquipment: async () => {
         try {
-            const data = await Equipment.getAll();
+            const data = await EquipmentService.getAll();
             set({ equipment: data });
         } catch (error) {
             console.error('Error fetching equipment:', error);
@@ -26,8 +25,8 @@ export const useStore = create<AppState>((set) => ({
     },
     fetchEquipmentFixed: async () => {
         try {
-            const allEquipment = await Equipment.getAll();
-            const fixedEquipment = allEquipment.filter((equip: Equipment) => !equip.getMobile());
+            const allEquipment = await EquipmentService.getAll();
+            const fixedEquipment = allEquipment.filter((equip: EquipmentService) => !equip.getMobile());
             set({ equipment: fixedEquipment });
         } catch (error) {
             console.error('Error fetching fixed equipment:', error);
@@ -35,7 +34,6 @@ export const useStore = create<AppState>((set) => ({
     },
     fetchBookings: async () => {
         try {
-            // Assuming a similar Booking service with getAll method
             const response = await fetch('https://quarkus-route-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com/bookings');
             const data = await response.json();
             set({ bookings: data });
@@ -45,17 +43,18 @@ export const useStore = create<AppState>((set) => ({
     },
     addRoom: async (room: Partial<Room>) => {
         try {
-            const newRoom = new Room();
+            const newRoom = new RoomService();
             Object.assign(newRoom, room);
             const createdRoom = await newRoom.create();
             set((state) => ({ rooms: [...state.rooms, createdRoom] }));
         } catch (error) {
             console.error('Error adding room:', error);
+            throw error;
         }
     },
     updateRoom: async (room: Room) => {
         try {
-            const roomInstance = new Room();
+            const roomInstance = new RoomService();
             Object.assign(roomInstance, room);
             const updatedRoom = await roomInstance.update();
             set((state) => ({
@@ -63,11 +62,12 @@ export const useStore = create<AppState>((set) => ({
             }));
         } catch (error) {
             console.error('Error updating room:', error);
+            throw error;
         }
     },
     deleteRoom: async (roomId: string) => {
         try {
-            const roomService = new Room();
+            const roomService = new RoomService();
             roomService.id = roomId;
             await roomService.delete();
             set((state) => ({
@@ -75,35 +75,63 @@ export const useStore = create<AppState>((set) => ({
             }));
         } catch (error) {
             console.error('Error deleting room:', error);
+            throw error;
         }
     },
-    addEquipment: async (equipment: Partial<Equipment>) => {
+    addEquipment: async (equipment: Partial<Equipment>): Promise<Equipment> => {
         try {
-            const newEquipment = new Equipment();
+            const newEquipment = new EquipmentService();
             Object.assign(newEquipment, equipment);
             const createdEquipment = await newEquipment.create();
-            set((state) => ({ equipment: [...state.equipment, createdEquipment] }));
+
+            // Convertir l'objet EquipmentService en interface Equipment
+            const equipmentData: Equipment = {
+                id: createdEquipment.getId(),
+                name: createdEquipment.getName(),
+                description: createdEquipment.getDescription(),
+                quantity: createdEquipment.getQuantity(),
+                mobile: createdEquipment.getMobile(),
+                imageUrl: createdEquipment.getImageUrl()
+            };
+
+            set((state) => ({ equipment: [...state.equipment, equipmentData] }));
+            return equipmentData;
         } catch (error) {
             console.error('Error adding equipment:', error);
+            throw error;
         }
     },
-    updateEquipment: async (equipment: Equipment) => {
+    updateEquipment: async (equipment: Equipment): Promise<Equipment> => {
         try {
-            const equipmentInstance = new Equipment();
+            const equipmentInstance = new EquipmentService();
             Object.assign(equipmentInstance, equipment);
             const updatedEquipment = await equipmentInstance.update();
+
+            // Convertir l'objet EquipmentService en interface Equipment
+            const equipmentData: Equipment = {
+                id: updatedEquipment.getId(),
+                name: updatedEquipment.getName(),
+                description: updatedEquipment.getDescription(),
+                quantity: updatedEquipment.getQuantity(),
+                mobile: updatedEquipment.getMobile(),
+                imageUrl: updatedEquipment.getImageUrl()
+            };
+
             set((state) => ({
                 equipment: state.equipment.map((e) =>
-                    e.id === updatedEquipment.getId() ? updatedEquipment : e
+                    e.id === equipmentData.id ? equipmentData : e
                 ),
             }));
+
+            return equipmentData;
         } catch (error) {
             console.error('Error updating equipment:', error);
+            throw error;
         }
     },
     deleteEquipment: async (equipmentId: string) => {
         try {
-            const equipmentInstance = new Equipment();
+            const equipmentInstance = new EquipmentService();
             equipmentInstance.id = equipmentId;
             await equipmentInstance.delete();
             set((state) => ({
@@ -111,6 +139,50 @@ export const useStore = create<AppState>((set) => ({
             }));
         } catch (error) {
             console.error('Error deleting equipment:', error);
+            throw error;
+        }
+    },
+
+    // ========== MÉTHODES POUR LES IMAGES ==========
+    uploadEquipmentImage: async (equipmentId: string, file: File) => {
+        try {
+            const equipmentInstance = new EquipmentService();
+            equipmentInstance.id = equipmentId;
+
+            // Upload de l'image via le service Equipment
+            const result = await equipmentInstance.uploadImage(file);
+
+            // Mettre à jour le state avec la nouvelle URL d'image
+            set((state) => ({
+                equipment: state.equipment.map((e) =>
+                    e.id === equipmentId ? { ...e, imageUrl: result.imageUrl } : e
+                ),
+            }));
+
+        } catch (error) {
+            console.error('Error uploading equipment image:', error);
+            throw error;
+        }
+    },
+
+    deleteEquipmentImage: async (equipmentId: string) => {
+        try {
+            const equipmentInstance = new EquipmentService();
+            equipmentInstance.id = equipmentId;
+
+            // Supprimer l'image via le service Equipment
+            await equipmentInstance.deleteImage();
+
+            // Mettre à jour le state en supprimant l'URL d'image
+            set((state) => ({
+                equipment: state.equipment.map((e) =>
+                    e.id === equipmentId ? { ...e, imageUrl: undefined } : e
+                ),
+            }));
+
+        } catch (error) {
+            console.error('Error deleting equipment image:', error);
+            throw error;
         }
     },
 }));

@@ -12,6 +12,7 @@ public class EquipmentMapper {
         dto.description = equipment.getDescription();
         dto.quantity = equipment.getQuantity();
         dto.mobile = equipment.isMobile();
+        dto.imageUrl = equipment.getImageUrl();
         return dto;
     }
 }

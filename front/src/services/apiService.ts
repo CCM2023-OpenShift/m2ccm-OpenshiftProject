@@ -136,6 +136,19 @@ class ApiService {
         });
     }
 
+    static async postFormData(endpoint: string, formData: FormData): Promise<any> {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return response.json();
+    }
+
     public static put(endpoint: string, data: any): Promise<any> {
         return this.fetchAuthenticated(endpoint, {
             method: 'PUT',
