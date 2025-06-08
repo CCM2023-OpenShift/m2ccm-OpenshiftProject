@@ -2,6 +2,7 @@ export interface Room {
     id: string;
     name: string;
     capacity: number;
+    imageUrl?: string;
     roomEquipments: RoomEquipment[];
 }
 
@@ -57,4 +58,6 @@ export interface AppState {
     deleteEquipment: (equipmentId: string) => Promise<void>;
     uploadEquipmentImage: (equipmentId: string, file: File) => Promise<void>;
     deleteEquipmentImage: (equipmentId: string) => Promise<void>;
+    uploadRoomImage: (roomId: string, file: File) => Promise<void>;
+    deleteRoomImage: (roomId: string) => Promise<void>;
 }

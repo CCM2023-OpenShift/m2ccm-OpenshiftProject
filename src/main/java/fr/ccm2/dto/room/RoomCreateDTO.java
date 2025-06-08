@@ -7,5 +7,6 @@ import java.util.List;
 public class RoomCreateDTO {
     public String name;
     public Integer capacity;
+    public String imageUrl;
     public List<RoomEquipmentCreateDTO> equipmentWithQuantities;
 }

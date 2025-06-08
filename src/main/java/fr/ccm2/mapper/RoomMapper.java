@@ -14,6 +14,7 @@ public class RoomMapper {
         dto.id = room.getId();
         dto.name = room.getName();
         dto.capacity = room.getCapacity();
+        dto.imageUrl = room.getImageUrl();
 
         // Ajouter les équipements de la salle (en évitant une boucle infinie)
         if (includeEquipments && room.getRoomEquipments() != null) {

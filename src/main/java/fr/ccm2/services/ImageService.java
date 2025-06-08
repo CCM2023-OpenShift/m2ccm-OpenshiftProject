@@ -11,10 +11,21 @@ import java.util.UUID;
 @ApplicationScoped
 public class ImageService {
 
-    private static final String UPLOAD_DIR = "/opt/uploads/equipments/";
-    private static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // Calculer 2 Mo
+    private static final String EQUIPMENT_UPLOAD_DIR = "/opt/uploads/equipments/";
+    private static final String ROOM_UPLOAD_DIR = "/opt/uploads/rooms/";  // Nouveau répertoire pour les salles
+    private static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 Mo
 
+    // Méthodes existantes pour les équipements...
     public String saveImage(FileUpload fileUpload) throws IOException {
+        return saveImageToDirectory(fileUpload, EQUIPMENT_UPLOAD_DIR, "/images/equipments/");
+    }
+
+    // Nouvelles méthodes pour les salles
+    public String saveRoomImage(FileUpload fileUpload) throws IOException {
+        return saveImageToDirectory(fileUpload, ROOM_UPLOAD_DIR, "/images/rooms/");
+    }
+
+    private String saveImageToDirectory(FileUpload fileUpload, String uploadDir, String urlPrefix) throws IOException {
         if (fileUpload == null || fileUpload.size() == 0) {
             throw new IllegalArgumentException("Fichier vide");
         }
@@ -23,27 +34,23 @@ public class ImageService {
             throw new IllegalArgumentException("Fichier trop volumineux (max 2Mo)");
         }
 
-        // Déterminer l'extension à partir du nom de fichier
         String originalFileName = fileUpload.fileName();
         String extension = getFileExtension(originalFileName);
         if (!isValidImageExtension(extension)) {
             throw new IllegalArgumentException("Type de fichier non supporté. Formats acceptés: JPG, JPEG, PNG");
         }
 
-        // Créer le répertoire s'il n'existe pas
-        Path uploadPath = Paths.get(UPLOAD_DIR);
+        Path uploadPath = Paths.get(uploadDir);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
 
-        // Générer un nom unique
         String fileName = UUID.randomUUID() + extension;
         Path filePath = uploadPath.resolve(fileName);
 
-        // Sauvegarder le fichier
         Files.copy(fileUpload.uploadedFile(), filePath);
 
-        return "/images/equipments/" + fileName;
+        return urlPrefix + fileName;
     }
 
     private String getFileExtension(String fileName) {
@@ -58,11 +65,19 @@ public class ImageService {
     }
 
     public byte[] getImage(String fileName) throws IOException {
+        return getImageFromDirectory(fileName, EQUIPMENT_UPLOAD_DIR);
+    }
+
+    public byte[] getRoomImage(String fileName) throws IOException {
+        return getImageFromDirectory(fileName, ROOM_UPLOAD_DIR);
+    }
+
+    private byte[] getImageFromDirectory(String fileName, String uploadDir) throws IOException {
         if (fileName.contains("..")) {
             throw new SecurityException("Nom de fichier non valide");
         }
 
-        Path imagePath = Paths.get(UPLOAD_DIR, fileName);
+        Path imagePath = Paths.get(uploadDir, fileName);
         if (!Files.exists(imagePath)) {
             return null;
         }
@@ -71,18 +86,30 @@ public class ImageService {
     }
 
     public String getContentType(String fileName) throws IOException {
-        Path imagePath = Paths.get(UPLOAD_DIR, fileName);
+        Path imagePath = Paths.get(EQUIPMENT_UPLOAD_DIR, fileName);
         return Files.probeContentType(imagePath);
     }
 
-    // Méthode optionnelle pour supprimer physiquement les fichiers
+    public String getRoomContentType(String fileName) throws IOException {
+        Path imagePath = Paths.get(ROOM_UPLOAD_DIR, fileName);
+        return Files.probeContentType(imagePath);
+    }
+
     public void deleteImageFile(String imageUrl) throws IOException {
-        if (imageUrl == null || !imageUrl.startsWith("/images/equipments/")) {
+        deleteImageFileFromDirectory(imageUrl, "/images/equipments/", EQUIPMENT_UPLOAD_DIR);
+    }
+
+    public void deleteRoomImageFile(String imageUrl) throws IOException {
+        deleteImageFileFromDirectory(imageUrl, "/images/rooms/", ROOM_UPLOAD_DIR);
+    }
+
+    private void deleteImageFileFromDirectory(String imageUrl, String urlPrefix, String uploadDir) throws IOException {
+        if (imageUrl == null || !imageUrl.startsWith(urlPrefix)) {
             return;
         }
 
-        String fileName = imageUrl.substring("/images/equipments/".length());
-        Path imagePath = Paths.get(UPLOAD_DIR, fileName);
+        String fileName = imageUrl.substring(urlPrefix.length());
+        Path imagePath = Paths.get(uploadDir, fileName);
 
         if (Files.exists(imagePath)) {
             Files.delete(imagePath);

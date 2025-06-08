@@ -5,6 +5,7 @@ export class Room {
     public id!: string;
     public name!: string;
     public capacity!: number;
+    public imageUrl?: string;
     public roomEquipments: RoomEquipment[] = [];
 
     errors!: object;
@@ -19,6 +20,7 @@ export class Room {
         this.id = json?.id;
         this.name = json?.name;
         this.capacity = json?.capacity;
+        this.imageUrl = json?.imageUrl;
         this.roomEquipments = (json?.roomEquipments || []).map((re: any) => ({
             id: re.id ?? null,
             quantity: re.quantity,
@@ -31,6 +33,7 @@ export class Room {
         return {
             name: this.name,
             capacity: this.capacity,
+            imageUrl: this.imageUrl,
             equipmentWithQuantities: this.roomEquipments.map(eq => ({
                 equipmentId: eq.equipmentId,
                 quantity: eq.quantity
@@ -43,6 +46,7 @@ export class Room {
             const payload = {
                 name: this.name,
                 capacity: this.capacity,
+                imageUrl: this.imageUrl,
                 equipmentWithQuantities: this.roomEquipments.map(eq => ({
                     equipmentId: eq.equipmentId,
                     quantity: eq.quantity
@@ -62,6 +66,7 @@ export class Room {
             const payload = {
                 name: this.name,
                 capacity: this.capacity,
+                imageUrl: this.imageUrl,
                 equipmentWithQuantities: this.roomEquipments.map(eq => ({
                     equipmentId: eq.equipmentId,
                     quantity: eq.quantity
@@ -81,6 +86,67 @@ export class Room {
             await ApiService.delete(`${Room.baseEndpoint}/${this.id}`);
         } catch (error) {
             console.error('Error deleting room:', error);
+            throw error;
+        }
+    }
+
+    // ========== MÉTHODES POUR GÉRER LES IMAGES ==========
+
+    public async uploadImage(file: File): Promise<{ message: string; imageUrl: string }> {
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Récupérer l'URL de base et le token depuis votre configuration
+            const baseUrl = 'http://localhost:8080'; // Remplacez par votre URL
+            const token = localStorage.getItem('token'); // Ou selon votre méthode de stockage
+
+            const response = await fetch(`${baseUrl}${Room.baseEndpoint}/${this.id}/image`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de l\'upload');
+            }
+
+            const result = await response.json();
+            this.imageUrl = result.imageUrl;
+            return result;
+        } catch (error) {
+            console.error('Error uploading room image:', error);
+            throw error;
+        }
+    }
+
+    public async deleteImage(): Promise<{ message: string }> {
+        try {
+            // Récupérer l'URL de base et le token depuis votre configuration
+            const baseUrl = 'http://localhost:8080'; // Remplacez par votre URL
+            const token = localStorage.getItem('token'); // Ou selon votre méthode de stockage
+
+            const response = await fetch(`${baseUrl}${Room.baseEndpoint}/${this.id}/image`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de la suppression');
+            }
+
+            const result = await response.json();
+            this.imageUrl = undefined;
+            return result;
+        } catch (error) {
+            console.error('Error deleting room image:', error);
             throw error;
         }
     }
@@ -106,6 +172,10 @@ export class Room {
 
     public getCapacity(): number {
         return this.capacity;
+    }
+
+    public getImageUrl(): string | undefined {
+        return this.imageUrl;
     }
 
     public getRoomEquipment(): RoomEquipment[] {

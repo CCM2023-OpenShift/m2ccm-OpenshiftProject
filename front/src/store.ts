@@ -34,7 +34,7 @@ export const useStore = create<AppState>((set) => ({
     },
     fetchBookings: async () => {
         try {
-            const response = await fetch('https://quarkus-route-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com/bookings');
+            const response = await fetch('http://localhost:8080/bookings');
             const data = await response.json();
             set({ bookings: data });
         } catch (error) {
@@ -84,7 +84,6 @@ export const useStore = create<AppState>((set) => ({
             Object.assign(newEquipment, equipment);
             const createdEquipment = await newEquipment.create();
 
-            // Convertir l'objet EquipmentService en interface Equipment
             const equipmentData: Equipment = {
                 id: createdEquipment.getId(),
                 name: createdEquipment.getName(),
@@ -107,7 +106,6 @@ export const useStore = create<AppState>((set) => ({
             Object.assign(equipmentInstance, equipment);
             const updatedEquipment = await equipmentInstance.update();
 
-            // Convertir l'objet EquipmentService en interface Equipment
             const equipmentData: Equipment = {
                 id: updatedEquipment.getId(),
                 name: updatedEquipment.getName(),
@@ -143,16 +141,14 @@ export const useStore = create<AppState>((set) => ({
         }
     },
 
-    // ========== MÉTHODES POUR LES IMAGES ==========
+    // ========== MÉTHODES POUR LES IMAGES D'ÉQUIPEMENTS ==========
     uploadEquipmentImage: async (equipmentId: string, file: File) => {
         try {
             const equipmentInstance = new EquipmentService();
             equipmentInstance.id = equipmentId;
 
-            // Upload de l'image via le service Equipment
             const result = await equipmentInstance.uploadImage(file);
 
-            // Mettre à jour le state avec la nouvelle URL d'image
             set((state) => ({
                 equipment: state.equipment.map((e) =>
                     e.id === equipmentId ? { ...e, imageUrl: result.imageUrl } : e
@@ -170,10 +166,8 @@ export const useStore = create<AppState>((set) => ({
             const equipmentInstance = new EquipmentService();
             equipmentInstance.id = equipmentId;
 
-            // Supprimer l'image via le service Equipment
             await equipmentInstance.deleteImage();
 
-            // Mettre à jour le state en supprimant l'URL d'image
             set((state) => ({
                 equipment: state.equipment.map((e) =>
                     e.id === equipmentId ? { ...e, imageUrl: undefined } : e
@@ -182,6 +176,45 @@ export const useStore = create<AppState>((set) => ({
 
         } catch (error) {
             console.error('Error deleting equipment image:', error);
+            throw error;
+        }
+    },
+
+    // ========== NOUVELLES MÉTHODES POUR LES IMAGES DES SALLES ==========
+    uploadRoomImage: async (roomId: string, file: File) => {
+        try {
+            const roomInstance = new RoomService();
+            roomInstance.id = roomId;
+
+            const result = await roomInstance.uploadImage(file);
+
+            set((state) => ({
+                rooms: state.rooms.map((r) =>
+                    r.id === roomId ? { ...r, imageUrl: result.imageUrl } : r
+                ),
+            }));
+
+        } catch (error) {
+            console.error('Error uploading room image:', error);
+            throw error;
+        }
+    },
+
+    deleteRoomImage: async (roomId: string) => {
+        try {
+            const roomInstance = new RoomService();
+            roomInstance.id = roomId;
+
+            await roomInstance.deleteImage();
+
+            set((state) => ({
+                rooms: state.rooms.map((r) =>
+                    r.id === roomId ? { ...r, imageUrl: undefined } : r
+                ),
+            }));
+
+        } catch (error) {
+            console.error('Error deleting room image:', error);
             throw error;
         }
     },

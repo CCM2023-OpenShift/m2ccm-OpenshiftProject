@@ -29,6 +29,7 @@ public class RoomService {
         Room room = new Room();
         room.setName(dto.name);
         room.setCapacity(dto.capacity);
+        room.setImageUrl(dto.imageUrl);  // Ajout de l'image
 
         em.persist(room);
         em.flush();
@@ -57,6 +58,9 @@ public class RoomService {
 
         room.setName(dto.name);
         room.setCapacity(dto.capacity);
+        if (dto.imageUrl != null) {
+            room.setImageUrl(dto.imageUrl);  // Mise à jour de l'image
+        }
 
         List<RoomEquipment> currentEquipments = em.createQuery(
                         "SELECT re FROM RoomEquipment re WHERE re.room.id = :roomId", RoomEquipment.class)
@@ -86,6 +90,14 @@ public class RoomService {
                 .getSingleResult();
 
         return room;
+    }
+
+    @Transactional
+    public void updateImageUrl(Long id, String imageUrl) {
+        Room room = em.find(Room.class, id);
+        if (room != null) {
+            room.setImageUrl(imageUrl);
+        }
     }
 
     @Transactional
