@@ -12,7 +12,7 @@ import java.util.UUID;
 public class ImageService {
 
     private static final String UPLOAD_DIR = "/opt/uploads/equipments/";
-    private static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 Mo
+    private static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // Calculer 2 Mo
 
     public String saveImage(FileUpload fileUpload) throws IOException {
         if (fileUpload == null || fileUpload.size() == 0) {

@@ -25,7 +25,7 @@ export const EquipmentList = () => {
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            // Vérification du type de fichier
+            // Vérification du type de fichier pour ne prendre que les valides
             if (!file.type.startsWith('image/')) {
                 setErrorMessage('Veuillez sélectionner un fichier image valide');
                 return;
