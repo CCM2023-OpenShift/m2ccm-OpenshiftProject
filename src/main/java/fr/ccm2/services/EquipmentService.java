@@ -47,6 +47,7 @@ public class EquipmentService {
         equipment.setDescription(dto.description);
         equipment.setQuantity(dto.quantity);
         equipment.setMobile(dto.mobile);
+        equipment.setImageUrl(dto.imageUrl);
 
         em.persist(equipment);
         em.flush();
@@ -62,6 +63,18 @@ public class EquipmentService {
             equipment.setDescription(dto.description);
             equipment.setQuantity(dto.quantity);
             equipment.setMobile(dto.mobile);
+            if (dto.imageUrl != null) {
+                equipment.setImageUrl(dto.imageUrl);
+            }
+        }
+        return equipment;
+    }
+
+    @Transactional
+    public Equipment updateImageUrl(Long id, String imageUrl) {
+        Equipment equipment = em.find(Equipment.class, id);
+        if (equipment != null) {
+            equipment.setImageUrl(imageUrl);
         }
         return equipment;
     }

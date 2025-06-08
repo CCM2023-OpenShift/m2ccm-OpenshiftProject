@@ -6,6 +6,7 @@ export class Equipment {
     public description!: string;
     public quantity!: number;
     public mobile!: boolean;
+    public imageUrl!: string;
 
     errors!: object;
 
@@ -21,6 +22,7 @@ export class Equipment {
         this.description = json?.description;
         this.quantity = json?.quantity;
         this.mobile = json?.mobile;
+        this.imageUrl = json?.imageUrl;
         return this;
     }
 
@@ -73,6 +75,32 @@ export class Equipment {
         }
     }
 
+    // Nouvelles méthodes pour la gestion des images
+    public async uploadImage(file: File): Promise<{ imageUrl: string }> {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('fileName', file.name);
+
+            const response = await ApiService.postFormData(`${Equipment.baseEndpoint}/${this.id}/image`, formData);
+            this.imageUrl = response.imageUrl;
+            return response;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    }
+
+    public async deleteImage(): Promise<void> {
+        try {
+            await ApiService.delete(`${Equipment.baseEndpoint}/${this.id}/image`);
+            this.imageUrl = '';
+        } catch (error) {
+            console.error('Error deleting image:', error);
+            throw error;
+        }
+    }
+
     public static async getAll(): Promise<Equipment[]> {
         try {
             const list = await ApiService.get(Equipment.baseEndpoint);
@@ -102,5 +130,13 @@ export class Equipment {
 
     public getMobile(): boolean {
         return this.mobile;
+    }
+
+    public getImageUrl(): string {
+        return this.imageUrl;
+    }
+
+    public hasImage(): boolean {
+        return this.imageUrl != null && this.imageUrl.trim() !== '';
     }
 }

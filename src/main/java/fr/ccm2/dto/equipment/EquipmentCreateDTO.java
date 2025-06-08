@@ -5,4 +5,5 @@ public class EquipmentCreateDTO {
     public String description;
     public int quantity;
     public boolean mobile;
+    public String imageUrl;
 }

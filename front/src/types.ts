@@ -18,6 +18,7 @@ export interface Equipment {
     description: string;
     quantity: number;
     mobile: boolean;
+    imageUrl?: string;
 }
 
 export interface Booking {
@@ -51,7 +52,9 @@ export interface AppState {
     addRoom: (room: Partial<Room>) => Promise<void>;
     updateRoom: (room: Room) => Promise<void>;
     deleteRoom: (roomId: string) => Promise<void>;
-    addEquipment: (equipment: Partial<Equipment>) => Promise<void>;
-    updateEquipment: (equipment: Equipment) => Promise<void>;
+    addEquipment: (equipment: Partial<Equipment>) => Promise<Equipment>;
+    updateEquipment: (equipment: Equipment) => Promise<Equipment>;
     deleteEquipment: (equipmentId: string) => Promise<void>;
+    uploadEquipmentImage: (equipmentId: string, file: File) => Promise<void>;
+    deleteEquipmentImage: (equipmentId: string) => Promise<void>;
 }

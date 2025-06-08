@@ -18,6 +18,9 @@ public class Equipment {
     private int quantity;
     private boolean mobile;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     // Getters et Setters
     public Long getId() { return id; }
 
@@ -32,4 +35,7 @@ public class Equipment {
 
     public boolean isMobile() { return mobile; }
     public void setMobile(boolean mobile) { this.mobile = mobile; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }
