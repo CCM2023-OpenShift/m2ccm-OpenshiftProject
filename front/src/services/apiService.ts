@@ -4,18 +4,22 @@ class ApiService {
     private static baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
     /**
-     * Méthode pour vérifier l'état d'authentification
+     * Vérifie l'authentification et rafraîchit le token si nécessaire.
      */
-    // public static isAuthenticated(): boolean {
-    //     return !!keycloak.token;
-    // }
+    private static async ensureAuthenticated(): Promise<void> {
+        if (!keycloak.authenticated) {
+            console.error('Utilisateur non authentifié');
+            await keycloak.login();
+            throw new Error('Authentification requise');
+        }
 
-    /**
-     * Méthode pour obtenir le token
-     */
-    // public static getToken(): string | undefined {
-    //     return keycloak.token;
-    // }
+        const tokenValid = await this.refreshToken();
+        if (!tokenValid) {
+            console.error('Token invalide ou expiré');
+            await keycloak.login();
+            throw new Error('Session expirée, veuillez vous reconnecter');
+        }
+    }
 
     /**
      * Méthode pour rafraîchir le token si nécessaire
@@ -27,7 +31,6 @@ class ApiService {
                 return false;
             }
 
-            // Rafraîchir le token s'il expire dans moins de 30 secondes
             const refreshed = await keycloak.updateToken(30);
             if (refreshed) {
                 console.log('Token rafraîchi avec succès');
@@ -43,26 +46,9 @@ class ApiService {
      * Méthode pour les appels API authentifiés
      */
     public static async fetchAuthenticated(endpoint: string, options: RequestInit = {}): Promise<any> {
-        // Vérifier l'authentification
-        if (!keycloak.authenticated) {
-            console.error('Utilisateur non authentifié');
-            await keycloak.login();
-            throw new Error('Authentification requise');
-        }
+        await this.ensureAuthenticated();
 
-        // Rafraîchir le token si nécessaire
-        const tokenValid = await this.refreshToken();
-        if (!tokenValid) {
-            console.error('Token invalide ou expiré');
-            await keycloak.login();
-            throw new Error('Session expirée, veuillez vous reconnecter');
-        }
-
-        // Construire l'URL complète
-        // const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
         const url = endpoint.startsWith('https') ? endpoint : `${this.baseUrl}${endpoint}`;
-
-        // Ajouter l'en-tête d'autorisation avec le token
         const headers = {
             'Authorization': `Bearer ${keycloak.token}`,
             'Content-Type': 'application/json',
@@ -70,13 +56,11 @@ class ApiService {
         };
 
         try {
-            // Effectuer la requête
             const response = await fetch(url, {
                 ...options,
                 headers
             });
 
-            // Gérer les erreurs HTTP
             if (!response.ok) {
                 let errorMessage: string;
                 try {
@@ -86,23 +70,16 @@ class ApiService {
                     errorMessage = `Erreur HTTP ${response.status}`;
                 }
 
-                // Si 401 ou 403, possible problème de token
                 if (response.status === 401 || response.status === 403) {
                     try {
-                        // Tenter de rafraîchir le token
                         await keycloak.updateToken(0);
-
-                        // Analyser le résultat après rafraîchissement
                         if (keycloak.authenticated) {
-                            // Si toujours authentifié, mais erreur 401/403, c'est un problème de permissions
                             return Promise.reject(new Error("Vous n'avez pas les autorisations nécessaires"));
                         } else {
-                            // Session expirée, rediriger vers login
                             await keycloak.login();
                             return Promise.reject(new Error("Votre session a expiré"));
                         }
                     } catch (refreshError) {
-                        // Problème lors du rafraîchissement du token
                         await keycloak.login();
                         return Promise.reject(new Error("Session invalide, reconnexion nécessaire"));
                     }
@@ -111,20 +88,17 @@ class ApiService {
                 return Promise.reject(new Error(errorMessage));
             }
 
-            // Si c'est une réponse 204 (No Content)
             if (response.status === 204) {
                 return null;
             }
 
-            // Retourner les données JSON
             return await response.json();
         } catch (error) {
-            console.error('Erreur lors de lappel API:', error);
+            console.error('Erreur lors de l\'appel API:', error);
             throw error;
         }
     }
 
-    // Méthodes d'aide pour les opérations courantes
     public static get(endpoint: string): Promise<any> {
         return this.fetchAuthenticated(endpoint);
     }
@@ -135,44 +109,6 @@ class ApiService {
             body: JSON.stringify(data)
         });
     }
-
-    static async postFormData(endpoint: string, formData: FormData): Promise<any> {
-        // Vérifier l'authentification
-        if (!keycloak.authenticated) {
-            console.error('Utilisateur non authentifié');
-            await keycloak.login();
-            throw new Error('Authentification requise');
-        }
-
-        // Rafraîchir le token si nécessaire
-        const tokenValid = await this.refreshToken();
-        if (!tokenValid) {
-            console.error('Token invalide ou expiré');
-            await keycloak.login();
-            throw new Error('Session expirée, veuillez vous reconnecter');
-        }
-
-        const url = `${this.baseUrl}${endpoint}`;
-        console.log(`API call (FormData) to: ${url}`);
-
-        // Note: Do NOT set Content-Type with FormData - the browser sets it automatically with the boundary
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${keycloak.token}`
-                // Don't set Content-Type here - the browser will set it with multipart/form-data and the correct boundary
-            },
-            body: formData,
-        });
-
-        if (!response.ok) {
-            console.error(`Upload error: ${response.status} ${response.statusText}`);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        return response.json();
-    }
-
 
     public static put(endpoint: string, data: any): Promise<any> {
         return this.fetchAuthenticated(endpoint, {
@@ -185,6 +121,29 @@ class ApiService {
         return this.fetchAuthenticated(endpoint, {
             method: 'DELETE'
         });
+    }
+
+    public static async postFormData(endpoint: string, formData: FormData): Promise<any> {
+        await this.ensureAuthenticated();
+
+        const url = `${this.baseUrl}${endpoint}`;
+        console.log(`API call (FormData) to: ${url}`);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${keycloak.token}`
+                // Ne pas définir Content-Type : laissé au navigateur
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            console.error(`Upload error: ${response.status} ${response.statusText}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return response.json();
     }
 }
 
