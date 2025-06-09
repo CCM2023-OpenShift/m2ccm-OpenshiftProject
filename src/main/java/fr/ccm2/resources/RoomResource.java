@@ -11,6 +11,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
+import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class RoomResource {
+
+    private static final Logger LOG = Logger.getLogger(RoomResource.class);
 
     @Inject
     RoomService roomService;
@@ -87,7 +90,8 @@ public class RoomResource {
             RoomResponseDTO responseDTO = RoomMapper.toResponse(room, true);
             return Response.ok(responseDTO).build();
         } catch (Exception e) {
-            e.printStackTrace();
+            // Remplacer printStackTrace() par un logging approprié
+            LOG.error("Erreur lors de la mise à jour de la salle ID=" + id, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Erreur serveur : " + e.getMessage()).build();
         }
     }
@@ -125,10 +129,12 @@ public class RoomResource {
                     .build();
 
         } catch (IllegalArgumentException e) {
+            LOG.warn("Tentative d'upload d'image invalide: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"error\": \"" + e.getMessage() + "\"}")
                     .build();
         } catch (IOException e) {
+            LOG.error("Erreur lors de l'upload d'image pour la salle ID=" + roomId, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("{\"error\": \"Erreur lors de la sauvegarde de l'image\"}")
                     .build();
@@ -157,6 +163,7 @@ public class RoomResource {
                     .build();
 
         } catch (IOException e) {
+            LOG.error("Erreur lors de la suppression d'image pour la salle ID=" + roomId, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("{\"error\": \"Erreur lors de la suppression de l'image\"}")
                     .build();
@@ -183,8 +190,10 @@ public class RoomResource {
             return Response.ok(imageData, contentType).build();
 
         } catch (SecurityException e) {
+            LOG.warn("Tentative d'accès non autorisé à l'image: " + fileName, e);
             return Response.status(Response.Status.BAD_REQUEST).build();
         } catch (IOException e) {
+            LOG.error("Erreur lors de la récupération de l'image: " + fileName, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
