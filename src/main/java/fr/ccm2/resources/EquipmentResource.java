@@ -110,22 +110,15 @@ public class EquipmentResource {
     public Response uploadImage(@PathParam("id") Long equipmentId,
                                 @FormParam("file") FileUpload file) {
         try {
-            // Vérifier que l'équipement existe
             if (equipmentService.getEquipmentById(equipmentId) == null) {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity("{\"error\": \"Équipement non trouvé\"}").build();
             }
-
-            // Vérifier qu'un fichier a été uploadé
             if (file == null || file.size() == 0) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity("{\"error\": \"Aucun fichier fourni\"}").build();
             }
-
-            // Sauvegarder l'image
             String imageUrl = imageService.saveImage(file);
-
-            // Mettre à jour l'URL de l'image dans l'équipement
             equipmentService.updateImageUrl(equipmentId, imageUrl);
 
             return Response.ok()
@@ -146,19 +139,15 @@ public class EquipmentResource {
     @RolesAllowed({"admin"})
     public Response deleteImage(@PathParam("id") Long equipmentId) {
         try {
-            // Vérifier que l'équipement existe
             Equipment equipment = equipmentService.getEquipmentById(equipmentId);
             if (equipment == null) {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity("{\"error\": \"Équipement non trouvé\"}").build();
             }
-
-            // TODO: Optionnel - Supprimer physiquement le fichier image du disque
+            // Suppression physique optionnelle
             // if (equipment.getImageUrl() != null) {
             //     imageService.deleteImageFile(equipment.getImageUrl());
             // }
-
-            // Supprimer l'URL de l'image dans l'équipement
             equipmentService.updateImageUrl(equipmentId, null);
 
             return Response.ok()
@@ -180,7 +169,6 @@ public class EquipmentResource {
                                @HeaderParam("Content-Length") long contentLength,
                                @QueryParam("filename") String filename) {
         try {
-            // Utiliser java.nio.file.Path explicitement pour éviter la confusion
             java.nio.file.Path uploadPath = Paths.get("uploads", filename);
             Files.createDirectories(uploadPath.getParent());
             Files.copy(fileInputStream, uploadPath);
@@ -197,10 +185,7 @@ public class EquipmentResource {
     public Response uploadFileBase64(String base64Content,
                                      @QueryParam("filename") String filename) {
         try {
-            // Décoder Base64
             byte[] decodedBytes = java.util.Base64.getDecoder().decode(base64Content);
-
-            // Utiliser java.nio.file.Path explicitement
             java.nio.file.Path uploadPath = Paths.get("uploads", filename);
             Files.createDirectories(uploadPath.getParent());
             Files.write(uploadPath, decodedBytes);

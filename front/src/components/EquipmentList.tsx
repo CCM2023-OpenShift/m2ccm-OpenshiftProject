@@ -31,12 +31,6 @@ export const EquipmentList = () => {
                 return;
             }
 
-            // Vérification de la taille (2MB max)
-            if (file.size > 2 * 1024 * 1024) {
-                setErrorMessage('La taille de l\'image ne doit pas dépasser 2MB');
-                return;
-            }
-
             setSelectedFile(file);
 
             // Créer un aperçu

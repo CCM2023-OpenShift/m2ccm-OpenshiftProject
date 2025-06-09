@@ -1,43 +1,47 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: keycloak-realm-config
+  name: keycloak-realm-config-dev
   namespace: gregorydhmccm-dev
 data:
   myrealm.json: |
     {
-      "realm": "myrealm",
+      "realm": "myrealm-dev",
       "enabled": true,
       "users": [
         {
-          "username": "user1",
+          "username": "devuser",
           "enabled": true,
-          "email": "user1@example.com",
-          "firstName": "User",
-          "lastName": "One",
+          "email": "devuser@example.com",
+          "firstName": "Dev",
+          "lastName": "User",
           "emailVerified": true,
           "credentials": [
             {
               "type": "password",
-              "value": "password1"
+              "value": "devpass"
             }
           ],
-          "realmRoles": ["user"]
+          "realmRoles": [
+            "user"
+          ]
         },
         {
-          "username": "admin1",
+          "username": "admin-dev",
           "enabled": true,
-          "email": "admin1@example.com",
+          "email": "admin@example.com",
           "firstName": "Admin",
-          "lastName": "One",
+          "lastName": "Developer",
           "emailVerified": true,
           "credentials": [
             {
               "type": "password",
-              "value": "admin1"
+              "value": "adminpass"
             }
           ],
-          "realmRoles": ["admin"]
+          "realmRoles": [
+            "admin"
+          ]
         }
       ],
       "roles": {
@@ -52,7 +56,7 @@ data:
       },
       "clients": [
         {
-          "clientId": "my-app",
+          "clientId": "my-app-dev",
           "redirectUris": [
             "https://vite-oc-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com/*",
             "http://localhost:3000/*"
@@ -66,7 +70,7 @@ data:
           "standardFlowEnabled": true
         },
         {
-          "clientId": "my-backend",
+          "clientId": "my-backend-dev",
           "enabled": true,
           "protocol": "openid-connect",
           "publicClient": false,

@@ -33,8 +33,15 @@ jobs:
           oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_SERVER }}
           oc project ${{ secrets.OPENSHIFT_PROJECT }}
 
-      - name: Change Directory
-        run: cd front
+      - name: Create Production Environment File
+        run: |
+          cd front
+          echo "VITE_KEYCLOAK_URL=${{ secrets.VITE_KEYCLOAK_URL }}" > .env.production
+          echo "VITE_KEYCLOAK_REALM=${{ secrets.VITE_KEYCLOAK_REALM }}" >> .env.production
+          echo "VITE_KEYCLOAK_CLIENT_ID=${{ secrets.VITE_KEYCLOAK_CLIENT_ID }}" >> .env.production
+          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" >> .env.production
+          echo "Environment file created:"
+          cat .env.production | sed 's/=.*/=****/'  # Securely show which variables were created
 
       - name: Create or Update Build
         run: |

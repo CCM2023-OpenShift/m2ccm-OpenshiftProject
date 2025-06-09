@@ -90,31 +90,14 @@ export class Room {
         }
     }
 
-    // ========== MÉTHODES POUR GÉRER LES IMAGES ==========
+    // ========== MÉTHODES POUR GÉRER LES IMAGES AVEC APISERVICE ==========
 
     public async uploadImage(file: File): Promise<{ message: string; imageUrl: string }> {
         try {
             const formData = new FormData();
             formData.append('image', file);
 
-            // Récupérer l'URL de base et le token depuis votre configuration
-            const baseUrl = 'http://localhost:8080'; // Remplacez par votre URL
-            const token = localStorage.getItem('token'); // Ou selon votre méthode de stockage
-
-            const response = await fetch(`${baseUrl}${Room.baseEndpoint}/${this.id}/image`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erreur lors de l\'upload');
-            }
-
-            const result = await response.json();
+            const result = await ApiService.postFormData(`${Room.baseEndpoint}/${this.id}/image`, formData);
             this.imageUrl = result.imageUrl;
             return result;
         } catch (error) {
@@ -125,24 +108,7 @@ export class Room {
 
     public async deleteImage(): Promise<{ message: string }> {
         try {
-            // Récupérer l'URL de base et le token depuis votre configuration
-            const baseUrl = 'http://localhost:8080'; // Remplacez par votre URL
-            const token = localStorage.getItem('token'); // Ou selon votre méthode de stockage
-
-            const response = await fetch(`${baseUrl}${Room.baseEndpoint}/${this.id}/image`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erreur lors de la suppression');
-            }
-
-            const result = await response.json();
+            const result = await ApiService.delete(`${Room.baseEndpoint}/${this.id}/image`);
             this.imageUrl = undefined;
             return result;
         } catch (error) {

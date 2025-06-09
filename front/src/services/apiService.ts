@@ -1,7 +1,7 @@
 import keycloak from '../../keycloak.js';
 
 class ApiService {
-    private static baseUrl = 'http://localhost:8080'; // URL de votre backend
+    private static baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
     /**
      * Méthode pour vérifier l'état d'authentification
@@ -137,17 +137,42 @@ class ApiService {
     }
 
     static async postFormData(endpoint: string, formData: FormData): Promise<any> {
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        // Vérifier l'authentification
+        if (!keycloak.authenticated) {
+            console.error('Utilisateur non authentifié');
+            await keycloak.login();
+            throw new Error('Authentification requise');
+        }
+
+        // Rafraîchir le token si nécessaire
+        const tokenValid = await this.refreshToken();
+        if (!tokenValid) {
+            console.error('Token invalide ou expiré');
+            await keycloak.login();
+            throw new Error('Session expirée, veuillez vous reconnecter');
+        }
+
+        const url = `${this.baseUrl}${endpoint}`;
+        console.log(`API call (FormData) to: ${url}`);
+
+        // Note: Do NOT set Content-Type with FormData - the browser sets it automatically with the boundary
+        const response = await fetch(url, {
             method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${keycloak.token}`
+                // Don't set Content-Type here - the browser will set it with multipart/form-data and the correct boundary
+            },
             body: formData,
         });
 
         if (!response.ok) {
+            console.error(`Upload error: ${response.status} ${response.statusText}`);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         return response.json();
     }
+
 
     public static put(endpoint: string, data: any): Promise<any> {
         return this.fetchAuthenticated(endpoint, {

@@ -1,9 +1,9 @@
 import Keycloak from 'keycloak-js';
 
 const keycloak = new Keycloak({
-    url: 'https://keycloak-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com',
-    realm: 'myrealm',
-    clientId: 'my-app',
+    url: import.meta.env.VITE_KEYCLOAK_URL,
+    realm: import.meta.env.VITE_KEYCLOAK_REALM,
+    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
 });
 
 export default keycloak;

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-postgresql-dev
+  namespace: gregorydhmccm-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak-postgresql-dev
+  template:
+    metadata:
+      labels:
+        app: keycloak-postgresql-dev
+    spec:
+      containers:
+        - name: keycloak-postgresql
+          image: bitnami/postgresql:15
+          env:
+            - name: POSTGRESQL_DATABASE
+              value: keycloakdbdev
+            - name: POSTGRESQL_USERNAME
+              value: keycloakdbdev
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-postgresql-secret-dev
+                  key: POSTGRES_PASSWORD
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /bitnami/postgresql
+      volumes:
+        - name: postgres-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-postgresql-dev
+  namespace: gregorydhmccm-dev
+spec:
+  selector:
+    app: keycloak-postgresql-dev
+  ports:
+    - port: 5432
