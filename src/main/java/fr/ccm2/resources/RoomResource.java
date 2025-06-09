@@ -30,12 +30,16 @@ public class RoomResource {
     @GET
     @RolesAllowed({"user", "admin"})
     public Response list() {
-        List<Room> rooms = roomService.getRoomsWithRelations();
-        List<RoomResponseDTO> response = rooms.stream()
-                .map(room -> RoomMapper.toResponse(room, true))
-                .collect(Collectors.toList());
+        try {
+            List<Room> rooms = roomService.getRoomsWithRelations();
+            List<RoomResponseDTO> response = rooms.stream()
+                    .map(room -> RoomMapper.toResponse(room, true))
+                    .collect(Collectors.toList());
 
-        return Response.ok(response).build();
+            return Response.ok(response).build();
+        } catch (Exception e) {
+            return Response.serverError().entity("Erreur serveur: " + e.getMessage()).build();
+        }
     }
 
     @GET

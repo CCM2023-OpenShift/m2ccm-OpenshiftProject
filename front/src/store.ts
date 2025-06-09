@@ -3,6 +3,8 @@ import { AppState, Room, Equipment } from './types';
 import { Room as RoomService } from './services/Room';
 import { Equipment as EquipmentService } from './services/Equipment';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 export const useStore = create<AppState>((set) => ({
     rooms: [],
     equipment: [],
@@ -34,7 +36,8 @@ export const useStore = create<AppState>((set) => ({
     },
     fetchBookings: async () => {
         try {
-            const response = await fetch('http://localhost:8080/bookings');
+            // Use the API_URL from environment variables
+            const response = await fetch(`${API_URL}/bookings`);
             const data = await response.json();
             set({ bookings: data });
         } catch (error) {

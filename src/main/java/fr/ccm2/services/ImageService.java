@@ -11,9 +11,9 @@ import java.util.UUID;
 @ApplicationScoped
 public class ImageService {
 
-    private static final String EQUIPMENT_UPLOAD_DIR = "/opt/uploads/equipments/";
-    private static final String ROOM_UPLOAD_DIR = "/opt/uploads/rooms/";  // Nouveau répertoire pour les salles
-    private static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 Mo
+    private static final String EQUIPMENT_UPLOAD_DIR = "/uploads/images/equipments/";
+    private static final String ROOM_UPLOAD_DIR = "/uploads/images/rooms/";
+    private static final long MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 000 Ko = ~195 Mo
 
     // Méthodes existantes pour les équipements...
     public String saveImage(FileUpload fileUpload) throws IOException {
@@ -31,7 +31,7 @@ public class ImageService {
         }
 
         if (fileUpload.size() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("Fichier trop volumineux (max 2Mo)");
+            throw new IllegalArgumentException("Fichier trop volumineux (max 200 Mo)");
         }
 
         String originalFileName = fileUpload.fileName();

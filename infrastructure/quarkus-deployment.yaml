@@ -26,6 +26,8 @@ spec:
                 secretKeyRef:
                   name: keycloak-client-backend
                   key: KEYCLOAK_CLIENT_BACKEND_SECRET
+            - name: IMAGE_UPLOAD_DIRECTORY
+              value: "/uploads/images"
           resources:
             requests:
               memory: "512Mi"

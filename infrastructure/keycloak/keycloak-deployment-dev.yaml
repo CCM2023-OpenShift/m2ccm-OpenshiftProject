@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-dev
+  namespace: gregorydhmccm-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak-dev
+  template:
+    metadata:
+      labels:
+        app: keycloak-dev
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:24.0.1
+          args:
+            - start-dev
+            - --import-realm
+          env:
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret-dev
+                  key: KEYCLOAK_ADMIN
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret-dev
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_URL
+              value: "jdbc:postgresql://keycloak-postgresql-dev:5432/keycloakdbdev"
+            - name: KC_DB_USERNAME
+              value: "keycloakdbdev"
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-postgresql-secret-dev
+                  key: POSTGRES_PASSWORD
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KEYCLOAK_CORS
+              value: "true"
+            - name: KEYCLOAK_CORS_ALLOWED_ORIGINS
+              value: "https://vite-oc-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com,http://localhost:3000"
+            - name: KC_PROXY
+              value: "edge"
+            - name: KC_HOSTNAME
+              value: "keycloak-dev-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: realm-config
+              mountPath: /opt/keycloak/data/import
+      volumes:
+        - name: realm-config
+          configMap:
+            name: keycloak-realm-config-dev
