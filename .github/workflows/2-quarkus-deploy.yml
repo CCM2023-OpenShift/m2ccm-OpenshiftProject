@@ -43,31 +43,68 @@ jobs:
           oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
           oc project $OPENSHIFT_PROJECT
 
-      - name: Create OpenShift ImageStream (if not exists)
+      - name: Manage BuildConfig and ImageStream
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
-          oc get is quarkus-app -n $OPENSHIFT_PROJECT || oc create is quarkus-app -n $OPENSHIFT_PROJECT
+          echo "🔍 Vérification de l'ImageStream..."
+          if ! oc get is quarkus-app -n $OPENSHIFT_PROJECT &>/dev/null; then
+            echo "📦 Création de l'ImageStream..."
+            oc create is quarkus-app -n $OPENSHIFT_PROJECT
+          fi
+          
+          echo "🔍 Vérification du BuildConfig..."
+          if ! oc get bc quarkus-app -n $OPENSHIFT_PROJECT &>/dev/null; then
+            echo "🛠️ Création du BuildConfig..."
+            oc new-build --binary --strategy=docker --name=quarkus-app -n $OPENSHIFT_PROJECT
+          else
+            echo "🔄 Mise à jour du BuildConfig existant..."
+            oc patch bc quarkus-app -n $OPENSHIFT_PROJECT --type=merge -p '{"spec":{"source":{"dockerfilePath":"src/main/docker/Dockerfile.jvm"}}}'
+          fi
+
+      - name: Configure Build Resources
+        env:
+          OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
+        run: |
+          echo "⚙️ Configuration des ressources pour le build..."
+          oc patch bc quarkus-app -n $OPENSHIFT_PROJECT --type=merge -p '{
+            "spec": {
+              "resources": {
+                "limits": {
+                  "memory": "2Gi",
+                  "cpu": "1"
+                },
+                "requests": {
+                  "memory": "1Gi",
+                  "cpu": "500m"
+                }
+              }
+            }
+          }'
 
       - name: Clean up previous failed builds
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
-          oc delete build -l buildconfig=quarkus-app -n $OPENSHIFT_PROJECT --ignore-not-found=true || true
-
-      - name: Set Dockerfile path in BuildConfig
-        env:
-          OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
-        run: |
-          oc patch bc quarkus-app -n $OPENSHIFT_PROJECT --type=merge -p '{"spec":{"source":{"dockerfilePath":"src/main/docker/Dockerfile.jvm"}}}' || true
+          echo "🧹 Nettoyage des builds échoués..."
+          oc delete build -l buildconfig=quarkus-app,status=failed -n $OPENSHIFT_PROJECT --ignore-not-found=true
 
       - name: Build and Push Image to OpenShift ImageStream
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
-          oc new-build --binary --strategy=docker --name=quarkus-app -n $OPENSHIFT_PROJECT || true
+          echo "📝 Préparation du Dockerfile..."
           cp src/main/docker/Dockerfile.jvm Dockerfile
-          oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT
+          
+          echo "🚀 Démarrage d'un nouveau build..."
+          timeout 15m oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT || {
+            echo "❌ Build échoué, vérification des logs..."
+            BUILD_NAME=$(oc get builds -l buildconfig=quarkus-app -n $OPENSHIFT_PROJECT --sort-by=.metadata.creationTimestamp -o name | tail -n 1)
+            oc logs $BUILD_NAME -n $OPENSHIFT_PROJECT
+            exit 1
+          }
+          
+          echo "✅ Build terminé avec succès!"
 
   deploy:
     needs: build-and-push
@@ -95,18 +132,30 @@ jobs:
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
+          echo "📄 Application des configurations de déploiement..."
           oc apply -f infrastructure/quarkus-deployment.yaml -n $OPENSHIFT_PROJECT
 
       - name: Deploy to OpenShift
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
+          echo "🔄 Mise à jour de l'image du déploiement..."
           oc set image deployment/quarkus-app quarkus-app=image-registry.openshift-image-registry.svc:5000/$OPENSHIFT_PROJECT/quarkus-app:latest
+          
+          echo "🔄 Redémarrage du déploiement..."
           oc rollout restart deployment/quarkus-app
+          
+          echo "⏳ Attente du déploiement..."
+          timeout 5m oc rollout status deployment/quarkus-app -n $OPENSHIFT_PROJECT || {
+            echo "❌ Déploiement échoué, vérification des logs..."
+            POD_NAME=$(oc get pods -l app=quarkus-app -n $OPENSHIFT_PROJECT --sort-by=.metadata.creationTimestamp -o name | tail -n 1)
+            oc logs $POD_NAME -n $OPENSHIFT_PROJECT
+            exit 1
+          }
 
       - name: Display API Route URL
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
           ROUTE=$(oc get route quarkus-route -n $OPENSHIFT_PROJECT -o jsonpath='{.spec.host}')
-          echo "🔗 Your API is available at: http://$ROUTE"
+          echo "🔗 Votre API est disponible à: https://$ROUTE"
