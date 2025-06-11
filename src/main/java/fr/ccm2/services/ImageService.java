@@ -13,31 +13,32 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.UUID;
 
 @ApplicationScoped
 public class ImageService {
 
-    @ConfigProperty(name = "%prod.app.image.storage.type")
+    @ConfigProperty(name = "app.image.storage.type", defaultValue = "local")
     String storageType;
 
-    @ConfigProperty(name = "%prod.app.image.upload.directory", defaultValue = "/tmp/uploads/images")
+    @ConfigProperty(name = "app.image.upload.directory", defaultValue = "/tmp/uploads/images")
     String localUploadDirectory;
 
-    @ConfigProperty(name = "%prod.app.supabase.url", defaultValue = "")
-    String supabaseUrl;
+    // Utilisez Optional pour les propriétés qui peuvent ne pas exister
+    @ConfigProperty(name = "app.supabase.url")
+    Optional<String> supabaseUrl;
 
-    @ConfigProperty(name = "%prod.app.supabase.key", defaultValue = "")
-    String supabaseKey;
+    @ConfigProperty(name = "app.supabase.key")
+    Optional<String> supabaseKey;
 
-    @ConfigProperty(name = "%prod.app.supabase.bucket", defaultValue = "equipment-images")
+    @ConfigProperty(name = "app.supabase.bucket", defaultValue = "equipment-images")
     String supabaseBucket;
 
     private static final String EQUIPMENT_FOLDER = "equipments";
     private static final String ROOM_FOLDER = "rooms";
     private static final long MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
 
-    // Fixed warning: Field 'client' may be 'final'
     private final Client client = ClientBuilder.newClient();
 
     // ========== MÉTHODES POUR ÉQUIPEMENTS ==========
@@ -163,22 +164,26 @@ public class ImageService {
 
     // ========== IMPLÉMENTATIONS SUPABASE ==========
     private String uploadImageSupabase(FileUpload file, String fileName, String folder) throws IOException {
-        // Fixed warning: 'Response' used without 'try'-with-resources statement
+        // Vérifiez si les configurations Supabase sont présentes
+        if (supabaseUrl.isEmpty() || supabaseKey.isEmpty()) {
+            throw new IllegalStateException("Configuration Supabase manquante en mode production");
+        }
+
         try {
             byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
             String objectPath = folder + "/" + fileName;
-            String uploadUrl = supabaseUrl + "/storage/v1/object/" + supabaseBucket + "/" + objectPath;
+            String uploadUrl = supabaseUrl.get() + "/storage/v1/object/" + supabaseBucket + "/" + objectPath;
 
             System.out.println("Upload Supabase vers: " + uploadUrl);
 
             try (Response response = client.target(uploadUrl)
                     .request()
-                    .header("Authorization", "Bearer " + supabaseKey)
+                    .header("Authorization", "Bearer " + supabaseKey.get())
                     .header("Content-Type", getContentTypeFromExtension(getFileExtension(fileName)))
                     .post(Entity.entity(fileBytes, MediaType.APPLICATION_OCTET_STREAM))) {
 
                 if (response.getStatus() == 200 || response.getStatus() == 201) {
-                    String publicUrl = supabaseUrl + "/storage/v1/object/public/" + supabaseBucket + "/" + objectPath;
+                    String publicUrl = supabaseUrl.get() + "/storage/v1/object/public/" + supabaseBucket + "/" + objectPath;
                     System.out.println("Image uploadée sur Supabase: " + publicUrl);
                     return publicUrl;
                 } else {
@@ -192,6 +197,11 @@ public class ImageService {
     }
 
     private void deleteImageSupabase(String imageUrl) throws IOException {
+        if (supabaseUrl.isEmpty() || supabaseKey.isEmpty()) {
+            System.out.println("Configuration Supabase manquante, suppression ignorée");
+            return;
+        }
+
         if (imageUrl == null || !imageUrl.contains(supabaseBucket)) {
             System.out.println("URL Supabase invalide: " + imageUrl);
             return;
@@ -199,18 +209,16 @@ public class ImageService {
 
         try {
             String objectPath = getString(imageUrl);
-
-            String deleteUrl = supabaseUrl + "/storage/v1/object/" + supabaseBucket + "/" + objectPath;
+            String deleteUrl = supabaseUrl.get() + "/storage/v1/object/" + supabaseBucket + "/" + objectPath;
 
             System.out.println("   Suppression Supabase:");
             System.out.println("   URL originale: " + imageUrl);
             System.out.println("   Object path: " + objectPath);
             System.out.println("   Delete URL: " + deleteUrl);
 
-            // Fixed warning: 'Response' used without 'try'-with-resources statement
             try (Response response = client.target(deleteUrl)
                     .request()
-                    .header("Authorization", "Bearer " + supabaseKey)
+                    .header("Authorization", "Bearer " + supabaseKey.get())
                     .delete()) {
 
                 if (response.getStatus() == 200 || response.getStatus() == 204) {
@@ -233,30 +241,23 @@ public class ImageService {
             objectPath = imageUrl.substring(imageUrl.indexOf("/storage/v1/object/public/" + supabaseBucket + "/") +
                     ("/storage/v1/object/public/" + supabaseBucket + "/").length());
         } else {
-            // Fallback pour d'autres formats d'URL
             objectPath = imageUrl.substring(imageUrl.indexOf(supabaseBucket) + supabaseBucket.length() + 1);
         }
         return objectPath;
     }
 
     // ========== MÉTHODES UTILITAIRES ==========
-    // Fixed warning: Method 'uploadImage' is never used
-    // Added @Deprecated to mark this method as potentially to be removed
     @Deprecated
     public String uploadImage(FileUpload file) throws IOException {
-        // Keeping this method for backward compatibility
         return saveImage(file);
     }
 
-    // La méthode deleteImage gère les URLs complètes
     public void deleteImage(String imageUrlOrFileName) throws IOException {
         System.out.println("deleteImage appelée avec: " + imageUrlOrFileName);
 
-        // Si c'est une URL complète, utiliser deleteImageFile
         if (imageUrlOrFileName != null && (imageUrlOrFileName.startsWith("http") || imageUrlOrFileName.startsWith("/images/"))) {
             deleteImageFile(imageUrlOrFileName);
         } else {
-            // Si c'est juste un nom de fichier, construire l'URL
             String imageUrl = "/images/" + EQUIPMENT_FOLDER + "/" + imageUrlOrFileName;
             deleteImageFile(imageUrl);
         }
