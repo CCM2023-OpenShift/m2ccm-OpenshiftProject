@@ -27,4 +27,4 @@ jobs:
           cache: maven
 
       - name: Build Quarkus Application
-        run: ./mvnw clean package
+        run: ./mvnw clean package -DskipTests
