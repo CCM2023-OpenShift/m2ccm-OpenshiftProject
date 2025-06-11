@@ -8,13 +8,7 @@ export class Room {
     public imageUrl?: string;
     public roomEquipments: RoomEquipment[] = [];
 
-    errors!: object;
-
     private static baseEndpoint: string = `/rooms`;
-
-    public resetErrors(): void {
-        this.errors = {};
-    }
 
     public fromJSON(json: any): Room {
         this.id = json?.id;
@@ -91,7 +85,6 @@ export class Room {
     }
 
     // ========== MÉTHODES POUR GÉRER LES IMAGES AVEC APISERVICE ==========
-
     public async uploadImage(file: File): Promise<{ message: string; imageUrl: string }> {
         try {
             const formData = new FormData();

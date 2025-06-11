@@ -21,7 +21,7 @@ public class ImageService {
     @ConfigProperty(name = "%prod.app.image.storage.type")
     String storageType;
 
-    @ConfigProperty(name = "%prod.app.image.upload.directory", defaultValue = "")
+    @ConfigProperty(name = "%prod.app.image.upload.directory", defaultValue = "/tmp/uploads/images")
     String localUploadDirectory;
 
     @ConfigProperty(name = "%prod.app.supabase.url", defaultValue = "")

@@ -34,6 +34,16 @@ export const RoomList = () => {
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Veuillez sélectionner un fichier image valide');
+                return;
+            }
+
+            if (file.size > 2 * 1024 * 1024) {
+                alert('La taille de l\'image ne doit pas dépasser 2MB');
+                return;
+            }
+
             setImageFile(file);
             const reader = new FileReader();
             reader.onload = () => {
@@ -61,28 +71,33 @@ export const RoomList = () => {
             if (editingRoom?.id) {
                 // Mode modification
                 await updateRoom({ ...roomData, id: editingRoom.id } as Room);
+                console.log('Room updated');
 
                 // Upload de l'image si présente
                 if (imageFile) {
+                    console.log('Uploading image for updated room:', editingRoom.id);
                     await uploadRoomImage(editingRoom.id, imageFile);
                 }
             } else {
-                // Mode création
+                // Mode création - Get the actual room from the server after creation
                 await addRoom(roomData);
-                await fetchRooms(); // Rafraîchir la liste des salles
+                console.log('Room created');
 
-                // Si on a une image à uploader, on doit trouver la salle qui vient d'être créée
-                if (imageFile) {
-                    // Attendre un peu pour que la création soit finalisée
-                    setTimeout(async () => {
-                        // Trouver la salle avec le même nom (en supposant que les noms sont uniques)
-                        const createdRoom = rooms.find(room => room.name === formData.name);
-                        if (createdRoom) {
-                            await uploadRoomImage(createdRoom.id, imageFile);
-                        }
-                    }, 500);
+                // Refresh rooms to get the newly created room with its ID
+                await fetchRooms();
+
+                // Find the newly created room by name (assuming name is unique)
+                const createdRoom = rooms.find(r => r.name === formData.name);
+
+                // Si on a une image à uploader et on a trouvé la salle créée
+                if (imageFile && createdRoom) {
+                    console.log('Uploading image for new room:', createdRoom.id);
+                    await uploadRoomImage(createdRoom.id, imageFile);
                 }
             }
+
+            // Always refresh rooms list after operations
+            await fetchRooms();
 
             setIsModalOpen(false);
             setEditingRoom(null);
@@ -91,6 +106,7 @@ export const RoomList = () => {
             setImagePreview(null);
         } catch (error) {
             console.error('Error saving room:', error);
+            alert('Une erreur est survenue lors de l\'enregistrement de la salle.');
         }
     };
 

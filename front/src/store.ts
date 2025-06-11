@@ -212,7 +212,9 @@ export const useStore = create<AppState>((set) => ({
             const roomInstance = new RoomService();
             roomInstance.id = roomId;
 
+            console.log('Uploading image for room:', roomId);
             const result = await roomInstance.uploadImage(file);
+            console.log('Room image upload successful:', result.imageUrl);
 
             set((state) => ({
                 rooms: state.rooms.map((r) =>
@@ -220,6 +222,7 @@ export const useStore = create<AppState>((set) => ({
                 ),
             }));
 
+            return result;
         } catch (error) {
             console.error('Error uploading room image:', error);
             throw error;
@@ -231,7 +234,9 @@ export const useStore = create<AppState>((set) => ({
             const roomInstance = new RoomService();
             roomInstance.id = roomId;
 
+            console.log('Deleting image for room:', roomId);
             await roomInstance.deleteImage();
+            console.log('Room image deleted successfully');
 
             set((state) => ({
                 rooms: state.rooms.map((r) =>
@@ -239,6 +244,10 @@ export const useStore = create<AppState>((set) => ({
                 ),
             }));
 
+            // Force refresh room data
+            await RoomService.getAll().then(data => {
+                set({ rooms: data });
+            });
         } catch (error) {
             console.error('Error deleting room image:', error);
             throw error;
