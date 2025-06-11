@@ -1,4 +1,4 @@
 # Local environment
-.env
+../.env
 .env.development
 .env.production
