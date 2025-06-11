@@ -10,6 +10,7 @@ export const EquipmentList = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         name: '',
@@ -25,7 +26,6 @@ export const EquipmentList = () => {
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            // Vérification du type de fichier pour ne prendre que les valides
             if (!file.type.startsWith('image/')) {
                 setErrorMessage('Veuillez sélectionner un fichier image valide');
                 return;
@@ -33,9 +33,8 @@ export const EquipmentList = () => {
 
             setSelectedFile(file);
 
-            // Créer un aperçu
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = (e: ProgressEvent<FileReader>) => {
                 setImagePreview(e.target?.result as string);
             };
             reader.readAsDataURL(file);
@@ -43,12 +42,10 @@ export const EquipmentList = () => {
         }
     };
 
-    // Nouvelle fonction pour gérer l'upload direct depuis les cartes
     const handleDirectImageUpload = async (equipmentId: string, event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        // Vérifications
         if (!file.type.startsWith('image/')) {
             alert('Veuillez sélectionner un fichier image valide');
             return;
@@ -61,7 +58,6 @@ export const EquipmentList = () => {
 
         try {
             await uploadEquipmentImage(equipmentId, file);
-            // Réinitialiser l'input
             event.target.value = '';
         } catch (error) {
             alert('Erreur lors de l\'upload de l\'image');
@@ -84,12 +80,38 @@ export const EquipmentList = () => {
     };
 
     const handleImageDelete = async (equipmentId: string) => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette image ?')) {
-            try {
-                await deleteEquipmentImage(equipmentId);
-            } catch (error) {
-                setErrorMessage('Erreur lors de la suppression de l\'image');
-            }
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette image ?')) return;
+
+        setIsDeleting(equipmentId);
+        try {
+            await deleteEquipmentImage(equipmentId);
+        } catch (error) {
+            console.error('Erreur lors de la suppression de l\'image:', error);
+            setErrorMessage('Erreur lors de la suppression de l\'image');
+        } finally {
+            setIsDeleting(null);
+        }
+    };
+
+    // Renommer la variable locale pour éviter le conflit
+    const handleDelete = async (equipmentId: string) => {
+        const targetEquipment = equipment.find((e: Equipment) => e.id === equipmentId);
+        const hasImage = targetEquipment?.imageUrl && targetEquipment.imageUrl.trim() !== '';
+
+        const confirmMessage = hasImage
+            ? 'Êtes-vous sûr de vouloir supprimer cet équipement ?\n Son image sera également supprimée définitivement.'
+            : 'Êtes-vous sûr de vouloir supprimer cet équipement ?';
+
+        if (!confirm(confirmMessage)) return;
+
+        setIsDeleting(equipmentId);
+        try {
+            await deleteEquipment(equipmentId);
+        } catch (error) {
+            console.error('Erreur lors de la suppression de l\'équipement:', error);
+            alert('Erreur lors de la suppression de l\'équipement');
+        } finally {
+            setIsDeleting(null);
         }
     };
 
@@ -104,21 +126,21 @@ export const EquipmentList = () => {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         try {
-            let equipment: Equipment;
+            // Renommer la variable locale pour éviter le conflit
+            let savedEquipment: Equipment;
 
             if (editingEquipment?.id) {
-                equipment = await updateEquipment({ ...formData, id: editingEquipment.id } as Equipment);
+                savedEquipment = await updateEquipment({ ...formData, id: editingEquipment.id } as Equipment);
             } else {
-                equipment = await addEquipment(formData);
+                savedEquipment = await addEquipment(formData);
             }
 
-            // Upload de l'image si une nouvelle image est sélectionnée
-            if (selectedFile && equipment.id) {
-                await handleImageUpload(equipment.id);
+            if (selectedFile && savedEquipment.id) {
+                await handleImageUpload(savedEquipment.id);
             }
 
             setIsModalOpen(false);
@@ -132,21 +154,16 @@ export const EquipmentList = () => {
         }
     };
 
-    const handleEdit = (equipment: Equipment) => {
-        setEditingEquipment(equipment);
+    // Renommer le paramètre pour éviter le conflit
+    const handleEdit = (equipmentToEdit: Equipment) => {
+        setEditingEquipment(equipmentToEdit);
         setFormData({
-            name: equipment.name,
-            description: equipment.description,
-            quantity: equipment.quantity,
-            mobile: equipment.mobile,
+            name: equipmentToEdit.name,
+            description: equipmentToEdit.description,
+            quantity: equipmentToEdit.quantity,
+            mobile: equipmentToEdit.mobile,
         });
         setIsModalOpen(true);
-    };
-
-    const handleDelete = async (equipmentId: string) => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cet équipement ?')) {
-            await deleteEquipment(equipmentId);
-        }
     };
 
     return (
@@ -166,8 +183,18 @@ export const EquipmentList = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {equipment.map((equip) => (
-                    <div key={equip.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                {equipment.map((equip: Equipment) => (
+                    <div key={equip.id} className="bg-white rounded-lg shadow-md overflow-hidden relative">
+                        {/* Overlay de chargement lors de la suppression */}
+                        {isDeleting === equip.id && (
+                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                                <div className="bg-white p-4 rounded-lg">
+                                    <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                                    <p className="text-sm text-gray-600">Suppression en cours...</p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Image de l'équipement */}
                         <div className="h-48 bg-gray-200 relative">
                             {equip.imageUrl ? (
@@ -190,10 +217,13 @@ export const EquipmentList = () => {
                                     onChange={(e) => handleDirectImageUpload(equip.id, e)}
                                     className="hidden"
                                     id={`file-input-${equip.id}`}
+                                    disabled={isDeleting === equip.id}
                                 />
                                 <label
                                     htmlFor={`file-input-${equip.id}`}
-                                    className="bg-blue-500 text-white p-2 rounded-full cursor-pointer hover:bg-blue-600"
+                                    className={`bg-blue-500 text-white p-2 rounded-full cursor-pointer hover:bg-blue-600 ${
+                                        isDeleting === equip.id ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
                                     title="Changer l'image"
                                 >
                                     <Camera className="w-4 h-4" />
@@ -202,10 +232,17 @@ export const EquipmentList = () => {
                                 {equip.imageUrl && (
                                     <button
                                         onClick={() => handleImageDelete(equip.id)}
-                                        className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                                        disabled={isDeleting === equip.id}
+                                        className={`bg-red-500 text-white p-2 rounded-full hover:bg-red-600 ${
+                                            isDeleting === equip.id ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
                                         title="Supprimer l'image"
                                     >
-                                        <X className="w-4 h-4" />
+                                        {isDeleting === equip.id ? (
+                                            <div className="w-4 h-4 animate-spin border border-white border-t-transparent rounded-full"></div>
+                                        ) : (
+                                            <X className="w-4 h-4" />
+                                        )}
                                     </button>
                                 )}
                             </div>
@@ -220,15 +257,26 @@ export const EquipmentList = () => {
                                 <div className="flex space-x-2">
                                     <button
                                         onClick={() => handleEdit(equip)}
-                                        className="text-blue-500 hover:text-blue-600"
+                                        disabled={isDeleting === equip.id}
+                                        className={`text-blue-500 hover:text-blue-600 ${
+                                            isDeleting === equip.id ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
                                     >
                                         <Edit className="w-5 h-5"/>
                                     </button>
                                     <button
                                         onClick={() => handleDelete(equip.id)}
-                                        className="text-red-500 hover:text-red-600"
+                                        disabled={isDeleting === equip.id}
+                                        className={`text-red-500 hover:text-red-600 ${
+                                            isDeleting === equip.id ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
+                                        title={equip.imageUrl ? 'Supprimer l\'équipement et son image' : 'Supprimer l\'équipement'}
                                     >
-                                        <Trash className="w-5 h-5"/>
+                                        {isDeleting === equip.id ? (
+                                            <div className="w-5 h-5 animate-spin border border-red-500 border-t-transparent rounded-full"></div>
+                                        ) : (
+                                            <Trash className="w-5 h-5"/>
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -239,12 +287,17 @@ export const EquipmentList = () => {
                             <p className="text-sm text-gray-700">
                                 <span className="font-semibold">Type :</span> {equip.mobile ? 'Mobile' : 'Statique'}
                             </p>
+                            {equip.imageUrl && (
+                                <p className="text-xs text-blue-600 mt-2">
+                                    📷 Image stockée
+                                </p>
+                            )}
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Modal reste identique */}
+            {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -267,7 +320,6 @@ export const EquipmentList = () => {
                                     Image de l'équipement
                                 </label>
 
-                                {/* Aperçu de l'image */}
                                 <div className="mb-3 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
                                     {imagePreview ? (
                                         <img
@@ -289,7 +341,6 @@ export const EquipmentList = () => {
                                     )}
                                 </div>
 
-                                {/* Input file */}
                                 <input
                                     ref={fileInputRef}
                                     type="file"

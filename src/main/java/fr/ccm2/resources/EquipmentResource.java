@@ -19,12 +19,16 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Path("/equipment")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class EquipmentResource {
+
+    private static final Logger LOGGER = Logger.getLogger(EquipmentResource.class.getName());
 
     @Inject
     EquipmentService equipmentService;
@@ -93,11 +97,79 @@ public class EquipmentResource {
     }
 
     @DELETE
+    @Path("/{id}/image")
+    @RolesAllowed({"admin"})
+    public Response deleteImage(@PathParam("id") Long equipmentId) {
+        try {
+            LOGGER.info("🔍 Starting image deletion for equipment ID: " + equipmentId);
+
+            Equipment equipment = equipmentService.getEquipmentById(equipmentId);
+            if (equipment == null) {
+                LOGGER.warning("Equipment not found with ID: " + equipmentId);
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\": \"Équipement non trouvé\"}").build();
+            }
+
+            String imageUrl = equipment.getImageUrl();
+            LOGGER.info("Current image URL: " + imageUrl);
+
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                try {
+                    LOGGER.info("Deleting physical image file: " + imageUrl);
+                    imageService.deleteImageFile(imageUrl);
+                    LOGGER.info("Physical image file deleted successfully");
+                } catch (Exception e) {
+                    // Fixed: Replaced printStackTrace with proper logging
+                    LOGGER.log(Level.WARNING, "Error deleting physical image file: " + e.getMessage(), e);
+                    // Continue with database update even if physical deletion fails
+                }
+            } else {
+                LOGGER.info("No image URL to delete");
+            }
+
+            LOGGER.info("Updating equipment to remove image URL reference");
+            equipmentService.updateImageUrl(equipmentId, null);
+            LOGGER.info("Database updated successfully");
+
+            return Response.ok()
+                    .entity("{\"message\": \"Image supprimée avec succès\"}")
+                    .build();
+        } catch (Exception e) {
+            // Fixed: Replaced printStackTrace with proper logging
+            LOGGER.log(Level.SEVERE, "Error in deleteImage: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"Erreur lors de la suppression de l'image: " + e.getMessage() + "\"}").build();
+        }
+    }
+
+    @DELETE
     @Path("/{id}")
     @RolesAllowed({"admin"})
     public Response delete(@PathParam("id") Long id) {
-        equipmentService.deleteEquipment(id);
-        return Response.noContent().build();
+        try {
+            Equipment equipment = equipmentService.getEquipmentById(id);
+            if (equipment == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+
+            // Handle image deletion before deleting the equipment
+            if (equipment.getImageUrl() != null && !equipment.getImageUrl().trim().isEmpty()) {
+                try {
+                    imageService.deleteImageFile(equipment.getImageUrl());
+                    LOGGER.info("Image deleted for equipment: " + id);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Failed to delete image: " + e.getMessage(), e);
+                    // Continue with equipment deletion even if image deletion fails
+                }
+            }
+
+            equipmentService.deleteEquipment(id);
+            return Response.noContent().build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error deleting equipment: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"" + e.getMessage() + "\"}").build();
+        }
     }
 
     // ========== ENDPOINTS POUR LES IMAGES (APPROCHE MODERNE) ==========
@@ -129,34 +201,9 @@ public class EquipmentResource {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"error\": \"" + e.getMessage() + "\"}").build();
         } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error saving image", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("{\"error\": \"Erreur lors de la sauvegarde de l'image\"}").build();
-        }
-    }
-
-    @DELETE
-    @Path("/{id}/image")
-    @RolesAllowed({"admin"})
-    public Response deleteImage(@PathParam("id") Long equipmentId) {
-        try {
-            Equipment equipment = equipmentService.getEquipmentById(equipmentId);
-            if (equipment == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity("{\"error\": \"Équipement non trouvé\"}").build();
-            }
-            // Suppression physique optionnelle
-            // if (equipment.getImageUrl() != null) {
-            //     imageService.deleteImageFile(equipment.getImageUrl());
-            // }
-            equipmentService.updateImageUrl(equipmentId, null);
-
-            return Response.ok()
-                    .entity("{\"message\": \"Image supprimée avec succès\"}")
-                    .build();
-
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"Erreur lors de la suppression de l'image\"}").build();
         }
     }
 
@@ -166,7 +213,8 @@ public class EquipmentResource {
     @Path("/upload")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     public Response uploadFile(InputStream fileInputStream,
-                               @HeaderParam("Content-Length") long contentLength,
+                               // Fixed: Marked the unused parameter with @SuppressWarnings
+                               @HeaderParam("Content-Length") @SuppressWarnings("unused") long contentLength,
                                @QueryParam("filename") String filename) {
         try {
             java.nio.file.Path uploadPath = Paths.get("uploads", filename);
@@ -175,6 +223,7 @@ public class EquipmentResource {
 
             return Response.ok("Fichier uploadé : " + filename).build();
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error uploading file", e);
             return Response.status(500).entity("Erreur : " + e.getMessage()).build();
         }
     }
@@ -192,6 +241,7 @@ public class EquipmentResource {
 
             return Response.ok("Fichier uploadé : " + filename).build();
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error uploading base64 file", e);
             return Response.status(500).entity("Erreur : " + e.getMessage()).build();
         }
     }

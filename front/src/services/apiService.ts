@@ -145,6 +145,40 @@ class ApiService {
 
         return response.json();
     }
+
+    public static async deleteEquipmentWithImage(equipmentId: string): Promise<void> {
+        await this.ensureAuthenticated();
+
+        // First get the equipment to check if it has an image
+        const equipment = await this.get(`/equipment/${equipmentId}`);
+
+        if (equipment?.imageUrl) {
+            // Delete the image first
+            console.log(`🗑️ Deleting image for equipment ${equipmentId}: ${equipment.imageUrl}`);
+            try {
+                await this.delete(`/equipment/${equipmentId}/image`);
+
+                // Also try to delete the physical file using the direct image endpoint
+                // This might fail depending on your backend implementation
+                const fileName = equipment.imageUrl.split('/').pop();
+                if (fileName) {
+                    try {
+                        await this.delete(`/images/equipments/${fileName}`);
+                        console.log('✅ Physical image file deleted successfully');
+                    } catch (imageError) {
+                        console.warn('⚠️ Could not delete physical image file:', imageError);
+                        // Continue anyway
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error deleting image:', error);
+                // Continue with equipment deletion even if image deletion fails
+            }
+        }
+
+        // Then delete the equipment
+        await this.delete(`/equipment/${equipmentId}`);
+    }
 }
 
 export default ApiService;

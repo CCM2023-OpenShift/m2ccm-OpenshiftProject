@@ -8,13 +8,7 @@ export class Equipment {
     public mobile!: boolean;
     public imageUrl!: string;
 
-    errors!: object;
-
     private static baseEndpoint: string = `/equipment`;
-
-    public resetErrors(): void {
-        this.errors = {};
-    }
 
     public fromJSON(json: any): Equipment {
         this.id = json?.id;
@@ -47,7 +41,6 @@ export class Equipment {
     public async create(): Promise<Equipment> {
         try {
             const payload = this.toCreate();
-
             const json = await ApiService.post(Equipment.baseEndpoint, payload);
             return this.fromJSON(json);
         } catch (error) {
@@ -66,16 +59,16 @@ export class Equipment {
         }
     }
 
+    // Suppression de l'équipement ET de son image
     public async delete(): Promise<void> {
         try {
-            await ApiService.delete(`${Equipment.baseEndpoint}/${this.id}`);
+            await ApiService.deleteEquipmentWithImage(this.id);
         } catch (error) {
             console.error('Error deleting equipment:', error);
             throw error;
         }
     }
 
-    // Nouvelles méthodes pour la gestion des images
     public async uploadImage(file: File): Promise<{ imageUrl: string }> {
         try {
             const formData = new FormData();
@@ -91,12 +84,35 @@ export class Equipment {
         }
     }
 
+    // Suppression de l'image du storage
     public async deleteImage(): Promise<void> {
         try {
+            if (!this.hasImage()) {
+                return;
+            }
+
+            // Appel API pour supprimer l'image du storage
             await ApiService.delete(`${Equipment.baseEndpoint}/${this.id}/image`);
+
+            // Mettre à jour l'objet local
             this.imageUrl = '';
         } catch (error) {
             console.error('Error deleting image:', error);
+            throw error;
+        }
+    }
+
+    // Méthode pour supprimer une image par URL (pour le cas direct)
+    public static async deleteImageByUrl(imageUrl: string): Promise<void> {
+        try {
+            if (!imageUrl || imageUrl.trim() === '') {
+                return;
+            }
+
+            // Appel à l'endpoint de suppression d'image par URL
+            await ApiService.post('/images/equipments/delete-by-url', { imageUrl });
+        } catch (error) {
+            console.error('Error deleting image by URL:', error);
             throw error;
         }
     }
