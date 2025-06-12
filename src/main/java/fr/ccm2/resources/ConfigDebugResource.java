@@ -1,5 +1,7 @@
 package fr.ccm2.resources;
 
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -10,6 +12,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.util.Optional;
 
 @Path("/debug")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ConfigDebugResource {
 
     @ConfigProperty(name = "app.supabase.key")
@@ -23,6 +27,7 @@ public class ConfigDebugResource {
 
     @GET
     @Path("/key")
+    @RolesAllowed({"admin"})
     @Produces(MediaType.TEXT_PLAIN)
     public String getKey() {
         return supabaseKey.orElse("CLÉS NON DÉFINIE");
@@ -30,6 +35,7 @@ public class ConfigDebugResource {
 
     @GET
     @Path("/supabase-key")
+    @RolesAllowed({"admin"})
     @Produces(MediaType.TEXT_PLAIN)
     public Response getSupabaseKey() {
         try {
@@ -55,6 +61,7 @@ public class ConfigDebugResource {
 
     @GET
     @Path("/supabase-key-full")
+    @RolesAllowed({"admin"})
     @Produces(MediaType.TEXT_PLAIN)
     public Response getSupabaseKeyFull() {
         try {
@@ -69,6 +76,7 @@ public class ConfigDebugResource {
 
     @GET
     @Path("/config")
+    @RolesAllowed({"admin"})
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAllConfig() {
         try {
@@ -88,6 +96,7 @@ public class ConfigDebugResource {
 
     @GET
     @Path("/health")
+    @RolesAllowed({"admin"})
     @Produces(MediaType.TEXT_PLAIN)
     public Response health() {
         return Response.ok("DEBUG ENDPOINT OK").build();
