@@ -73,7 +73,6 @@ export class Equipment {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('fileName', file.name);
 
             const response = await ApiService.postFormData(`${Equipment.baseEndpoint}/${this.id}/image`, formData);
             this.imageUrl = response.imageUrl;
