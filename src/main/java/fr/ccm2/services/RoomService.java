@@ -9,9 +9,11 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class RoomService {
+    private static final Logger LOGGER = Logger.getLogger(RoomService.class.getName());
 
     @Inject
     EntityManager em;
@@ -93,10 +95,16 @@ public class RoomService {
     }
 
     @Transactional
-    public void updateImageUrl(Long id, String imageUrl) {
-        Room room = em.find(Room.class, id);
+    public void updateImageUrl(Long roomId, String imageUrl) {
+        LOGGER.info("Updating room " + roomId + " with image URL: " + imageUrl);
+        Room room = em.find(Room.class, roomId);
         if (room != null) {
             room.setImageUrl(imageUrl);
+            em.merge(room);
+            em.flush();
+            LOGGER.info("Successfully updated image URL for room " + roomId);
+        } else {
+            LOGGER.warning("Room not found with ID: " + roomId);
         }
     }
 

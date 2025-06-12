@@ -3,16 +3,12 @@ package fr.ccm2.services;
 import fr.ccm2.dto.equipment.EquipmentCreateDTO;
 import fr.ccm2.dto.equipment.EquipmentUpdateDTO;
 import fr.ccm2.entities.Equipment;
-import fr.ccm2.entities.Room;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class EquipmentService {
@@ -71,13 +67,15 @@ public class EquipmentService {
     }
 
     @Transactional
-    public Equipment updateImageUrl(Long id, String imageUrl) {
+    public void updateImageUrl(Long id, String imageUrl) {
         Equipment equipment = em.find(Equipment.class, id);
         if (equipment != null) {
             equipment.setImageUrl(imageUrl);
+            em.merge(equipment);
+            em.flush();
         }
-        return equipment;
     }
+
 
     @Transactional
     public void deleteEquipment(Long id) {
@@ -86,6 +84,4 @@ public class EquipmentService {
             em.remove(equipment);
         }
     }
-
-    
 }

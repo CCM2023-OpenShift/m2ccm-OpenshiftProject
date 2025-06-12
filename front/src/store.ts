@@ -166,16 +166,39 @@ export const useStore = create<AppState>((set) => ({
 
     deleteEquipmentImage: async (equipmentId: string) => {
         try {
+            // Find equipment in state using a closure over the set function
+            let currentEquipment: Equipment | undefined;
+
+            set((state) => {
+                // Find the equipment inside the set callback where state is available
+                currentEquipment = state.equipment.find(e => e.id === equipmentId);
+                // Don't change state yet, just return it as is
+                return state;
+            });
+
+            if (!currentEquipment || !currentEquipment.imageUrl) {
+                return;
+            }
+
+            // Create and properly initialize the Equipment instance
             const equipmentInstance = new EquipmentService();
             equipmentInstance.id = equipmentId;
+            equipmentInstance.imageUrl = currentEquipment.imageUrl;
 
+            // Now deleteImage() will work correctly because hasImage() will return true
             await equipmentInstance.deleteImage();
 
+            // Update the state
             set((state) => ({
                 equipment: state.equipment.map((e) =>
-                    e.id === equipmentId ? { ...e, imageUrl: undefined } : e
+                    e.id === equipmentId ? { ...e, imageUrl: '' } : e
                 ),
             }));
+
+            // Optional: Force refresh the equipment data to confirm changes
+            await EquipmentService.getAll().then(data => {
+                set({ equipment: data });
+            });
 
         } catch (error) {
             console.error('Error deleting equipment image:', error);
@@ -189,7 +212,9 @@ export const useStore = create<AppState>((set) => ({
             const roomInstance = new RoomService();
             roomInstance.id = roomId;
 
+            console.log('Uploading image for room:', roomId);
             const result = await roomInstance.uploadImage(file);
+            console.log('Room image upload successful:', result.imageUrl);
 
             set((state) => ({
                 rooms: state.rooms.map((r) =>
@@ -197,6 +222,7 @@ export const useStore = create<AppState>((set) => ({
                 ),
             }));
 
+            return result;
         } catch (error) {
             console.error('Error uploading room image:', error);
             throw error;
@@ -208,7 +234,9 @@ export const useStore = create<AppState>((set) => ({
             const roomInstance = new RoomService();
             roomInstance.id = roomId;
 
+            console.log('Deleting image for room:', roomId);
             await roomInstance.deleteImage();
+            console.log('Room image deleted successfully');
 
             set((state) => ({
                 rooms: state.rooms.map((r) =>
@@ -216,6 +244,10 @@ export const useStore = create<AppState>((set) => ({
                 ),
             }));
 
+            // Force refresh room data
+            await RoomService.getAll().then(data => {
+                set({ rooms: data });
+            });
         } catch (error) {
             console.error('Error deleting room image:', error);
             throw error;

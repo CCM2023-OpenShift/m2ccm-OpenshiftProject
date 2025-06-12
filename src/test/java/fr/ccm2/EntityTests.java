@@ -22,7 +22,7 @@ class EntityTests {
         Room room = new Room();
         room.setName("Salle A");
         room.setCapacity(10);
-        // Suppression de setLocation() car le champ n'existe pas dans Room
+        room.setImageUrl("");
 
         // Persister l'objet
         entityManager.persist(room);

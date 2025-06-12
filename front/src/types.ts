@@ -58,6 +58,6 @@ export interface AppState {
     deleteEquipment: (equipmentId: string) => Promise<void>;
     uploadEquipmentImage: (equipmentId: string, file: File) => Promise<void>;
     deleteEquipmentImage: (equipmentId: string) => Promise<void>;
-    uploadRoomImage: (roomId: string, file: File) => Promise<void>;
+    uploadRoomImage: (roomId: string, file: File) => Promise<{ message: string; imageUrl: string }>;
     deleteRoomImage: (roomId: string) => Promise<void>;
 }

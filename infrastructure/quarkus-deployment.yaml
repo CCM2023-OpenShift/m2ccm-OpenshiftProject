@@ -28,6 +28,22 @@ spec:
                   key: KEYCLOAK_CLIENT_BACKEND_SECRET
             - name: IMAGE_UPLOAD_DIRECTORY
               value: "/uploads/images"
+            - name: APP_SUPABASE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: supabase
+                  key: APP_SUPABASE_KEY
+            - name: PROD_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: quarkus-secrets
+                  key: PROD_DB_PASSWORD
+            - name: PROD_KC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: quarkus-secrets
+                  key: PROD_KC_SECRET
+
           resources:
             requests:
               memory: "512Mi"

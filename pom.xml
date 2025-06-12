@@ -41,7 +41,7 @@
             <artifactId>quarkus-security</artifactId>
         </dependency>
 
-        <!-- ========== API REST (SIMPLE) ========== -->
+        <!-- ========== API REST ========== -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest</artifactId>
@@ -49,6 +49,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client</artifactId>
         </dependency>
 
         <!-- ========== DOCUMENTATION API ========== -->
