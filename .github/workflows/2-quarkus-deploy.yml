@@ -134,11 +134,6 @@ jobs:
           oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
           oc project $OPENSHIFT_PROJECT
 
-      - name: Apply Network Policies
-        run: |
-          echo "🔒 Application des politiques réseau..."
-          oc apply -f infrastructure/networkpolicies.yaml -n $OPENSHIFT_PROJECT
-
       - name: Apply OpenShift Deployment YAML
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
