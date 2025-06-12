@@ -87,9 +87,6 @@ COPY --chown=185 target/quarkus-app/*.jar /deployments/
 COPY --chown=185 target/quarkus-app/app/ /deployments/app/
 COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
 
-# On copie les images à précharger dans /uploads/images
-RUN mkdir -p /uploads/images && chown -R 185:0 /uploads/images
-
 EXPOSE 8080
 
 USER 185

@@ -1,6 +1,7 @@
 package fr.ccm2.resources;
 
 import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -19,7 +20,7 @@ public class DatabaseDebugResource {
 
     @GET
     @Path("/connection-info")
-    @PermitAll
+    @RolesAllowed({"admin"})
     @Produces(MediaType.APPLICATION_JSON)
     public Response getDatabaseConnectionInfo() {
         try (Connection connection = dataSource.getConnection()) {
