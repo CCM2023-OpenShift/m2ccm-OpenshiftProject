@@ -11,7 +11,6 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 
-//debug
 @Path("/debug-db")
 public class DatabaseDebugResource {
 
