@@ -16,6 +16,7 @@ spec:
       containers:
         - name: quarkus-app
           image: image-registry.openshift-image-registry.svc:5000/gregorydhmccm-dev/quarkus-app:latest
+          imagePullPolicy: Always  # Ajoutez cette ligne
           ports:
             - containerPort: 8080
           env:
@@ -51,32 +52,3 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: quarkus-service
-  namespace: gregorydhmccm-dev
-spec:
-  selector:
-    app: quarkus-app
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
-  type: ClusterIP
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: quarkus-route
-  namespace: gregorydhmccm-dev
-spec:
-  to:
-    kind: Service
-    name: quarkus-service
-  port:
-    targetPort: 8080
-  tls:
-    termination: edge
-  wildcardPolicy: None

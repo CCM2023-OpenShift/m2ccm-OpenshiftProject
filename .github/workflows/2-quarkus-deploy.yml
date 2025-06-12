@@ -59,7 +59,7 @@ jobs:
             oc new-build --binary --strategy=docker --name=quarkus-app -n $OPENSHIFT_PROJECT
           else
             echo "🔄 Mise à jour du BuildConfig existant..."
-            oc patch bc quarkus-app -n $OPENSHIFT_PROJECT --type=merge -p '{"spec":{"source":{"dockerfilePath":"src/main/docker/Dockerfile.jvm"}}}'
+            oc patch bc quarkus-app -n $OPENSHIFT_PROJECT --type=merge -p '{"spec":{"source":{"dockerfilePath":"Dockerfile"}}}'
           fi
 
       - name: Configure Build Resources
@@ -92,7 +92,9 @@ jobs:
       - name: Build and Push Image to OpenShift ImageStream
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
+          BUILD_ID: ${{ github.run_id }}-${{ github.run_number }}
         run: |
+          # Utiliser directement le Dockerfile.jvm corrigé
           echo "📝 Préparation du Dockerfile..."
           cp src/main/docker/Dockerfile.jvm Dockerfile
           
@@ -103,6 +105,10 @@ jobs:
             oc logs $BUILD_NAME -n $OPENSHIFT_PROJECT
             exit 1
           }
+          
+          # Tag l'image avec un ID unique
+          echo "🏷️ Tag de l'image avec un ID unique..."
+          oc tag $OPENSHIFT_PROJECT/quarkus-app:latest $OPENSHIFT_PROJECT/quarkus-app:$BUILD_ID
           
           echo "✅ Build terminé avec succès!"
 
@@ -128,12 +134,21 @@ jobs:
           oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
           oc project $OPENSHIFT_PROJECT
 
+      - name: Apply Network Policies
+        run: |
+          echo "🔒 Application des politiques réseau..."
+          oc apply -f infrastructure/networkpolicies.yaml -n $OPENSHIFT_PROJECT
+
       - name: Apply OpenShift Deployment YAML
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
         run: |
           echo "📄 Application des configurations de déploiement..."
           oc apply -f infrastructure/quarkus-deployment.yaml -n $OPENSHIFT_PROJECT
+          
+          # Ajouter imagePullPolicy: Always
+          echo "🔄 Ajout de imagePullPolicy: Always..."
+          oc patch deployment/quarkus-app -p '{"spec":{"template":{"spec":{"containers":[{"name":"quarkus-app","imagePullPolicy":"Always"}]}}}}'
 
       - name: Deploy to OpenShift
         env:
@@ -141,6 +156,9 @@ jobs:
         run: |
           echo "🔄 Mise à jour de l'image du déploiement..."
           oc set image deployment/quarkus-app quarkus-app=image-registry.openshift-image-registry.svc:5000/$OPENSHIFT_PROJECT/quarkus-app:latest
+          
+          echo "🔄 Ajout d'une annotation pour forcer le redéploiement..."
+          oc patch deployment/quarkus-app -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubernetes.io/change-cause\":\"Deployment update $(date +%s)\"}}}}}"
           
           echo "🔄 Redémarrage du déploiement..."
           oc rollout restart deployment/quarkus-app
