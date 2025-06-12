@@ -4,6 +4,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.Optional;
@@ -21,24 +22,74 @@ public class ConfigDebugResource {
     String storageType;
 
     @GET
+    @Path("/key")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getKey() {
+        return supabaseKey.orElse("CLÉS NON DÉFINIE");
+    }
+
+    @GET
     @Path("/supabase-key")
     @Produces(MediaType.TEXT_PLAIN)
-    public String getSupabaseKey() {
-        if (supabaseKey.isPresent()) {
-            return "Supabase Key: " + supabaseKey.get();
-        } else {
-            return "Supabase Key: NON DÉFINIE";
+    public Response getSupabaseKey() {
+        try {
+            String result;
+            if (supabaseKey.isPresent()) {
+                String key = supabaseKey.get();
+                // Masquer partiellement la clé pour la sécurité
+                if (key.length() > 10) {
+                    result = "Supabase Key: " + key.substring(0, 5) + "..." + key.substring(key.length() - 5);
+                } else {
+                    result = "Supabase Key: [MASQUÉ - longueur: " + key.length() + "]";
+                }
+            } else {
+                result = "Supabase Key: NON DÉFINIE";
+            }
+            return Response.ok(result).build();
+        } catch (Exception e) {
+            return Response.status(500)
+                    .entity("Erreur lors de la récupération de la clé: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @GET
+    @Path("/supabase-key-full")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response getSupabaseKeyFull() {
+        try {
+            String result = supabaseKey.orElse("NON DÉFINIE");
+            return Response.ok("Supabase Key Full: " + result).build();
+        } catch (Exception e) {
+            return Response.status(500)
+                    .entity("Erreur lors de la récupération de la clé complète: " + e.getMessage())
+                    .build();
         }
     }
 
     @GET
     @Path("/config")
     @Produces(MediaType.APPLICATION_JSON)
-    public String getAllConfig() {
-        return "{\n" +
-                "  \"storageType\": \"" + storageType + "\",\n" +
-                "  \"supabaseUrl\": \"" + (supabaseUrl.isPresent() ? supabaseUrl.get() : "NON DÉFINIE") + "\",\n" +
-                "  \"supabaseKey\": \"" + (supabaseKey.isPresent() ? supabaseKey.get() : "NON DÉFINIE") + "\"\n" +
-                "}";
+    public Response getAllConfig() {
+        try {
+            String json = "{\n" +
+                    "  \"storageType\": \"" + storageType + "\",\n" +
+                    "  \"supabaseUrl\": \"" + (supabaseUrl.isPresent() ? supabaseUrl.get() : "NON DÉFINIE") + "\",\n" +
+                    "  \"supabaseKeyPresent\": " + supabaseKey.isPresent() + ",\n" +
+                    "  \"supabaseKeyLength\": " + (supabaseKey.isPresent() ? supabaseKey.get().length() : 0) + "\n" +
+                    "}";
+            return Response.ok(json).build();
+        } catch (Exception e) {
+            return Response.status(500)
+                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
+                    .build();
+        }
+    }
+
+    @GET
+    @Path("/health")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response health() {
+        return Response.ok("DEBUG ENDPOINT OK").build();
     }
 }
