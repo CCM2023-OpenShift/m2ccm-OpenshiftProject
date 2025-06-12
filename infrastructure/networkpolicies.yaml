@@ -29,28 +29,4 @@ spec:
       app: quarkus-app
   policyTypes: [Egress]
   egress:
-    # Accès au registre d'images OpenShift
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: openshift-image-registry
-      ports:
-        - protocol: TCP
-          port: 5000
-    # Accès à PostgreSQL
-    - to:
-        - podSelector:
-            matchLabels:
-              app: postgresql
-      ports:
-        - protocol: TCP
-          port: 5432
-    # Accès DNS (nécessaire pour la résolution des noms)
-    - to:
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
-  # Autres connexions requises (ajustez selon vos besoins)
-  # Par exemple, pour les services externes comme Keycloak, ajoutez-les ici
+    - {}
