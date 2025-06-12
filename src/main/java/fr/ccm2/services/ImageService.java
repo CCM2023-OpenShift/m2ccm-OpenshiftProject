@@ -25,7 +25,6 @@ public class ImageService {
     @ConfigProperty(name = "%prod.app.image.upload.directory", defaultValue = "/tmp/uploads/images")
     String localUploadDirectory;
 
-    // Utilisez Optional pour les propriétés qui peuvent ne pas exister
     @ConfigProperty(name = "%prod.app.supabase.url")
     Optional<String> supabaseUrl;
 
