@@ -19,20 +19,20 @@ import java.util.UUID;
 @ApplicationScoped
 public class ImageService {
 
-    @ConfigProperty(name = "app.image.storage.type", defaultValue = "local")
+    @ConfigProperty(name = "%prod.app.image.storage.type", defaultValue = "local")
     String storageType;
 
-    @ConfigProperty(name = "app.image.upload.directory", defaultValue = "/tmp/uploads/images")
+    @ConfigProperty(name = "%prod.app.image.upload.directory", defaultValue = "/tmp/uploads/images")
     String localUploadDirectory;
 
     // Utilisez Optional pour les propriétés qui peuvent ne pas exister
-    @ConfigProperty(name = "app.supabase.url")
+    @ConfigProperty(name = "%prod.app.supabase.url")
     Optional<String> supabaseUrl;
 
-    @ConfigProperty(name = "app.supabase.key")
+    @ConfigProperty(name = "%prod.app.supabase.key")
     Optional<String> supabaseKey;
 
-    @ConfigProperty(name = "app.supabase.bucket", defaultValue = "equipment-images")
+    @ConfigProperty(name = "%prod.app.supabase.bucket", defaultValue = "equipment-images")
     String supabaseBucket;
 
     private static final String EQUIPMENT_FOLDER = "equipments";
