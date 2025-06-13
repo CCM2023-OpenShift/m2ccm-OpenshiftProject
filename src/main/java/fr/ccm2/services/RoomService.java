@@ -31,7 +31,7 @@ public class RoomService {
         Room room = new Room();
         room.setName(dto.name);
         room.setCapacity(dto.capacity);
-        room.setImageUrl(dto.imageUrl);  // Ajout de l'image
+        room.setImageUrl(dto.imageUrl);
 
         em.persist(room);
         em.flush();
@@ -61,7 +61,7 @@ public class RoomService {
         room.setName(dto.name);
         room.setCapacity(dto.capacity);
         if (dto.imageUrl != null) {
-            room.setImageUrl(dto.imageUrl);  // Mise à jour de l'image
+            room.setImageUrl(dto.imageUrl);
         }
 
         List<RoomEquipment> currentEquipments = em.createQuery(

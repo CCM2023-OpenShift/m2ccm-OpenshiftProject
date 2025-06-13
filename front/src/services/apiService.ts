@@ -146,6 +146,14 @@ class ApiService {
         return response.json();
     }
 
+    public static async deleteWithBody(endpoint: string, data: any): Promise<any> {
+        return this.fetchAuthenticated(endpoint, {
+            method: 'DELETE',
+            body: JSON.stringify(data)
+        });
+    }
+
+    // ✅ Amélioration de deleteEquipmentWithImage pour plus de robustesse
     public static async deleteEquipmentWithImage(equipmentId: string): Promise<void> {
         await this.ensureAuthenticated();
 
@@ -153,27 +161,39 @@ class ApiService {
         const equipment = await this.get(`/equipment/${equipmentId}`);
 
         if (equipment?.imageUrl) {
-            // Delete the image first
+            // Delete the image first via equipment endpoint
             console.log(`Deleting image for equipment ${equipmentId}: ${equipment.imageUrl}`);
             try {
                 await this.delete(`/equipment/${equipmentId}/image`);
-
-                const fileName = equipment.imageUrl.split('/').pop();
-                if (fileName) {
-                    try {
-                        await this.delete(`/images/equipments/${fileName}`);
-                    } catch (imageError) {
-                        console.warn('Could not delete physical image file:', imageError);
-                        // Continue anyway
-                    }
-                }
             } catch (error) {
-                console.error('Error deleting image:', error);
+                console.error('Error deleting image via equipment endpoint:', error);
+                // Continue anyway
             }
         }
 
         // Then delete the equipment
         await this.delete(`/equipment/${equipmentId}`);
+    }
+
+    // ✅ Nouvelle méthode pour supprimer room avec image
+    public static async deleteRoomWithImage(roomId: string): Promise<void> {
+        await this.ensureAuthenticated();
+
+        // First get the room to check if it has an image
+        const room = await this.get(`/rooms/${roomId}`);
+
+        if (room?.imageUrl) {
+            console.log(`Deleting image for room ${roomId}: ${room.imageUrl}`);
+            try {
+                await this.delete(`/rooms/${roomId}/image`);
+            } catch (error) {
+                console.error('Error deleting room image:', error);
+                // Continue anyway
+            }
+        }
+
+        // Then delete the room
+        await this.delete(`/rooms/${roomId}`);
     }
 }
 

@@ -50,13 +50,13 @@ export interface AppState {
     fetchEquipment: () => Promise<void>;
     fetchEquipmentFixed: () => Promise<void>;
     fetchBookings: () => Promise<void>;
-    addRoom: (room: Partial<Room>) => Promise<void>;
-    updateRoom: (room: Room) => Promise<void>;
+    addRoom: (room: Partial<Room>) => Promise<Room>
+    updateRoom: (room: Room) => Promise<Room>;
     deleteRoom: (roomId: string) => Promise<void>;
     addEquipment: (equipment: Partial<Equipment>) => Promise<Equipment>;
     updateEquipment: (equipment: Equipment) => Promise<Equipment>;
     deleteEquipment: (equipmentId: string) => Promise<void>;
-    uploadEquipmentImage: (equipmentId: string, file: File) => Promise<void>;
+    uploadEquipmentImage: (equipmentId: string, file: File) => Promise<{ imageUrl: string }>;
     deleteEquipmentImage: (equipmentId: string) => Promise<void>;
     uploadRoomImage: (roomId: string, file: File) => Promise<{ message: string; imageUrl: string }>;
     deleteRoomImage: (roomId: string) => Promise<void>;

@@ -77,7 +77,7 @@ export class Room {
 
     public async delete(): Promise<void> {
         try {
-            await ApiService.delete(`${Room.baseEndpoint}/${this.id}`);
+            await ApiService.deleteRoomWithImage(this.id);
         } catch (error) {
             console.error('Error deleting room:', error);
             throw error;
@@ -88,7 +88,7 @@ export class Room {
     public async uploadImage(file: File): Promise<{ message: string; imageUrl: string }> {
         try {
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append('file', file);
 
             const result = await ApiService.postFormData(`${Room.baseEndpoint}/${this.id}/image`, formData);
             this.imageUrl = result.imageUrl;
@@ -106,6 +106,21 @@ export class Room {
             return result;
         } catch (error) {
             console.error('Error deleting room image:', error);
+            throw error;
+        }
+    }
+
+    // Méthode pour supprimer une image room par URL (comme Equipment)
+    public static async deleteImageByUrl(imageUrl: string): Promise<void> {
+        try {
+            if (!imageUrl || imageUrl.trim() === '') {
+                return;
+            }
+
+            // Appel à l'endpoint de suppression d'image room par URL
+            await ApiService.post('/images/rooms/delete-by-url', { imageUrl });
+        } catch (error) {
+            console.error('Error deleting room image by URL:', error);
             throw error;
         }
     }
