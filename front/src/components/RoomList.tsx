@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { Monitor, Users, Plus, Edit, Trash, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { Room } from '../types';
+import { useImageValidation } from '../hooks/useImageValidation';
 
 export const RoomList = () => {
     const {
@@ -26,6 +27,8 @@ export const RoomList = () => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+    const { loading, validateFile, getMaxSizeMB, getAcceptedTypes, getAcceptedExtensions, isConfigReady } = useImageValidation('room');
+
     useEffect(() => {
         void fetchRooms();
         void fetchEquipmentFixed();
@@ -33,24 +36,27 @@ export const RoomList = () => {
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Veuillez sélectionner un fichier image valide');
-                return;
-            }
+        if (!file) return;
 
-            if (file.size > 2 * 1024 * 1024) {
-                alert('La taille de l\'image ne doit pas dépasser 2MB');
-                return;
-            }
-
-            setImageFile(file);
-            const reader = new FileReader();
-            reader.onload = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+        if (!isConfigReady()) {
+            alert('Configuration en cours de chargement, veuillez patienter...');
+            e.target.value = '';
+            return;
         }
+
+        const error = validateFile(file);
+        if (error) {
+            alert(error);
+            e.target.value = '';
+            return;
+        }
+
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onload = () => {
+            setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -313,11 +319,15 @@ export const RoomList = () => {
                                     )}
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept={getAcceptedTypes()} // ✅ Types dynamiques depuis backend
                                         onChange={handleImageChange}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
                                 </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {loading ? 'Chargement configuration...' :
+                                        `Max: ${getMaxSizeMB()}MB, formats: ${getAcceptedExtensions()}`}
+                                </p>
                             </div>
 
                             {equipment.filter((re) => !re.mobile).length > 0 && (

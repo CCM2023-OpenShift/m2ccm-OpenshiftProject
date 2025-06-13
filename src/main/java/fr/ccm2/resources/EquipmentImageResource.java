@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.annotation.security.RolesAllowed;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.io.IOException;
@@ -14,6 +15,30 @@ public class EquipmentImageResource {
 
     @Inject
     ImageService imageService;
+
+    @GET
+    @Path("/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"user", "admin"})
+    public Response getUploadConfig() {
+        try {
+            ImageService.UploadConfig config = imageService.getUploadConfig();
+
+            // Format JSON exact comme demandé
+            String jsonResponse = String.format(
+                    "{\"maxFileSize\":%d,\"allowedExtensions\":%s,\"allowedMimeTypes\":%s}",
+                    config.maxFileSize,
+                    config.allowedExtensions.toString().replace(" ", ""),
+                    config.allowedMimeTypes.toString().replace(" ", "")
+            );
+
+            return Response.ok(jsonResponse).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"Erreur lors de la récupération de la configuration\"}")
+                    .build();
+        }
+    }
 
     @GET
     @Path("/{fileName}")
