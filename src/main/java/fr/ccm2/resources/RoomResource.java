@@ -11,10 +11,11 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
-import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Path("/rooms")
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 public class RoomResource {
 
-    private static final Logger LOG = Logger.getLogger(RoomResource.class);
+    private static final Logger LOGGER = Logger.getLogger(RoomResource.class.getName());
 
     @Inject
     RoomService roomService;
@@ -41,6 +42,7 @@ public class RoomResource {
 
             return Response.ok(response).build();
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error fetching rooms", e);
             return Response.serverError().entity("Erreur serveur: " + e.getMessage()).build();
         }
     }
@@ -58,6 +60,7 @@ public class RoomResource {
     }
 
     @POST
+    @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin"})
     public Response create(RoomCreateDTO dto) {
         Room room = roomService.createRoom(dto);
@@ -90,54 +93,8 @@ public class RoomResource {
             RoomResponseDTO responseDTO = RoomMapper.toResponse(room, true);
             return Response.ok(responseDTO).build();
         } catch (Exception e) {
-            // Remplacer printStackTrace() par un logging approprié
-            LOG.error("Erreur lors de la mise à jour de la salle ID=" + id, e);
+            LOGGER.log(Level.SEVERE, "Erreur lors de la mise à jour de la salle ID=" + id, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Erreur serveur : " + e.getMessage()).build();
-        }
-    }
-
-    @DELETE
-    @Path("/{id}")
-    @RolesAllowed({"admin"})
-    public Response delete(@PathParam("id") Long id) {
-        roomService.deleteRoom(id);
-        return Response.noContent().build();
-    }
-
-    // ========== ENDPOINTS POUR LES IMAGES DES SALLES ==========
-
-    @POST
-    @Path("/{id}/image")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"admin"})
-    public Response uploadImage(@PathParam("id") Long roomId,
-                                @FormParam("image") FileUpload imageFile) {
-        try {
-            Room room = roomService.getRoomById(roomId);
-            if (room == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity("Salle non trouvée")
-                        .build();
-            }
-
-            String imageUrl = imageService.saveRoomImage(imageFile);
-            roomService.updateImageUrl(roomId, imageUrl);
-
-            return Response.ok()
-                    .entity("{\"message\": \"Image uploadée avec succès\", \"imageUrl\": \"" + imageUrl + "\"}")
-                    .build();
-
-        } catch (IllegalArgumentException e) {
-            LOG.warn("Tentative d'upload d'image invalide: " + e.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
-        } catch (IOException e) {
-            LOG.error("Erreur lors de l'upload d'image pour la salle ID=" + roomId, e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"Erreur lors de la sauvegarde de l'image\"}")
-                    .build();
         }
     }
 
@@ -146,55 +103,108 @@ public class RoomResource {
     @RolesAllowed({"admin"})
     public Response deleteImage(@PathParam("id") Long roomId) {
         try {
+            LOGGER.info("🔍 Starting image deletion for room ID: " + roomId);
+
             Room room = roomService.getRoomById(roomId);
             if (room == null) {
+                LOGGER.warning("Room not found with ID: " + roomId);
                 return Response.status(Response.Status.NOT_FOUND)
-                        .entity("Salle non trouvée")
-                        .build();
+                        .entity("{\"error\": \"Salle non trouvée\"}").build();
             }
 
-            if (room.getImageUrl() != null) {
-                imageService.deleteRoomImageFile(room.getImageUrl());
-                roomService.updateImageUrl(roomId, null);
+            String imageUrl = room.getImageUrl();
+            LOGGER.info("Current image URL: " + imageUrl);
+
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                try {
+                    LOGGER.info("Deleting physical image file: " + imageUrl);
+                    imageService.deleteRoomImageFile(imageUrl);
+                    LOGGER.info("Physical image file deleted successfully");
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Error deleting physical image file: " + e.getMessage(), e);
+                    // Continue with database update even if physical deletion fails
+                }
+            } else {
+                LOGGER.info("No image URL to delete");
             }
+
+            LOGGER.info("Updating room to remove image URL reference");
+            roomService.updateImageUrl(roomId, null);
+            LOGGER.info("Database updated successfully");
 
             return Response.ok()
                     .entity("{\"message\": \"Image supprimée avec succès\"}")
                     .build();
-
-        } catch (IOException e) {
-            LOG.error("Erreur lors de la suppression d'image pour la salle ID=" + roomId, e);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error in deleteImage: " + e.getMessage(), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"Erreur lors de la suppression de l'image\"}")
-                    .build();
+                    .entity("{\"error\": \"Erreur lors de la suppression de l'image: " + e.getMessage() + "\"}").build();
         }
     }
 
-    // ========== ENDPOINT POUR SERVIR LES IMAGES DES SALLES ==========
-
-    @GET
-    @Path("/images/{fileName}")
-    @Produces("image/*")
-    public Response getRoomImage(@PathParam("fileName") String fileName) {
+    @DELETE
+    @Path("/{id}")
+    @RolesAllowed({"admin"})
+    public Response delete(@PathParam("id") Long id) {
         try {
-            byte[] imageData = imageService.getRoomImage(fileName);
-            if (imageData == null) {
+            Room room = roomService.getRoomById(id);
+            if (room == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
 
-            String contentType = imageService.getRoomContentType(fileName);
-            if (contentType == null) {
-                contentType = "application/octet-stream";
+            // Handle image deletion before deleting the room
+            if (room.getImageUrl() != null && !room.getImageUrl().trim().isEmpty()) {
+                try {
+                    imageService.deleteRoomImageFile(room.getImageUrl());
+                    LOGGER.info("Image deleted for room: " + id);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Failed to delete image: " + e.getMessage(), e);
+                    // Continue with room deletion even if image deletion fails
+                }
             }
 
-            return Response.ok(imageData, contentType).build();
+            roomService.deleteRoom(id);
+            return Response.noContent().build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error deleting room: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"" + e.getMessage() + "\"}").build();
+        }
+    }
 
-        } catch (SecurityException e) {
-            LOG.warn("Tentative d'accès non autorisé à l'image: " + fileName, e);
-            return Response.status(Response.Status.BAD_REQUEST).build();
+    // ========== ENDPOINTS POUR LES IMAGES ==========
+
+    @POST
+    @Path("/{id}/image")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin"})
+    public Response uploadImage(@PathParam("id") Long roomId,
+                                @FormParam("file") FileUpload file) {
+        try {
+            if (roomService.getRoomById(roomId) == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\": \"Salle non trouvée\"}").build();
+            }
+            if (file == null || file.size() == 0) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("{\"error\": \"Aucun fichier fourni\"}").build();
+            }
+
+            String imageUrl = imageService.saveRoomImage(file);
+            roomService.updateImageUrl(roomId, imageUrl);
+
+            return Response.ok()
+                    .entity("{\"message\": \"Image uploadée avec succès\", \"imageUrl\": \"" + imageUrl + "\"}")
+                    .build();
+
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"error\": \"" + e.getMessage() + "\"}").build();
         } catch (IOException e) {
-            LOG.error("Erreur lors de la récupération de l'image: " + fileName, e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+            LOGGER.log(Level.SEVERE, "Error saving room image", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"Erreur lors de la sauvegarde de l'image\"}").build();
         }
     }
 }

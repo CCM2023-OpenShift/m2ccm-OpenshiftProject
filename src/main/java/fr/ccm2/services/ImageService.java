@@ -31,8 +31,11 @@ public class ImageService {
     @ConfigProperty(name = "%prod.app.supabase.key")
     Optional<String> supabaseKey;
 
-    @ConfigProperty(name = "%prod.app.supabase.bucket", defaultValue = "equipment-images")
-    String supabaseBucket;
+    @ConfigProperty(name = "%prod.app.supabase.equipment.bucket", defaultValue = "equipment-images")
+    String equipmentBucket;
+
+    @ConfigProperty(name = "%prod.app.supabase.rooms.bucket", defaultValue = "rooms_images")
+    String roomsBucket;
 
     private static final String EQUIPMENT_FOLDER = "equipments";
     private static final String ROOM_FOLDER = "rooms";
@@ -42,7 +45,7 @@ public class ImageService {
 
     // ========== MÉTHODES POUR ÉQUIPEMENTS ==========
     public String saveImage(FileUpload fileUpload) throws IOException {
-        return uploadImageToFolder(fileUpload, EQUIPMENT_FOLDER);
+        return uploadImageToFolder(fileUpload, EQUIPMENT_FOLDER, equipmentBucket);
     }
 
     public byte[] getImage(String fileName) throws IOException {
@@ -50,12 +53,12 @@ public class ImageService {
     }
 
     public void deleteImageFile(String imageUrl) throws IOException {
-        deleteImageFromFolder(imageUrl, EQUIPMENT_FOLDER);
+        deleteImageFromFolder(imageUrl, EQUIPMENT_FOLDER, equipmentBucket);
     }
 
     // ========== MÉTHODES POUR SALLES ==========
     public String saveRoomImage(FileUpload fileUpload) throws IOException {
-        return uploadImageToFolder(fileUpload, ROOM_FOLDER);
+        return uploadImageToFolder(fileUpload, ROOM_FOLDER, roomsBucket);
     }
 
     public byte[] getRoomImage(String fileName) throws IOException {
@@ -63,7 +66,7 @@ public class ImageService {
     }
 
     public void deleteRoomImageFile(String imageUrl) throws IOException {
-        deleteImageFromFolder(imageUrl, ROOM_FOLDER);
+        deleteImageFromFolder(imageUrl, ROOM_FOLDER, roomsBucket);
     }
 
     public String getRoomContentType(String fileName) throws IOException {
@@ -71,7 +74,7 @@ public class ImageService {
     }
 
     // ========== MÉTHODES COMMUNES ==========
-    private String uploadImageToFolder(FileUpload fileUpload, String folder) throws IOException {
+    private String uploadImageToFolder(FileUpload fileUpload, String folder, String bucket) throws IOException {
         validateFile(fileUpload);
 
         String originalFileName = fileUpload.fileName();
@@ -82,7 +85,7 @@ public class ImageService {
             uploadImageLocal(fileUpload, fileName, folder);
             return "/images/" + folder + "/" + fileName;
         } else if ("supabase".equals(storageType)) {
-            return uploadImageSupabase(fileUpload, fileName, folder);
+            return uploadImageSupabase(fileUpload, fileName, folder, bucket);
         } else {
             throw new IllegalStateException("Type de stockage inconnu: " + storageType);
         }
@@ -97,13 +100,13 @@ public class ImageService {
         throw new IllegalStateException("Type de stockage inconnu: " + storageType);
     }
 
-    private void deleteImageFromFolder(String imageUrl, String folder) throws IOException {
-        System.out.println("Suppression demandée pour: " + imageUrl + " (folder: " + folder + ")");
+    private void deleteImageFromFolder(String imageUrl, String folder, String bucket) throws IOException {
+        System.out.println("Suppression demandée pour: " + imageUrl + " (folder: " + folder + ", bucket: " + bucket + ")");
 
         if ("local".equals(storageType)) {
             deleteImageLocal(imageUrl, folder);
         } else if ("supabase".equals(storageType)) {
-            deleteImageSupabase(imageUrl);
+            deleteImageSupabase(imageUrl, bucket);
         }
     }
 
@@ -162,8 +165,7 @@ public class ImageService {
     }
 
     // ========== IMPLÉMENTATIONS SUPABASE ==========
-    private String uploadImageSupabase(FileUpload file, String fileName, String folder) throws IOException {
-        // Vérifiez si les configurations Supabase sont présentes
+    private String uploadImageSupabase(FileUpload file, String fileName, String folder, String bucket) throws IOException {
         if (supabaseUrl.isEmpty() || supabaseKey.isEmpty()) {
             throw new IllegalStateException("Configuration Supabase manquante en mode production");
         }
@@ -171,9 +173,9 @@ public class ImageService {
         try {
             byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
             String objectPath = folder + "/" + fileName;
-            String uploadUrl = supabaseUrl.get() + "/storage/v1/object/" + supabaseBucket + "/" + objectPath;
+            String uploadUrl = supabaseUrl.get() + "/storage/v1/object/" + bucket + "/" + objectPath;
 
-            System.out.println("Upload Supabase vers: " + uploadUrl);
+            System.out.println("Upload Supabase vers: " + uploadUrl + " (bucket: " + bucket + ")");
 
             try (Response response = client.target(uploadUrl)
                     .request()
@@ -182,7 +184,7 @@ public class ImageService {
                     .post(Entity.entity(fileBytes, MediaType.APPLICATION_OCTET_STREAM))) {
 
                 if (response.getStatus() == 200 || response.getStatus() == 201) {
-                    String publicUrl = supabaseUrl.get() + "/storage/v1/object/public/" + supabaseBucket + "/" + objectPath;
+                    String publicUrl = supabaseUrl.get() + "/storage/v1/object/public/" + bucket + "/" + objectPath;
                     System.out.println("Image uploadée sur Supabase: " + publicUrl);
                     return publicUrl;
                 } else {
@@ -195,23 +197,24 @@ public class ImageService {
         }
     }
 
-    private void deleteImageSupabase(String imageUrl) throws IOException {
+    private void deleteImageSupabase(String imageUrl, String bucket) throws IOException {
         if (supabaseUrl.isEmpty() || supabaseKey.isEmpty()) {
             System.out.println("Configuration Supabase manquante, suppression ignorée");
             return;
         }
 
-        if (imageUrl == null || !imageUrl.contains(supabaseBucket)) {
-            System.out.println("URL Supabase invalide: " + imageUrl);
+        if (imageUrl == null || !imageUrl.contains(bucket)) {
+            System.out.println("URL Supabase invalide pour bucket " + bucket + ": " + imageUrl);
             return;
         }
 
         try {
-            String objectPath = getString(imageUrl);
-            String deleteUrl = supabaseUrl.get() + "/storage/v1/object/" + supabaseBucket + "/" + objectPath;
+            String objectPath = getObjectPath(imageUrl, bucket);
+            String deleteUrl = supabaseUrl.get() + "/storage/v1/object/" + bucket + "/" + objectPath;
 
             System.out.println("   Suppression Supabase:");
             System.out.println("   URL originale: " + imageUrl);
+            System.out.println("   Bucket: " + bucket);
             System.out.println("   Object path: " + objectPath);
             System.out.println("   Delete URL: " + deleteUrl);
 
@@ -234,13 +237,13 @@ public class ImageService {
         }
     }
 
-    private String getString(String imageUrl) {
+    private String getObjectPath(String imageUrl, String bucket) {
         String objectPath;
-        if (imageUrl.contains("/storage/v1/object/public/" + supabaseBucket + "/")) {
-            objectPath = imageUrl.substring(imageUrl.indexOf("/storage/v1/object/public/" + supabaseBucket + "/") +
-                    ("/storage/v1/object/public/" + supabaseBucket + "/").length());
+        if (imageUrl.contains("/storage/v1/object/public/" + bucket + "/")) {
+            objectPath = imageUrl.substring(imageUrl.indexOf("/storage/v1/object/public/" + bucket + "/") +
+                    ("/storage/v1/object/public/" + bucket + "/").length());
         } else {
-            objectPath = imageUrl.substring(imageUrl.indexOf(supabaseBucket) + supabaseBucket.length() + 1);
+            objectPath = imageUrl.substring(imageUrl.indexOf(bucket) + bucket.length() + 1);
         }
         return objectPath;
     }

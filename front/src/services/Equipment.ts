@@ -108,8 +108,7 @@ export class Equipment {
                 return;
             }
 
-            // Appel à l'endpoint de suppression d'image par URL
-            await ApiService.post('/images/equipments/delete-by-url', { imageUrl });
+            await ApiService.deleteWithBody('/images/equipments', { imageUrl });
         } catch (error) {
             console.error('Error deleting image by URL:', error);
             throw error;

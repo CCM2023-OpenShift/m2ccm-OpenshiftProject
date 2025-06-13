@@ -9,8 +9,8 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.io.IOException;
 
-@Path("/images/equipments")
-public class ImageResource {
+@Path("/images/rooms")
+public class RoomImageResource {
 
     @Inject
     ImageService imageService;
@@ -19,12 +19,12 @@ public class ImageResource {
     @Path("/{fileName}")
     public Response getImage(@PathParam("fileName") String fileName) {
         try {
-            byte[] imageData = imageService.getImage(fileName);
+            byte[] imageData = imageService.getRoomImage(fileName);
             if (imageData == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
 
-            String contentType = imageService.getContentType(fileName);
+            String contentType = imageService.getRoomContentType(fileName);
             if (contentType == null) {
                 contentType = "application/octet-stream";
             }
@@ -50,7 +50,7 @@ public class ImageResource {
                         .entity("{\"error\": \"Aucun fichier fourni\"}").build();
             }
 
-            String imageUrl = imageService.saveImage(file);
+            String imageUrl = imageService.saveRoomImage(file);
             return Response.ok("{\"imageUrl\":\"" + imageUrl + "\"}").build();
 
         } catch (IllegalArgumentException e) {
@@ -62,13 +62,12 @@ public class ImageResource {
         }
     }
 
-    // Accepter les URLs complètes pour la suppression
     @DELETE
     @Path("/{fileName}")
     public Response deleteImage(@PathParam("fileName") String fileName) {
         try {
-            System.out.println("🗑️ DELETE /images/equipments/" + fileName);
-            imageService.deleteImage(fileName);
+            System.out.println("🗑️ DELETE /images/rooms/" + fileName);
+            imageService.deleteRoomImageFile("/images/rooms/" + fileName);
             return Response.ok("{\"message\": \"Image supprimée avec succès\"}").build();
 
         } catch (IOException e) {
@@ -78,16 +77,14 @@ public class ImageResource {
         }
     }
 
-    // Endpoint pour supprimer par URL complète
     @DELETE
     @Consumes(MediaType.APPLICATION_JSON)
     public Response deleteImageByUrl(String requestBody) {
         try {
-            // Parse simple du JSON pour récupérer l'URL
             String imageUrl = requestBody.replaceAll(".*\"imageUrl\"\\s*:\\s*\"([^\"]+)\".*", "$1");
 
-            System.out.println("🗑️ DELETE par URL: " + imageUrl);
-            imageService.deleteImageFile(imageUrl);
+            System.out.println("🗑️ DELETE room image par URL: " + imageUrl);
+            imageService.deleteRoomImageFile(imageUrl);
             return Response.ok("{\"message\": \"Image supprimée avec succès\"}").build();
 
         } catch (IOException e) {

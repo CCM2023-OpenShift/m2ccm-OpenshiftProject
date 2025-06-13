@@ -5,10 +5,11 @@ import { Equipment as EquipmentService } from './services/Equipment';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-export const useStore = create<AppState>((set) => ({
+export const useStore = create<AppState>((set, get) => ({
     rooms: [],
     equipment: [],
     bookings: [],
+
     fetchRooms: async () => {
         try {
             const data = await RoomService.getAll();
@@ -17,6 +18,7 @@ export const useStore = create<AppState>((set) => ({
             console.error('Error fetching rooms:', error);
         }
     },
+
     fetchEquipment: async () => {
         try {
             const data = await EquipmentService.getAll();
@@ -25,6 +27,7 @@ export const useStore = create<AppState>((set) => ({
             console.error('Error fetching equipment:', error);
         }
     },
+
     fetchEquipmentFixed: async () => {
         try {
             const allEquipment = await EquipmentService.getAll();
@@ -34,9 +37,9 @@ export const useStore = create<AppState>((set) => ({
             console.error('Error fetching fixed equipment:', error);
         }
     },
+
     fetchBookings: async () => {
         try {
-            // Use the API_URL from environment variables
             const response = await fetch(`${API_URL}/bookings`);
             const data = await response.json();
             set({ bookings: data });
@@ -44,17 +47,20 @@ export const useStore = create<AppState>((set) => ({
             console.error('Error fetching bookings:', error);
         }
     },
+
     addRoom: async (room: Partial<Room>) => {
         try {
             const newRoom = new RoomService();
             Object.assign(newRoom, room);
             const createdRoom = await newRoom.create();
             set((state) => ({ rooms: [...state.rooms, createdRoom] }));
+            return createdRoom;
         } catch (error) {
             console.error('Error adding room:', error);
             throw error;
         }
     },
+
     updateRoom: async (room: Room) => {
         try {
             const roomInstance = new RoomService();
@@ -63,11 +69,13 @@ export const useStore = create<AppState>((set) => ({
             set((state) => ({
                 rooms: state.rooms.map((r) => (r.id === updatedRoom.id ? updatedRoom : r)),
             }));
+            return updatedRoom;
         } catch (error) {
             console.error('Error updating room:', error);
             throw error;
         }
     },
+
     deleteRoom: async (roomId: string) => {
         try {
             const roomService = new RoomService();
@@ -81,6 +89,7 @@ export const useStore = create<AppState>((set) => ({
             throw error;
         }
     },
+
     addEquipment: async (equipment: Partial<Equipment>): Promise<Equipment> => {
         try {
             const newEquipment = new EquipmentService();
@@ -103,6 +112,7 @@ export const useStore = create<AppState>((set) => ({
             throw error;
         }
     },
+
     updateEquipment: async (equipment: Equipment): Promise<Equipment> => {
         try {
             const equipmentInstance = new EquipmentService();
@@ -130,6 +140,7 @@ export const useStore = create<AppState>((set) => ({
             throw error;
         }
     },
+
     deleteEquipment: async (equipmentId: string) => {
         try {
             const equipmentInstance = new EquipmentService();
@@ -158,6 +169,7 @@ export const useStore = create<AppState>((set) => ({
                 ),
             }));
 
+            return result;
         } catch (error) {
             console.error('Error uploading equipment image:', error);
             throw error;
@@ -166,39 +178,27 @@ export const useStore = create<AppState>((set) => ({
 
     deleteEquipmentImage: async (equipmentId: string) => {
         try {
-            // Find equipment in state using a closure over the set function
-            let currentEquipment: Equipment | undefined;
-
-            set((state) => {
-                // Find the equipment inside the set callback where state is available
-                currentEquipment = state.equipment.find(e => e.id === equipmentId);
-                // Don't change state yet, just return it as is
-                return state;
-            });
+            // Utiliser get() pour accéder à l'état actuel
+            const currentEquipment = get().equipment.find(e => e.id === equipmentId);
 
             if (!currentEquipment || !currentEquipment.imageUrl) {
                 return;
             }
 
-            // Create and properly initialize the Equipment instance
             const equipmentInstance = new EquipmentService();
             equipmentInstance.id = equipmentId;
             equipmentInstance.imageUrl = currentEquipment.imageUrl;
 
-            // Now deleteImage() will work correctly because hasImage() will return true
             await equipmentInstance.deleteImage();
 
-            // Update the state
             set((state) => ({
                 equipment: state.equipment.map((e) =>
                     e.id === equipmentId ? { ...e, imageUrl: '' } : e
                 ),
             }));
 
-            // Optional: Force refresh the equipment data to confirm changes
-            await EquipmentService.getAll().then(data => {
-                set({ equipment: data });
-            });
+            const refreshedData = await EquipmentService.getAll();
+            set({ equipment: refreshedData });
 
         } catch (error) {
             console.error('Error deleting equipment image:', error);
@@ -206,7 +206,7 @@ export const useStore = create<AppState>((set) => ({
         }
     },
 
-    // ========== NOUVELLES MÉTHODES POUR LES IMAGES DES SALLES ==========
+    // ========== MÉTHODES POUR LES IMAGES DES SALLES ==========
     uploadRoomImage: async (roomId: string, file: File) => {
         try {
             const roomInstance = new RoomService();
@@ -244,10 +244,8 @@ export const useStore = create<AppState>((set) => ({
                 ),
             }));
 
-            // Force refresh room data
-            await RoomService.getAll().then(data => {
-                set({ rooms: data });
-            });
+            const refreshedData = await RoomService.getAll();
+            set({ rooms: refreshedData });
         } catch (error) {
             console.error('Error deleting room image:', error);
             throw error;
