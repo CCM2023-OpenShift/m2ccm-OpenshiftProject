@@ -11,9 +11,12 @@ on:
       - main
     paths:
       - 'src/**'
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.set-tag.outputs.tag }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -24,6 +27,14 @@ jobs:
           java-version: 21
           distribution: temurin
           cache: maven
+
+      # ✅ NOUVEAU : Générer un tag unique
+      - name: Generate unique image tag
+        id: set-tag
+        run: |
+          TAG="v$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::8}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "📦 Tag de l'image: $TAG"
 
       - name: Build Quarkus Application
         run: ./mvnw clean package -DskipTests
@@ -92,13 +103,13 @@ jobs:
       - name: Build and Push Image to OpenShift ImageStream
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
-          BUILD_ID: ${{ github.run_id }}-${{ github.run_number }}
+          IMAGE_TAG: ${{ steps.set-tag.outputs.tag }}
         run: |
           # Utiliser directement le Dockerfile.jvm corrigé
           echo "📝 Préparation du Dockerfile..."
           cp src/main/docker/Dockerfile.jvm Dockerfile
           
-          echo "🚀 Démarrage d'un nouveau build..."
+          echo "🚀 Démarrage d'un nouveau build avec tag $IMAGE_TAG..."
           timeout 15m oc start-build quarkus-app --from-dir=. --follow -n $OPENSHIFT_PROJECT || {
             echo "❌ Build échoué, vérification des logs..."
             BUILD_NAME=$(oc get builds -l buildconfig=quarkus-app -n $OPENSHIFT_PROJECT --sort-by=.metadata.creationTimestamp -o name | tail -n 1)
@@ -106,11 +117,11 @@ jobs:
             exit 1
           }
           
-          # Tag l'image avec un ID unique
-          echo "🏷️ Tag de l'image avec un ID unique..."
-          oc tag $OPENSHIFT_PROJECT/quarkus-app:latest $OPENSHIFT_PROJECT/quarkus-app:$BUILD_ID
+          # ✅ Tag l'image avec le tag unique ET latest
+          echo "🏷️ Tag de l'image avec $IMAGE_TAG et latest..."
+          oc tag $OPENSHIFT_PROJECT/quarkus-app:latest $OPENSHIFT_PROJECT/quarkus-app:$IMAGE_TAG
           
-          echo "✅ Build terminé avec succès!"
+          echo "✅ Build terminé avec succès! Tag: $IMAGE_TAG"
 
   deploy:
     needs: build-and-push
@@ -140,23 +151,22 @@ jobs:
         run: |
           echo "📄 Application des configurations de déploiement..."
           oc apply -f infrastructure/quarkus-deployment.yaml -n $OPENSHIFT_PROJECT
-          
-          # Ajouter imagePullPolicy: Always
-          echo "🔄 Ajout de imagePullPolicy: Always..."
-          oc patch deployment/quarkus-app -p '{"spec":{"template":{"spec":{"containers":[{"name":"quarkus-app","imagePullPolicy":"Always"}]}}}}'
 
-      - name: Deploy to OpenShift
+      - name: Deploy to OpenShift with unique tag
         env:
           OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
         run: |
-          echo "🔄 Mise à jour de l'image du déploiement..."
-          oc set image deployment/quarkus-app quarkus-app=image-registry.openshift-image-registry.svc:5000/$OPENSHIFT_PROJECT/quarkus-app:latest
+          echo "🔄 Déploiement avec le tag unique: $IMAGE_TAG"
+          
+          # ✅ Utiliser le tag unique au lieu de latest
+          oc set image deployment/quarkus-app quarkus-app=image-registry.openshift-image-registry.svc:5000/$OPENSHIFT_PROJECT/quarkus-app:$IMAGE_TAG
+          
+          # ✅ Force imagePullPolicy: Always
+          oc patch deployment/quarkus-app -p '{"spec":{"template":{"spec":{"containers":[{"name":"quarkus-app","imagePullPolicy":"Always"}]}}}}'
           
           echo "🔄 Ajout d'une annotation pour forcer le redéploiement..."
-          oc patch deployment/quarkus-app -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubernetes.io/change-cause\":\"Deployment update $(date +%s)\"}}}}}"
-          
-          echo "🔄 Redémarrage du déploiement..."
-          oc rollout restart deployment/quarkus-app
+          oc patch deployment/quarkus-app -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"deployment.kubernetes.io/revision\":\"$(date +%s)\"}}}}}"
           
           echo "⏳ Attente du déploiement..."
           timeout 5m oc rollout status deployment/quarkus-app -n $OPENSHIFT_PROJECT || {
@@ -172,3 +182,4 @@ jobs:
         run: |
           ROUTE=$(oc get route quarkus-route -n $OPENSHIFT_PROJECT -o jsonpath='{.spec.host}')
           echo "🔗 Votre API est disponible à: https://$ROUTE"
+          echo "📦 Image déployée: ${{ needs.build-and-push.outputs.image-tag }}"
