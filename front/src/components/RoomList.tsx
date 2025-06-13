@@ -75,7 +75,6 @@ export const RoomList = () => {
 
         try {
             if (editingRoom?.id) {
-                // Mode modification
                 await updateRoom({ ...roomData, id: editingRoom.id } as Room);
                 console.log('Room updated');
 
