@@ -74,27 +74,25 @@ public class RoomResource {
 
     @PUT
     @Path("/{id}")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin"})
-    public Response update(@PathParam("id") Long id,
-                           @FormParam("name") String name,
-                           @FormParam("capacity") Integer capacity) {
-
-        RoomUpdateDTO dto = new RoomUpdateDTO();
-        dto.name = name;
-        dto.capacity = capacity;
-
+    public Response update(@PathParam("id") Long id, RoomUpdateDTO dto) {
         try {
+            System.out.println("🔧 PUT /rooms/" + id + " called with DTO: " + dto.name);
+
             Room room = roomService.updateRoom(id, dto);
             if (room == null) {
                 return Response.status(Response.Status.NOT_FOUND).entity("Salle non trouvée.").build();
             }
 
             RoomResponseDTO responseDTO = RoomMapper.toResponse(room, true);
+            System.out.println("Room updated successfully: " + responseDTO.name);
             return Response.ok(responseDTO).build();
         } catch (Exception e) {
+            System.err.println("Error updating room " + id + ": " + e.getMessage());
             LOGGER.log(Level.SEVERE, "Erreur lors de la mise à jour de la salle ID=" + id, e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Erreur serveur : " + e.getMessage()).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"Erreur serveur : " + e.getMessage() + "\"}").build();
         }
     }
 
@@ -103,7 +101,7 @@ public class RoomResource {
     @RolesAllowed({"admin"})
     public Response deleteImage(@PathParam("id") Long roomId) {
         try {
-            LOGGER.info("🔍 Starting image deletion for room ID: " + roomId);
+            LOGGER.info("Starting image deletion for room ID: " + roomId);
 
             Room room = roomService.getRoomById(roomId);
             if (room == null) {
@@ -122,7 +120,6 @@ public class RoomResource {
                     LOGGER.info("Physical image file deleted successfully");
                 } catch (Exception e) {
                     LOGGER.log(Level.WARNING, "Error deleting physical image file: " + e.getMessage(), e);
-                    // Continue with database update even if physical deletion fails
                 }
             } else {
                 LOGGER.info("No image URL to delete");

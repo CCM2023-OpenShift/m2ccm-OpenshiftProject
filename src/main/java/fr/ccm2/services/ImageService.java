@@ -36,7 +36,7 @@ public class ImageService {
     @ConfigProperty(name = "%prod.app.supabase.equipment.bucket", defaultValue = "equipment-images")
     String equipmentBucket;
 
-    @ConfigProperty(name = "%prod.app.supabase.rooms.bucket", defaultValue = "rooms_images")
+    @ConfigProperty(name = "%prod.app.supabase.rooms.bucket", defaultValue = "room-images")
     String roomsBucket;
 
     private static final String EQUIPMENT_FOLDER = "equipments";

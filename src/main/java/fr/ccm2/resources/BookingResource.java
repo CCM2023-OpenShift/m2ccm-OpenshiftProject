@@ -65,8 +65,7 @@ public class BookingResource {
     public Response create(BookingCreateDTO dto) {
         try {
             // Associer automatiquement l'utilisateur connecté comme organisateur
-            String currentUser = securityIdentity.getPrincipal().getName();
-            dto.organizer = currentUser;
+            dto.organizer = securityIdentity.getPrincipal().getName();
 
             Booking booking = bookingService.createBooking(dto);
             booking = bookingService.getBookingByIdWithRelations(booking.getId());
@@ -84,45 +83,37 @@ public class BookingResource {
 
     @PUT
     @Path("/{id}")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"user", "admin"})
-    public Response update(@PathParam("id") Long id,
-                           @FormParam("title") String title,
-                           @FormParam("roomId") Long roomId,
-                           @FormParam("startTime") String startTime,
-                           @FormParam("endTime") String endTime,
-                           @FormParam("attendees") int attendees,
-                           @FormParam("organizer") String organizer) {
+    public Response update(@PathParam("id") Long id, BookingUpdateDTO dto) {
+        try {
+            System.out.println("🔧 PUT /bookings/" + id + " called with DTO: " + dto.title);
 
-        Booking existingBooking = bookingService.getBookingById(id);
-        if (existingBooking == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            Booking existingBooking = bookingService.getBookingById(id);
+            if (existingBooking == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+
+            String currentUser = securityIdentity.getPrincipal().getName();
+            if (!securityIdentity.hasRole("admin") && !existingBooking.getOrganizer().equals(currentUser)) {
+                return Response.status(Response.Status.FORBIDDEN)
+                        .entity("Vous n'êtes pas autorisé à modifier cette réservation").build();
+            }
+
+            if (!securityIdentity.hasRole("admin")) {
+                dto.organizer = currentUser;
+            }
+
+            Booking booking = bookingService.updateBooking(id, dto);
+            BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
+
+            System.out.println("Booking updated successfully: " + responseDTO.title);
+            return Response.ok(responseDTO).build();
+        } catch (Exception e) {
+            System.err.println("Error updating booking " + id + ": " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"Erreur serveur : " + e.getMessage() + "\"}").build();
         }
-
-        // Vérifier les permissions
-        String currentUser = securityIdentity.getPrincipal().getName();
-        if (!securityIdentity.hasRole("admin") && !existingBooking.getOrganizer().equals(currentUser)) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity("Vous n'êtes pas autorisé à modifier cette réservation").build();
-        }
-
-        BookingUpdateDTO dto = new BookingUpdateDTO();
-        dto.title = title;
-        dto.roomId = roomId;
-        dto.startTime = LocalDateTime.parse(startTime);
-        dto.endTime = LocalDateTime.parse(endTime);
-        dto.attendees = attendees;
-
-        // Seul un admin peut changer l'organisateur
-        if (securityIdentity.hasRole("admin")) {
-            dto.organizer = organizer;
-        } else {
-            dto.organizer = currentUser; // Garder l'utilisateur actuel
-        }
-
-        Booking booking = bookingService.updateBooking(id, dto);
-        BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
-        return Response.ok(responseDTO).build();
     }
 
     @DELETE

@@ -15,10 +15,8 @@ class ImageConfig {
         if (!this.equipmentConfig) {
             try {
                 this.equipmentConfig = await ApiService.get('/images/equipments/config');
-                console.log('📐 Configuration équipements récupérée:', this.equipmentConfig);
             } catch (error) {
-                console.error('❌ Erreur récupération config équipements:', error);
-                // Fallback en cas d'erreur
+                console.error('Erreur récupération config équipements:', error);
                 this.equipmentConfig = {
                     maxFileSize: 5242880, // 5MB
                     allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
@@ -35,10 +33,8 @@ class ImageConfig {
         if (!this.roomConfig) {
             try {
                 this.roomConfig = await ApiService.get('/images/rooms/config');
-                console.log('📐 Configuration rooms récupérée:', this.roomConfig);
             } catch (error) {
-                console.error('❌ Erreur récupération config rooms:', error);
-                // Fallback en cas d'erreur
+                console.error('Erreur récupération config rooms:', error);
                 this.roomConfig = {
                     maxFileSize: 5242880, // 5MB
                     allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
