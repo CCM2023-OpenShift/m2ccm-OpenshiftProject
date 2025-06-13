@@ -1,3 +1,5 @@
+import User from "./services/User.ts";
+
 export interface Room {
     id: string;
     name: string;
@@ -46,6 +48,8 @@ export interface AppState {
     rooms: Room[];
     equipment: Equipment[];
     bookings: Booking[];
+    currentUser: User | null;
+    availableOrganizers: User[];
     fetchRooms: () => Promise<void>;
     fetchEquipment: () => Promise<void>;
     fetchEquipmentFixed: () => Promise<void>;
@@ -60,4 +64,6 @@ export interface AppState {
     deleteEquipmentImage: (equipmentId: string) => Promise<void>;
     uploadRoomImage: (roomId: string, file: File) => Promise<{ message: string; imageUrl: string }>;
     deleteRoomImage: (roomId: string) => Promise<void>;
+    fetchCurrentUser: () => Promise<void>;
+    fetchBookingOrganizers: () => Promise<void>;
 }

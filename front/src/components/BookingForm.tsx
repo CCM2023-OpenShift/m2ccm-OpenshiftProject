@@ -1,17 +1,28 @@
 import React, { useEffect, useState } from 'react';
+import { useKeycloak } from '@react-keycloak/web';
 import { useStore } from "../store.ts";
 import { Room } from '../services/Room';
 import { Booking } from '../services/Booking';
 import { Equipment } from "../services/Equipment.ts";
 import { RoomEquipment } from "../services/RoomEquipment.ts";
+import { User } from '../services/User.ts';
 import { roundUpToNextHalfHour, formatDateTimeLocal } from '../composable/formatTimestamp.ts';
+import { Lock, User as UserIcon, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const BookingForm = () => {
+    const { keycloak } = useKeycloak();
     const { fetchEquipment } = useStore();
     const [rooms, setRooms] = useState<Room[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [availableEquipments, setAvailableEquipments] = useState<any[]>([]);
     const [availableEquipmentsMobile, setAvailableEquipmentsMobile] = useState<any[]>([]);
+    const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [customOrganizerInput, setCustomOrganizerInput] = useState('');
+
+    const roles = keycloak.tokenParsed?.realm_access?.roles || [];
+    const isAdmin = roles.includes('admin');
+    const currentUser = keycloak.tokenParsed?.preferred_username || 'M0rd0rian';
 
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -32,7 +43,7 @@ export const BookingForm = () => {
             startTime: string;
             endTime: string;
         }[],
-        organizer: '',
+        organizer: currentUser,
     };
 
     const [formData, setFormData] = useState(initialBookingData);
@@ -40,16 +51,56 @@ export const BookingForm = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setLoading(true);
+
+                // Charger les salles
                 const roomsData = await Room.getAll();
                 setRooms(roomsData);
+
+                if (isAdmin) {
+                    await fetchAvailableUsers();
+                }
+
             } catch (error) {
                 console.error('Erreur lors du chargement des données', error);
+                setErrorMessage('Erreur lors du chargement des données');
+            } finally {
+                setLoading(false);
             }
         };
 
         void fetchData();
-    }, []);
+    }, [isAdmin]);
 
+    const fetchAvailableUsers = async () => {
+        try {
+            const users = await User.getBookingOrganizers();
+            setAvailableUsers(users);
+        } catch (error) {
+            console.error('Error loading users:', error);
+
+            const fallbackUser = new User().fromJSON({
+                id: '',
+                username: currentUser,
+                displayName: `${currentUser} (Vous)`,
+                enabled: true
+            });
+
+            setAvailableUsers([fallbackUser]);
+        }
+    };
+
+    // Gestion de l'input libre pour les admins
+    const handleCustomOrganizerChange = (value: string) => {
+        setCustomOrganizerInput(value);
+        setFormData(prev => ({ ...prev, organizer: value }));
+    };
+
+    // Gestion de la sélection dans le dropdown
+    const handleOrganizerSelect = (value: string) => {
+        setFormData(prev => ({ ...prev, organizer: value }));
+        setCustomOrganizerInput(''); // Reset l'input libre
+    };
 
     useEffect(() => {
         if (!formData.roomId) {
@@ -105,31 +156,49 @@ export const BookingForm = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        const selectedRoom = rooms.find((room) => Number(room.id) === Number(formData.roomId));
-        if (!selectedRoom) {
-            alert("La salle sélectionnée n'est pas valide.");
-            return;
-        }
-
-        const bookingData = {
-            title: formData.title,
-            startTime: formData.startTime,
-            endTime: formData.endTime,
-            attendees: parseInt(formData.attendees),
-            organizer: formData.organizer,
-            room: selectedRoom,
-            bookingEquipments: formData.bookingEquipments
-                .filter((be) => be.quantity > 0)
-                .map((be) => ({
-                    equipmentId: String(be.equipmentId),
-                    quantity: be.quantity,
-                    startTime: formData.startTime,
-                    endTime: formData.endTime,
-                })),
-        };
+        setLoading(true);
 
         try {
+            const selectedRoom = rooms.find((room) => Number(room.id) === Number(formData.roomId));
+            if (!selectedRoom) {
+                setErrorMessage("La salle sélectionnée n'est pas valide.");
+                return;
+            }
+
+            if (!formData.organizer.trim()) {
+                setErrorMessage('L\'organisateur est obligatoire');
+                return;
+            }
+
+            if (isAdmin && customOrganizerInput.trim()) {
+                try {
+                    const validation = await User.validateUsername(customOrganizerInput.trim());
+                    if (!validation.valid) {
+                        setErrorMessage(`Nom d'utilisateur invalide: ${validation.message}`);
+                        return;
+                    }
+                } catch (validationError) {
+                    console.warn('Validation error, proceeding anyway:', validationError);
+                }
+            }
+
+            const bookingData = {
+                title: formData.title,
+                startTime: formData.startTime,
+                endTime: formData.endTime,
+                attendees: parseInt(formData.attendees),
+                organizer: formData.organizer,
+                room: selectedRoom,
+                bookingEquipments: formData.bookingEquipments
+                    .filter((be) => be.quantity > 0)
+                    .map((be) => ({
+                        equipmentId: String(be.equipmentId),
+                        quantity: be.quantity,
+                        startTime: formData.startTime,
+                        endTime: formData.endTime,
+                    })),
+            };
+
             const booking = new Booking();
             Object.assign(booking, bookingData);
             await booking.create();
@@ -137,6 +206,8 @@ export const BookingForm = () => {
             alert("Réservation créée avec succès!");
             setErrorMessage('');
             setFormData(initialBookingData);
+            setCustomOrganizerInput('');
+
         } catch (error) {
             console.error("Error creating booking:", error);
             if (error instanceof Error) {
@@ -144,8 +215,19 @@ export const BookingForm = () => {
             } else {
                 setErrorMessage('Une erreur inconnue est survenue.');
             }
+        } finally {
+            setLoading(false);
         }
     };
+
+    if (loading && rooms.length === 0) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <span className="ml-4">Chargement...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6">
@@ -162,6 +244,7 @@ export const BookingForm = () => {
                         onChange={(e) => setFormData({...formData, title: e.target.value})}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
+                        disabled={loading}
                     />
                 </div>
 
@@ -174,6 +257,7 @@ export const BookingForm = () => {
                         onChange={(e) => setFormData({...formData, roomId: e.target.value})}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
+                        disabled={loading}
                     >
                         <option value="">Sélectionner une salle</option>
                         {rooms.map((room) => (
@@ -216,6 +300,7 @@ export const BookingForm = () => {
                             min={formatDateTimeLocal(new Date())}
                             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
+                            disabled={loading}
                         />
                     </div>
 
@@ -232,6 +317,7 @@ export const BookingForm = () => {
                             min={formData.startTime}
                             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
+                            disabled={loading}
                         />
                     </div>
                 </div>
@@ -247,22 +333,83 @@ export const BookingForm = () => {
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         min="1"
+                        disabled={loading}
                     />
                 </div>
 
+                {/* CHAMP ORGANISATEUR */}
                 <div className="mb-6">
-                    <label className="block text-gray-700 font-semibold mb-2">
+                    <label className="block text-gray-700 font-semibold mb-2 items-center">
                         Organisateur
                     </label>
-                    <input
-                        type="text"
-                        value={formData.organizer}
-                        onChange={(e) => setFormData({...formData, organizer: e.target.value})}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
+
+                    {!isAdmin ? (
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={formData.organizer}
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed focus:outline-none"
+                                title="Seuls les administrateurs peuvent modifier l'organisateur"
+                            />
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <UserIcon className="w-5 h-5 text-gray-400" />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* Dropdown */}
+                            <select
+                                value={customOrganizerInput ? '' : formData.organizer}
+                                onChange={(e) => handleOrganizerSelect(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-orange-300"
+                                disabled={loading}
+                            >
+                                <option value="">Sélectionner un organisateur connu</option>
+                                {availableUsers.map((user) => (
+                                    <option key={user.getUsername()} value={user.getUsername()}>
+                                        {user.getDisplayName()}
+                                    </option>
+                                ))}
+                            </select>
+
+                            {/* Séparateur */}
+                            <div className="flex items-center">
+                                <div className="flex-1 border-t border-gray-300"></div>
+                                <span className="px-3 text-sm text-gray-500">ou</span>
+                                <div className="flex-1 border-t border-gray-300"></div>
+                            </div>
+
+                            {/* Input libre */}
+                            <div>
+                                <input
+                                    type="text"
+                                    value={customOrganizerInput}
+                                    onChange={(e) => handleCustomOrganizerChange(e.target.value)}
+                                    placeholder="Tapez un autre nom d'utilisateur..."
+                                    className="w-full px-3 py-2 border rounded-lg border-dashed border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={loading}
+                                />
+                                <p className="text-xs text-gray-500 mt-1 flex items-center">
+                                    <Shield className="w-3 h-3 mr-1" />
+                                    En tant qu'admin, vous pouvez saisir n'importe quel nom d'utilisateur
+                                </p>
+                            </div>
+
+                            {/* Affichage de l'organisateur sélectionné */}
+                            {formData.organizer && (
+                                <div className="flex items-center text-sm">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                                    <span className="text-green-700">
+                                        Organisateur: <strong>{formData.organizer}</strong>
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
+                {/* Équipements mobiles */}
                 {formData.startTime && formData.endTime ? (
                     <div className="mb-6">
                         <label className="block text-gray-700 font-semibold mb-2">
@@ -289,6 +436,7 @@ export const BookingForm = () => {
                                             max={quantity}
                                             className="w-20 border rounded px-1 ml-2"
                                             value={existing.quantity}
+                                            disabled={loading}
                                             onChange={(e) => {
                                                 const qty = Number(e.target.value);
                                                 setFormData((prev) => {
@@ -332,23 +480,34 @@ export const BookingForm = () => {
                 )}
 
                 {errorMessage && (
-                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                        {errorMessage
-                            .split('\n')
-                            .filter(line => line.trim() !== '')
-                            .map((line, index) => (
-                                <p key={index} className={index > 0 ? 'ml-4' : ''}>
-                                    {index === 0 ? line : `- ${line}`}
-                                </p>
-                            ))}
+                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded flex items-start">
+                        <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                            {errorMessage
+                                .split('\n')
+                                .filter(line => line.trim() !== '')
+                                .map((line, index) => (
+                                    <p key={index} className={index > 0 ? 'ml-4' : ''}>
+                                        {index === 0 ? line : `- ${line}`}
+                                    </p>
+                                ))}
+                        </div>
                     </div>
                 )}
 
                 <button
                     type="submit"
-                    className="w-full bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+                    disabled={loading}
+                    className="w-full bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                    Réserver la salle
+                    {loading ? (
+                        <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Création en cours...
+                        </>
+                    ) : (
+                        'Réserver la salle'
+                    )}
                 </button>
             </form>
         </div>

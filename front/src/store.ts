@@ -1,7 +1,8 @@
-import { create } from 'zustand';
-import { AppState, Room, Equipment } from './types';
-import { Room as RoomService } from './services/Room';
-import { Equipment as EquipmentService } from './services/Equipment';
+import {create} from 'zustand';
+import {AppState, Room, Equipment} from './types';
+import {Room as RoomService} from './services/Room';
+import {Equipment as EquipmentService} from './services/Equipment';
+import User from "./services/User.ts";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -9,11 +10,13 @@ export const useStore = create<AppState>((set, get) => ({
     rooms: [],
     equipment: [],
     bookings: [],
+    currentUser: null,
+    availableOrganizers: [],
 
     fetchRooms: async () => {
         try {
             const data = await RoomService.getAll();
-            set({ rooms: data });
+            set({rooms: data});
         } catch (error) {
             console.error('Error fetching rooms:', error);
         }
@@ -22,7 +25,7 @@ export const useStore = create<AppState>((set, get) => ({
     fetchEquipment: async () => {
         try {
             const data = await EquipmentService.getAll();
-            set({ equipment: data });
+            set({equipment: data});
         } catch (error) {
             console.error('Error fetching equipment:', error);
         }
@@ -32,7 +35,7 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const allEquipment = await EquipmentService.getAll();
             const fixedEquipment = allEquipment.filter((equip: EquipmentService) => !equip.getMobile());
-            set({ equipment: fixedEquipment });
+            set({equipment: fixedEquipment});
         } catch (error) {
             console.error('Error fetching fixed equipment:', error);
         }
@@ -42,7 +45,7 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const response = await fetch(`${API_URL}/bookings`);
             const data = await response.json();
-            set({ bookings: data });
+            set({bookings: data});
         } catch (error) {
             console.error('Error fetching bookings:', error);
         }
@@ -53,7 +56,7 @@ export const useStore = create<AppState>((set, get) => ({
             const newRoom = new RoomService();
             Object.assign(newRoom, room);
             const createdRoom = await newRoom.create();
-            set((state) => ({ rooms: [...state.rooms, createdRoom] }));
+            set((state) => ({rooms: [...state.rooms, createdRoom]}));
             return createdRoom;
         } catch (error) {
             console.error('Error adding room:', error);
@@ -105,7 +108,7 @@ export const useStore = create<AppState>((set, get) => ({
                 imageUrl: createdEquipment.getImageUrl()
             };
 
-            set((state) => ({ equipment: [...state.equipment, equipmentData] }));
+            set((state) => ({equipment: [...state.equipment, equipmentData]}));
             return equipmentData;
         } catch (error) {
             console.error('Error adding equipment:', error);
@@ -165,7 +168,7 @@ export const useStore = create<AppState>((set, get) => ({
 
             set((state) => ({
                 equipment: state.equipment.map((e) =>
-                    e.id === equipmentId ? { ...e, imageUrl: result.imageUrl } : e
+                    e.id === equipmentId ? {...e, imageUrl: result.imageUrl} : e
                 ),
             }));
 
@@ -193,12 +196,12 @@ export const useStore = create<AppState>((set, get) => ({
 
             set((state) => ({
                 equipment: state.equipment.map((e) =>
-                    e.id === equipmentId ? { ...e, imageUrl: '' } : e
+                    e.id === equipmentId ? {...e, imageUrl: ''} : e
                 ),
             }));
 
             const refreshedData = await EquipmentService.getAll();
-            set({ equipment: refreshedData });
+            set({equipment: refreshedData});
 
         } catch (error) {
             console.error('Error deleting equipment image:', error);
@@ -216,7 +219,7 @@ export const useStore = create<AppState>((set, get) => ({
 
             set((state) => ({
                 rooms: state.rooms.map((r) =>
-                    r.id === roomId ? { ...r, imageUrl: result.imageUrl } : r
+                    r.id === roomId ? {...r, imageUrl: result.imageUrl} : r
                 ),
             }));
 
@@ -236,15 +239,41 @@ export const useStore = create<AppState>((set, get) => ({
 
             set((state) => ({
                 rooms: state.rooms.map((r) =>
-                    r.id === roomId ? { ...r, imageUrl: undefined } : r
+                    r.id === roomId ? {...r, imageUrl: undefined} : r
                 ),
             }));
 
             const refreshedData = await RoomService.getAll();
-            set({ rooms: refreshedData });
+            set({rooms: refreshedData});
         } catch (error) {
             console.error('Error deleting room image:', error);
             throw error;
+        }
+    },
+
+    /**
+     * Récupère l'utilisateur actuel
+     */
+    fetchCurrentUser: async () => {
+        try {
+            const currentUser = await User.getCurrent();
+            set({currentUser});
+        } catch (error) {
+            console.error('Store: Error fetching current user:', error);
+            set({currentUser: null});
+        }
+    },
+
+    /**
+     * Récupère la liste des organisateurs (admin seulement)
+     */
+    fetchBookingOrganizers: async () => {
+        try {
+            const organizers = await User.getBookingOrganizers();
+            set({availableOrganizers: organizers});
+        } catch (error) {
+            console.error('Store: Error fetching booking organizers:', error);
+            set({availableOrganizers: []});
         }
     },
 }));
