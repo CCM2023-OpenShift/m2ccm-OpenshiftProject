@@ -153,7 +153,6 @@ class ApiService {
         });
     }
 
-    // ✅ Amélioration de deleteEquipmentWithImage pour plus de robustesse
     public static async deleteEquipmentWithImage(equipmentId: string): Promise<void> {
         await this.ensureAuthenticated();
 
@@ -175,7 +174,6 @@ class ApiService {
         await this.delete(`/equipment/${equipmentId}`);
     }
 
-    // ✅ Nouvelle méthode pour supprimer room avec image
     public static async deleteRoomWithImage(roomId: string): Promise<void> {
         await this.ensureAuthenticated();
 

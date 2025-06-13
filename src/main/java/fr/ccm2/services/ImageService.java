@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,9 +41,16 @@ public class ImageService {
 
     private static final String EQUIPMENT_FOLDER = "equipments";
     private static final String ROOM_FOLDER = "rooms";
-    private static final long MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
+
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "webp");
+    private static final List<String> ALLOWED_MIME_TYPES = Arrays.asList("image/jpeg", "image/png", "image/webp");
 
     private final Client client = ClientBuilder.newClient();
+
+    public UploadConfig getUploadConfig() {
+        return new UploadConfig(MAX_FILE_SIZE, ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES);
+    }
 
     // ========== MÉTHODES POUR ÉQUIPEMENTS ==========
     public String saveImage(FileUpload fileUpload) throws IOException {
@@ -116,13 +125,47 @@ public class ImageService {
         }
 
         if (fileUpload.size() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("Fichier trop volumineux (max 200 Mo)");
+            long maxSizeMB = MAX_FILE_SIZE / (1024 * 1024);
+            throw new IllegalArgumentException("Fichier trop volumineux (max " + maxSizeMB + " Mo)");
         }
 
         String extension = getFileExtension(fileUpload.fileName());
         if (!isValidImageExtension(extension)) {
-            throw new IllegalArgumentException("Type de fichier non supporté. Formats acceptés: JPG, JPEG, PNG");
+            String acceptedList = String.join(", ", ALLOWED_EXTENSIONS).toUpperCase();
+            throw new IllegalArgumentException("Type de fichier non supporté. Formats acceptés: " + acceptedList);
         }
+
+        validateImageContent(fileUpload);
+    }
+
+    private void validateImageContent(FileUpload fileUpload) {
+        try {
+            byte[] header = new byte[12];
+            Files.newInputStream(fileUpload.uploadedFile()).read(header);
+
+            if (!isValidImageHeader(header)) {
+                throw new IllegalArgumentException("Le fichier n'est pas une image valide");
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Impossible de lire le fichier");
+        }
+    }
+
+    private boolean isValidImageHeader(byte[] header) {
+        // JPEG: FF D8 FF
+        if (header[0] == (byte) 0xFF && header[1] == (byte) 0xD8 && header[2] == (byte) 0xFF) {
+            return true;
+        }
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if (header[0] == (byte) 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47) {
+            return true;
+        }
+        // WebP: 52 49 46 46 ... 57 45 42 50
+        if (header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46 &&
+                header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50) {
+            return true;
+        }
+        return false;
     }
 
     // ========== IMPLÉMENTATIONS LOCALES ==========
@@ -296,6 +339,19 @@ public class ImageService {
     }
 
     private boolean isValidImageExtension(String extension) {
-        return ".jpg".equals(extension) || ".jpeg".equals(extension) || ".png".equals(extension);
+        String cleanExtension = extension.startsWith(".") ? extension.substring(1) : extension;
+        return ALLOWED_EXTENSIONS.contains(cleanExtension.toLowerCase());
+    }
+
+    public static class UploadConfig {
+        public final Long maxFileSize;
+        public final List<String> allowedExtensions;
+        public final List<String> allowedMimeTypes;
+
+        public UploadConfig(Long maxFileSize, List<String> allowedExtensions, List<String> allowedMimeTypes) {
+            this.maxFileSize = maxFileSize;
+            this.allowedExtensions = allowedExtensions;
+            this.allowedMimeTypes = allowedMimeTypes;
+        }
     }
 }

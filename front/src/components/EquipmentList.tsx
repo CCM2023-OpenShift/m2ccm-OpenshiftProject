@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { Monitor, Plus, Edit, Trash, X, Camera, Upload } from 'lucide-react';
 import { Equipment } from '../types';
+import { useImageValidation } from '../hooks/useImageValidation';
 
 export const EquipmentList = () => {
     const { equipment, fetchEquipment, addEquipment, updateEquipment, deleteEquipment, uploadEquipmentImage, deleteEquipmentImage } = useStore();
@@ -19,40 +20,50 @@ export const EquipmentList = () => {
         mobile: false,
     });
 
+    const { loading, validateFile, getMaxSizeMB, getAcceptedTypes, getAcceptedExtensions, isConfigReady } = useImageValidation('equipment');
+
     useEffect(() => {
         void fetchEquipment();
     }, [fetchEquipment]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file) {
-            if (!file.type.startsWith('image/')) {
-                setErrorMessage('Veuillez sélectionner un fichier image valide');
-                return;
-            }
+        if (!file) return;
 
-            setSelectedFile(file);
-
-            const reader = new FileReader();
-            reader.onload = (e: ProgressEvent<FileReader>) => {
-                setImagePreview(e.target?.result as string);
-            };
-            reader.readAsDataURL(file);
-            setErrorMessage('');
+        if (!isConfigReady()) {
+            setErrorMessage('Configuration en cours de chargement...');
+            return;
         }
+
+        const error = validateFile(file);
+        if (error) {
+            setErrorMessage(error);
+            event.target.value = '';
+            return;
+        }
+
+        setSelectedFile(file);
+        const reader = new FileReader();
+        reader.onload = (e: ProgressEvent<FileReader>) => {
+            setImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+        setErrorMessage('');
     };
 
     const handleDirectImageUpload = async (equipmentId: string, event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
-            alert('Veuillez sélectionner un fichier image valide');
+        if (!isConfigReady()) {
+            alert('Configuration en cours de chargement, veuillez patienter...');
             return;
         }
 
-        if (file.size > 2 * 1024 * 1024) {
-            alert('La taille de l\'image ne doit pas dépasser 2MB');
+        const error = validateFile(file);
+        if (error) {
+            alert(error);
+            event.target.value = '';
             return;
         }
 
@@ -93,7 +104,6 @@ export const EquipmentList = () => {
         }
     };
 
-    // Renommer la variable locale pour éviter le conflit
     const handleDelete = async (equipmentId: string) => {
         const targetEquipment = equipment.find((e: Equipment) => e.id === equipmentId);
         const hasImage = targetEquipment?.imageUrl && targetEquipment.imageUrl.trim() !== '';
@@ -130,7 +140,6 @@ export const EquipmentList = () => {
         e.preventDefault();
 
         try {
-            // Renommer la variable locale pour éviter le conflit
             let savedEquipment: Equipment;
 
             if (editingEquipment?.id) {
@@ -154,7 +163,6 @@ export const EquipmentList = () => {
         }
     };
 
-    // Renommer le paramètre pour éviter le conflit
     const handleEdit = (equipmentToEdit: Equipment) => {
         setEditingEquipment(equipmentToEdit);
         setFormData({
@@ -213,18 +221,18 @@ export const EquipmentList = () => {
                             <div className="absolute top-2 right-2 flex space-x-2">
                                 <input
                                     type="file"
-                                    accept="image/*"
+                                    accept={getAcceptedTypes()}
                                     onChange={(e) => handleDirectImageUpload(equip.id, e)}
                                     className="hidden"
                                     id={`file-input-${equip.id}`}
-                                    disabled={isDeleting === equip.id}
+                                    disabled={isDeleting === equip.id || !isConfigReady()}
                                 />
                                 <label
                                     htmlFor={`file-input-${equip.id}`}
                                     className={`bg-blue-500 text-white p-2 rounded-full cursor-pointer hover:bg-blue-600 ${
-                                        isDeleting === equip.id ? 'opacity-50 cursor-not-allowed' : ''
+                                        (isDeleting === equip.id || !isConfigReady()) ? 'opacity-50 cursor-not-allowed' : ''
                                     }`}
-                                    title="Changer l'image"
+                                    title={!isConfigReady() ? "Configuration en cours..." : "Changer l'image"}
                                 >
                                     <Camera className="w-4 h-4" />
                                 </label>
@@ -344,12 +352,16 @@ export const EquipmentList = () => {
                                 <input
                                     ref={fileInputRef}
                                     type="file"
-                                    accept="image/*"
+                                    accept={getAcceptedTypes()}
                                     onChange={handleFileSelect}
-                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={!isConfigReady()}
+                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        !isConfigReady() ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Formats acceptés: JPG, PNG. Taille max: 2MB
+                                    {loading ? 'Chargement configuration...' :
+                                        `Formats acceptés: ${getAcceptedExtensions()}. Taille max: ${getMaxSizeMB()}MB`}
                                 </p>
                             </div>
 
