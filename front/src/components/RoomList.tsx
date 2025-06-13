@@ -76,17 +76,14 @@ export const RoomList = () => {
         try {
             if (editingRoom?.id) {
                 await updateRoom({ ...roomData, id: editingRoom.id } as Room);
-                console.log('Room updated');
 
                 // Upload de l'image si présente
                 if (imageFile) {
-                    console.log('Uploading image for updated room:', editingRoom.id);
                     await uploadRoomImage(editingRoom.id, imageFile);
                 }
             } else {
                 // Mode création - Get the actual room from the server after creation
                 await addRoom(roomData);
-                console.log('Room created');
 
                 // Refresh rooms to get the newly created room with its ID
                 await fetchRooms();
@@ -96,7 +93,6 @@ export const RoomList = () => {
 
                 // Si on a une image à uploader et on a trouvé la salle créée
                 if (imageFile && createdRoom) {
-                    console.log('Uploading image for new room:', createdRoom.id);
                     await uploadRoomImage(createdRoom.id, imageFile);
                 }
             }

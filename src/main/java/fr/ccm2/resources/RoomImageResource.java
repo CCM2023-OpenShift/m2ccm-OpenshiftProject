@@ -23,16 +23,7 @@ public class RoomImageResource {
     public Response getUploadConfig() {
         try {
             ImageService.UploadConfig config = imageService.getUploadConfig();
-
-            // Format JSON exact comme demandé
-            String jsonResponse = String.format(
-                    "{\"maxFileSize\":%d,\"allowedExtensions\":%s,\"allowedMimeTypes\":%s}",
-                    config.maxFileSize,
-                    config.allowedExtensions.toString().replace(" ", ""),
-                    config.allowedMimeTypes.toString().replace(" ", "")
-            );
-
-            return Response.ok(jsonResponse).build();
+            return Response.ok(config).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("{\"error\": \"Erreur lors de la récupération de la configuration\"}")

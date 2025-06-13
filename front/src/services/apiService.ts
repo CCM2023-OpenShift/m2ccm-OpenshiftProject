@@ -27,14 +27,10 @@ class ApiService {
     private static async refreshToken(): Promise<boolean> {
         try {
             if (!keycloak.authenticated) {
-                console.log('Utilisateur non authentifié');
                 return false;
             }
 
-            const refreshed = await keycloak.updateToken(30);
-            if (refreshed) {
-                console.log('Token rafraîchi avec succès');
-            }
+            await keycloak.updateToken(30);
             return true;
         } catch (error) {
             console.error('Erreur lors du rafraîchissement du token:', error);
@@ -127,7 +123,6 @@ class ApiService {
         await this.ensureAuthenticated();
 
         const url = `${this.baseUrl}${endpoint}`;
-        console.log(`API call (FormData) to: ${url}`);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -160,13 +155,10 @@ class ApiService {
         const equipment = await this.get(`/equipment/${equipmentId}`);
 
         if (equipment?.imageUrl) {
-            // Delete the image first via equipment endpoint
-            console.log(`Deleting image for equipment ${equipmentId}: ${equipment.imageUrl}`);
             try {
                 await this.delete(`/equipment/${equipmentId}/image`);
             } catch (error) {
                 console.error('Error deleting image via equipment endpoint:', error);
-                // Continue anyway
             }
         }
 
@@ -181,12 +173,10 @@ class ApiService {
         const room = await this.get(`/rooms/${roomId}`);
 
         if (room?.imageUrl) {
-            console.log(`Deleting image for room ${roomId}: ${room.imageUrl}`);
             try {
                 await this.delete(`/rooms/${roomId}/image`);
             } catch (error) {
                 console.error('Error deleting room image:', error);
-                // Continue anyway
             }
         }
 

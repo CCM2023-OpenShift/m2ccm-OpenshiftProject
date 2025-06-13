@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class BookingCreateDTO {
-    public String title;//
+    public String title;
     public Long roomId;
     public LocalDateTime startTime;
     public LocalDateTime endTime;

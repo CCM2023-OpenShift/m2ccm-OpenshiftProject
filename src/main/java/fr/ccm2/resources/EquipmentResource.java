@@ -73,27 +73,26 @@ public class EquipmentResource {
 
     @PUT
     @Path("/{id}")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin"})
-    public Response update(@PathParam("id") Long id,
-                           @FormParam("name") String name,
-                           @FormParam("description") String description,
-                           @FormParam("quantity") int quantity,
-                           @FormParam("mobile") boolean mobile) {
+    public Response update(@PathParam("id") Long id, EquipmentUpdateDTO dto) {
+        try {
+            System.out.println("🔧 PUT /equipment/" + id + " called with DTO: " + dto.name);
 
-        EquipmentUpdateDTO dto = new EquipmentUpdateDTO();
-        dto.name = name;
-        dto.description = description;
-        dto.quantity = quantity;
-        dto.mobile = mobile;
+            Equipment equipment = equipmentService.updateEquipment(id, dto);
+            if (equipment == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
 
-        Equipment equipment = equipmentService.updateEquipment(id, dto);
-        if (equipment == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            EquipmentResponseDTO responseDTO = EquipmentMapper.toResponse(equipment);
+            System.out.println("Equipment updated successfully: " + responseDTO.name);
+            return Response.ok(responseDTO).build();
+        } catch (Exception e) {
+            System.err.println("Error updating equipment " + id + ": " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error updating equipment: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"Erreur lors de la mise à jour: " + e.getMessage() + "\"}").build();
         }
-
-        EquipmentResponseDTO responseDTO = EquipmentMapper.toResponse(equipment);
-        return Response.ok(responseDTO).build();
     }
 
     @DELETE
@@ -101,7 +100,7 @@ public class EquipmentResource {
     @RolesAllowed({"admin"})
     public Response deleteImage(@PathParam("id") Long equipmentId) {
         try {
-            LOGGER.info("🔍 Starting image deletion for equipment ID: " + equipmentId);
+            LOGGER.info("Starting image deletion for equipment ID: " + equipmentId);
 
             Equipment equipment = equipmentService.getEquipmentById(equipmentId);
             if (equipment == null) {
@@ -119,9 +118,7 @@ public class EquipmentResource {
                     imageService.deleteImageFile(imageUrl);
                     LOGGER.info("Physical image file deleted successfully");
                 } catch (Exception e) {
-                    // Fixed: Replaced printStackTrace with proper logging
                     LOGGER.log(Level.WARNING, "Error deleting physical image file: " + e.getMessage(), e);
-                    // Continue with database update even if physical deletion fails
                 }
             } else {
                 LOGGER.info("No image URL to delete");

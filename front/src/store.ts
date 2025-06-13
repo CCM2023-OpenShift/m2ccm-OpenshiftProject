@@ -212,9 +212,7 @@ export const useStore = create<AppState>((set, get) => ({
             const roomInstance = new RoomService();
             roomInstance.id = roomId;
 
-            console.log('Uploading image for room:', roomId);
             const result = await roomInstance.uploadImage(file);
-            console.log('Room image upload successful:', result.imageUrl);
 
             set((state) => ({
                 rooms: state.rooms.map((r) =>
@@ -234,9 +232,7 @@ export const useStore = create<AppState>((set, get) => ({
             const roomInstance = new RoomService();
             roomInstance.id = roomId;
 
-            console.log('Deleting image for room:', roomId);
             await roomInstance.deleteImage();
-            console.log('Room image deleted successfully');
 
             set((state) => ({
                 rooms: state.rooms.map((r) =>
