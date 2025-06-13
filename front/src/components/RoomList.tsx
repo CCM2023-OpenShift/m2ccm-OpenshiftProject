@@ -1,8 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../store';
-import { Monitor, Users, Plus, Edit, Trash, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Monitor, Users, Plus, Edit, Trash, X, Upload, Image as ImageIcon, Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { Room } from '../types';
 import { useImageValidation } from '../hooks/useImageValidation';
+
+interface RoomFilters {
+    search: string;
+    minCapacity: number;
+    maxCapacity: number;
+    hasImage: 'all' | 'with' | 'without';
+    hasEquipment: 'all' | 'with' | 'without';
+    equipmentName: string;
+    sortBy: 'name' | 'capacity' | 'equipment-count';
+    sortOrder: 'asc' | 'desc';
+}
 
 export const RoomList = () => {
     const {
@@ -19,6 +30,20 @@ export const RoomList = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRoom, setEditingRoom] = useState<Partial<Room> | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+
+    // État des filtres
+    const [filters, setFilters] = useState<RoomFilters>({
+        search: '',
+        minCapacity: 0,
+        maxCapacity: 1000,
+        hasImage: 'all',
+        hasEquipment: 'all',
+        equipmentName: '',
+        sortBy: 'name',
+        sortOrder: 'asc'
+    });
+
     const [formData, setFormData] = useState({
         name: '',
         capacity: '',
@@ -33,6 +58,117 @@ export const RoomList = () => {
         void fetchRooms();
         void fetchEquipmentFixed();
     }, [fetchRooms, fetchEquipmentFixed]);
+
+    // Logique de filtrage et tri
+    const filteredAndSortedRooms = useMemo(() => {
+        let filtered = rooms.filter((room: Room) => {
+            // Recherche textuelle
+            const searchMatch = room.name.toLowerCase().includes(filters.search.toLowerCase());
+
+            // Filtre par capacité
+            const capacityMatch = room.capacity >= filters.minCapacity &&
+                room.capacity <= filters.maxCapacity;
+
+            // Filtre par image
+            const imageMatch = filters.hasImage === 'all' ||
+                (filters.hasImage === 'with' && room.imageUrl && room.imageUrl.trim() !== '') ||
+                (filters.hasImage === 'without' && (!room.imageUrl || room.imageUrl.trim() === ''));
+
+            // Filtre par équipement
+            const hasAnyEquipment = Array.isArray(room.roomEquipments) && room.roomEquipments.length > 0;
+            const equipmentMatch = filters.hasEquipment === 'all' ||
+                (filters.hasEquipment === 'with' && hasAnyEquipment) ||
+                (filters.hasEquipment === 'without' && !hasAnyEquipment);
+
+            // Filtre par nom d'équipement spécifique
+            let equipmentNameMatch = true;
+            if (filters.equipmentName.trim() !== '') {
+                equipmentNameMatch = room.roomEquipments?.some(re => {
+                    const matchedEquipment = equipment.find(eq => eq.id === re.equipmentId);
+                    return matchedEquipment?.name.toLowerCase().includes(filters.equipmentName.toLowerCase());
+                }) ?? false;
+            }
+
+            return searchMatch && capacityMatch && imageMatch && equipmentMatch && equipmentNameMatch;
+        });
+
+        // Tri
+        filtered.sort((a, b) => {
+            let aValue: any;
+            let bValue: any;
+
+            switch (filters.sortBy) {
+                case 'name':
+                    aValue = a.name.toLowerCase();
+                    bValue = b.name.toLowerCase();
+                    break;
+                case 'capacity':
+                    aValue = a.capacity;
+                    bValue = b.capacity;
+                    break;
+                case 'equipment-count':
+                    aValue = Array.isArray(a.roomEquipments) ? a.roomEquipments.length : 0;
+                    bValue = Array.isArray(b.roomEquipments) ? b.roomEquipments.length : 0;
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (aValue < bValue) return filters.sortOrder === 'asc' ? -1 : 1;
+            if (aValue > bValue) return filters.sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return filtered;
+    }, [rooms, equipment, filters]);
+
+    // Réinitialiser les filtres
+    const resetFilters = () => {
+        setFilters({
+            search: '',
+            minCapacity: 0,
+            maxCapacity: 1000,
+            hasImage: 'all',
+            hasEquipment: 'all',
+            equipmentName: '',
+            sortBy: 'name',
+            sortOrder: 'asc'
+        });
+    };
+
+    // Statistiques rapides
+    const stats = useMemo(() => {
+        const total = rooms.length;
+        const withImages = rooms.filter((r: Room) => r.imageUrl && r.imageUrl.trim() !== '').length;
+        const withEquipment = rooms.filter((r: Room) => Array.isArray(r.roomEquipments) && r.roomEquipments.length > 0).length;
+        const totalCapacity = rooms.reduce((sum: number, r: Room) => sum + r.capacity, 0);
+        const avgCapacity = total > 0 ? Math.round(totalCapacity / total) : 0;
+        const maxCapacity = total > 0 ? Math.max(...rooms.map((r: Room) => r.capacity)) : 0;
+
+        return {
+            total,
+            withImages,
+            withEquipment,
+            totalCapacity,
+            avgCapacity,
+            maxCapacity
+        };
+    }, [rooms]);
+
+    // Liste des équipements uniques dans les salles
+    const equipmentInRooms = useMemo(() => {
+        const equipmentIds = new Set<string>();
+        rooms.forEach(room => {
+            room.roomEquipments?.forEach(re => {
+                equipmentIds.add(re.equipmentId);
+            });
+        });
+
+        return Array.from(equipmentIds)
+            .map(id => equipment.find(eq => eq.id === id))
+            .filter(Boolean)
+            .sort((a, b) => a!.name.localeCompare(b!.name));
+    }, [rooms, equipment]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -147,8 +283,19 @@ export const RoomList = () => {
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">Gestion des salles</h1>
+            {/* Header avec statistiques */}
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-3xl font-bold">Gestion des salles</h1>
+                    <div className="flex space-x-6 mt-2 text-sm text-gray-600">
+                        <span>Total: <strong>{stats.total}</strong></span>
+                        <span>Avec images: <strong>{stats.withImages}</strong></span>
+                        <span>Avec équipements: <strong>{stats.withEquipment}</strong></span>
+                        <span>Capacité totale: <strong>{stats.totalCapacity}</strong></span>
+                        <span>Capacité max: <strong>{stats.maxCapacity}</strong></span>
+                        <span>Capacité moy: <strong>{stats.avgCapacity}</strong></span>
+                    </div>
+                </div>
                 <button
                     onClick={() => {
                         setEditingRoom(null);
@@ -164,8 +311,169 @@ export const RoomList = () => {
                 </button>
             </div>
 
+            {/* Barre de recherche et filtres */}
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+                <div className="flex items-center space-x-4 mb-4">
+                    {/* Recherche */}
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="Rechercher par nom de salle..."
+                            value={filters.search}
+                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    {/* Bouton filtres */}
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${
+                            showFilters ? 'bg-blue-500 text-white border-blue-500' : 'hover:bg-gray-50'
+                        }`}
+                    >
+                        <SlidersHorizontal className="w-5 h-5" />
+                        <span>Filtres</span>
+                    </button>
+
+                    {/* Bouton reset */}
+                    <button
+                        onClick={resetFilters}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800 border rounded-lg hover:bg-gray-50"
+                    >
+                        Tout effacer
+                    </button>
+                </div>
+
+                {/* Panneau de filtres */}
+                {showFilters && (
+                    <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Capacité min */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Capacité min</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={filters.minCapacity}
+                                onChange={(e) => setFilters({ ...filters, minCapacity: Number(e.target.value) })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        {/* Capacité max */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Capacité max</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={filters.maxCapacity}
+                                onChange={(e) => setFilters({ ...filters, maxCapacity: Number(e.target.value) })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        {/* Images */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
+                            <select
+                                value={filters.hasImage}
+                                onChange={(e) => setFilters({ ...filters, hasImage: e.target.value as any })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">Toutes</option>
+                                <option value="with">Avec image</option>
+                                <option value="without">Sans image</option>
+                            </select>
+                        </div>
+
+                        {/* Équipements */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Équipements</label>
+                            <select
+                                value={filters.hasEquipment}
+                                onChange={(e) => setFilters({ ...filters, hasEquipment: e.target.value as any })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">Toutes</option>
+                                <option value="with">Avec équipements</option>
+                                <option value="without">Sans équipements</option>
+                            </select>
+                        </div>
+
+                        {/* Recherche par équipement spécifique */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Équipement spécifique</label>
+                            <input
+                                type="text"
+                                placeholder="Nom d'équipement..."
+                                value={filters.equipmentName}
+                                onChange={(e) => setFilters({ ...filters, equipmentName: e.target.value })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        {/* Tri */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Trier par</label>
+                            <select
+                                value={filters.sortBy}
+                                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="name">Nom</option>
+                                <option value="capacity">Capacité</option>
+                                <option value="equipment-count">Nb équipements</option>
+                            </select>
+                        </div>
+
+                        {/* Ordre de tri */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
+                            <select
+                                value={filters.sortOrder}
+                                onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value as any })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="asc">Croissant</option>
+                                <option value="desc">Décroissant</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
+                {/* Résultats */}
+                <div className="mt-4 text-sm text-gray-600">
+                    {filteredAndSortedRooms.length} salle(s) trouvée(s) sur {rooms.length}
+                </div>
+
+                {/* Équipements populaires */}
+                {equipmentInRooms.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                        <p className="text-sm text-gray-600 mb-2">Équipements dans les salles :</p>
+                        <div className="flex flex-wrap gap-2">
+                            {equipmentInRooms.slice(0, 8).map(eq => (
+                                <button
+                                    key={eq!.id}
+                                    onClick={() => setFilters({ ...filters, equipmentName: eq!.name })}
+                                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200 transition-colors"
+                                >
+                                    {eq!.name}
+                                </button>
+                            ))}
+                            {equipmentInRooms.length > 8 && (
+                                <span className="px-3 py-1 text-gray-500 text-xs">
+                                    +{equipmentInRooms.length - 8} autres...
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Grille des salles */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {rooms.map((room) => (
+                {filteredAndSortedRooms.map((room) => (
                     <div key={room.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* Image de la salle */}
                         {room.imageUrl ? (
@@ -233,12 +541,46 @@ export const RoomList = () => {
                                     <p className="text-gray-500">Aucun équipement</p>
                                 )}
                             </div>
+
+                            {/* Badges informatifs */}
+                            <div className="flex flex-wrap gap-2 mt-4">
+                                {room.imageUrl && (
+                                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                        📷 Image
+                                    </span>
+                                )}
+                                {Array.isArray(room.roomEquipments) && room.roomEquipments.length > 0 && (
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                        🔧 {room.roomEquipments.length} équipement(s)
+                                    </span>
+                                )}
+                                {room.capacity >= 50 && (
+                                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                                        👥 Grande salle
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Modal */}
+            {/* Affichage si aucun résultat */}
+            {filteredAndSortedRooms.length === 0 && rooms.length > 0 && (
+                <div className="text-center py-12">
+                    <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune salle trouvée</h3>
+                    <p className="text-gray-500 mb-4">Essayez de modifier vos critères de recherche</p>
+                    <button
+                        onClick={resetFilters}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                    >
+                        Réinitialiser les filtres
+                    </button>
+                </div>
+            )}
+
+            {/* Modal (reste identique à ton code original) */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -314,7 +656,7 @@ export const RoomList = () => {
                                     )}
                                     <input
                                         type="file"
-                                        accept={getAcceptedTypes()} // ✅ Types dynamiques depuis backend
+                                        accept={getAcceptedTypes()}
                                         onChange={handleImageChange}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />

@@ -1,8 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store';
-import { Monitor, Plus, Edit, Trash, X, Camera, Upload } from 'lucide-react';
+import { Monitor, Plus, Edit, Trash, X, Camera, Upload, Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { Equipment } from '../types';
 import { useImageValidation } from '../hooks/useImageValidation';
+
+interface EquipmentFilters {
+    search: string;
+    type: 'all' | 'mobile' | 'static';
+    minQuantity: number;
+    maxQuantity: number;
+    hasImage: 'all' | 'with' | 'without';
+    sortBy: 'name' | 'quantity' | 'type';
+    sortOrder: 'asc' | 'desc';
+}
 
 export const EquipmentList = () => {
     const { equipment, fetchEquipment, addEquipment, updateEquipment, deleteEquipment, uploadEquipmentImage, deleteEquipmentImage } = useStore();
@@ -12,7 +22,20 @@ export const EquipmentList = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // État des filtres
+    const [filters, setFilters] = useState<EquipmentFilters>({
+        search: '',
+        type: 'all',
+        minQuantity: 0,
+        maxQuantity: 1000,
+        hasImage: 'all',
+        sortBy: 'name',
+        sortOrder: 'asc'
+    });
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -25,6 +48,83 @@ export const EquipmentList = () => {
     useEffect(() => {
         void fetchEquipment();
     }, [fetchEquipment]);
+
+    // Logique de filtrage et tri
+    const filteredAndSortedEquipment = useMemo(() => {
+        let filtered = equipment.filter((equip: Equipment) => {
+            // Recherche textuelle
+            const searchMatch = equip.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+                equip.description.toLowerCase().includes(filters.search.toLowerCase());
+
+            // Filtre par type
+            const typeMatch = filters.type === 'all' ||
+                (filters.type === 'mobile' && equip.mobile) ||
+                (filters.type === 'static' && !equip.mobile);
+
+            // Filtre par quantité
+            const quantityMatch = equip.quantity >= filters.minQuantity &&
+                equip.quantity <= filters.maxQuantity;
+
+            // Filtre par image
+            const imageMatch = filters.hasImage === 'all' ||
+                (filters.hasImage === 'with' && equip.imageUrl && equip.imageUrl.trim() !== '') ||
+                (filters.hasImage === 'without' && (!equip.imageUrl || equip.imageUrl.trim() === ''));
+
+            return searchMatch && typeMatch && quantityMatch && imageMatch;
+        });
+
+        // Tri
+        filtered.sort((a, b) => {
+            let aValue: any;
+            let bValue: any;
+
+            switch (filters.sortBy) {
+                case 'name':
+                    aValue = a.name.toLowerCase();
+                    bValue = b.name.toLowerCase();
+                    break;
+                case 'quantity':
+                    aValue = a.quantity;
+                    bValue = b.quantity;
+                    break;
+                case 'type':
+                    aValue = a.mobile ? 'mobile' : 'static';
+                    bValue = b.mobile ? 'mobile' : 'static';
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (aValue < bValue) return filters.sortOrder === 'asc' ? -1 : 1;
+            if (aValue > bValue) return filters.sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return filtered;
+    }, [equipment, filters]);
+
+    // Réinitialiser les filtres
+    const resetFilters = () => {
+        setFilters({
+            search: '',
+            type: 'all',
+            minQuantity: 0,
+            maxQuantity: 1000,
+            hasImage: 'all',
+            sortBy: 'name',
+            sortOrder: 'asc'
+        });
+    };
+
+    // Statistiques rapides
+    const stats = useMemo(() => {
+        const total = equipment.length;
+        const mobile = equipment.filter((e: Equipment) => e.mobile).length;
+        const withImages = equipment.filter((e: Equipment) => e.imageUrl && e.imageUrl.trim() !== '').length;
+        const totalQuantity = equipment.reduce((sum: number, e: Equipment) => sum + e.quantity, 0);
+
+        return { total, mobile, static: total - mobile, withImages, totalQuantity };
+    }, [equipment]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -176,8 +276,18 @@ export const EquipmentList = () => {
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">Gestion des équipements</h1>
+            {/* Header avec statistiques */}
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-3xl font-bold">Gestion des équipements</h1>
+                    <div className="flex space-x-6 mt-2 text-sm text-gray-600">
+                        <span>Total: <strong>{stats.total}</strong></span>
+                        <span>Mobile: <strong>{stats.mobile}</strong></span>
+                        <span>Statique: <strong>{stats.static}</strong></span>
+                        <span>Avec images: <strong>{stats.withImages}</strong></span>
+                        <span>Quantité totale: <strong>{stats.totalQuantity}</strong></span>
+                    </div>
+                </div>
                 <button
                     onClick={() => {
                         resetModal();
@@ -190,8 +300,134 @@ export const EquipmentList = () => {
                 </button>
             </div>
 
+            {/* Barre de recherche et filtres */}
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+                <div className="flex items-center space-x-4 mb-4">
+                    {/* Recherche */}
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="Rechercher par nom ou description..."
+                            value={filters.search}
+                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    {/* Bouton filtres */}
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${
+                            showFilters ? 'bg-blue-500 text-white border-blue-500' : 'hover:bg-gray-50'
+                        }`}
+                    >
+                        <SlidersHorizontal className="w-5 h-5" />
+                        <span>Filtres</span>
+                    </button>
+
+                    {/* Bouton reset */}
+                    <button
+                        onClick={resetFilters}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800 border rounded-lg hover:bg-gray-50"
+                    >
+                        Tout effacer
+                    </button>
+                </div>
+
+                {/* Panneau de filtres */}
+                {showFilters && (
+                    <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Type */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                            <select
+                                value={filters.type}
+                                onChange={(e) => setFilters({ ...filters, type: e.target.value as any })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">Tous</option>
+                                <option value="mobile">Mobile</option>
+                                <option value="static">Statique</option>
+                            </select>
+                        </div>
+
+                        {/* Quantité min */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantité min</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={filters.minQuantity}
+                                onChange={(e) => setFilters({ ...filters, minQuantity: Number(e.target.value) })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        {/* Quantité max */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantité max</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={filters.maxQuantity}
+                                onChange={(e) => setFilters({ ...filters, maxQuantity: Number(e.target.value) })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        {/* Images */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
+                            <select
+                                value={filters.hasImage}
+                                onChange={(e) => setFilters({ ...filters, hasImage: e.target.value as any })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">Tous</option>
+                                <option value="with">Avec image</option>
+                                <option value="without">Sans image</option>
+                            </select>
+                        </div>
+
+                        {/* Tri */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Trier par</label>
+                            <select
+                                value={filters.sortBy}
+                                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="name">Nom</option>
+                                <option value="quantity">Quantité</option>
+                                <option value="type">Type</option>
+                            </select>
+                        </div>
+
+                        {/* Ordre de tri */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
+                            <select
+                                value={filters.sortOrder}
+                                onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value as any })}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="asc">Croissant</option>
+                                <option value="desc">Décroissant</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
+                {/* Résultats */}
+                <div className="mt-4 text-sm text-gray-600">
+                    {filteredAndSortedEquipment.length} équipement(s) trouvé(s) sur {equipment.length}
+                </div>
+            </div>
+
+            {/* Grille des équipements */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {equipment.map((equip: Equipment) => (
+                {filteredAndSortedEquipment.map((equip: Equipment) => (
                     <div key={equip.id} className="bg-white rounded-lg shadow-md overflow-hidden relative">
                         {/* Overlay de chargement lors de la suppression */}
                         {isDeleting === equip.id && (
@@ -295,17 +531,27 @@ export const EquipmentList = () => {
                             <p className="text-sm text-gray-700">
                                 <span className="font-semibold">Type :</span> {equip.mobile ? 'Mobile' : 'Statique'}
                             </p>
-                            {equip.imageUrl && (
-                                <p className="text-xs text-blue-600 mt-2">
-                                    📷 Image stockée
-                                </p>
-                            )}
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Modal */}
+            {/* Affichage si aucun résultat */}
+            {filteredAndSortedEquipment.length === 0 && equipment.length > 0 && (
+                <div className="text-center py-12">
+                    <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun équipement trouvé</h3>
+                    <p className="text-gray-500 mb-4">Essayez de modifier vos critères de recherche</p>
+                    <button
+                        onClick={resetFilters}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                    >
+                        Réinitialiser les filtres
+                    </button>
+                </div>
+            )}
+
+            {/* Modal (reste identique) */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
