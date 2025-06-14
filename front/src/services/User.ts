@@ -89,6 +89,46 @@ export class User {
     }
 
     /**
+     * Mise à jour du statut d'un utilisateur (actif/inactif)
+     */
+    public static async updateUserStatus(userId: string, enabled: boolean): Promise<User> {
+        try {
+            const response = await ApiService.patch(`${User.baseEndpoint}/${userId}/status`, { enabled });
+            return new User().fromJSON(response);
+        } catch (error) {
+            console.error('Error updating user status:', error);
+            throw new Error(`Impossible de mettre à jour le statut de l'utilisateur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        }
+    }
+
+    /**
+     * Envoi d'un email de réinitialisation de mot de passe
+     */
+    public static async sendPasswordResetEmail(userId: string): Promise<void> {
+        try {
+            await ApiService.post(`${User.baseEndpoint}/${userId}/reset-password`, {});
+        } catch (error) {
+            console.error('Error sending password reset email:', error);
+
+            // Message d'erreur plus descriptif
+            let errorMessage = "Impossible d'envoyer l'email de réinitialisation";
+
+            // Essayons de récupérer plus d'informations sur l'erreur
+            if (error instanceof Error) {
+                if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+                    errorMessage += ". Erreur interne du serveur: le service d'email n'est peut-être pas configuré dans Keycloak ou les permissions sont insuffisantes.";
+                } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+                    errorMessage += ". Permissions insuffisantes pour effectuer cette action.";
+                } else {
+                    errorMessage += `: ${error.message}`;
+                }
+            }
+
+            throw new Error(errorMessage);
+        }
+    }
+
+    /**
      * Récupère tous les utilisateurs (admin seulement)
      */
     public static async getAll(): Promise<User[]> {
@@ -179,6 +219,31 @@ export class User {
     }
 
     // ========== MÉTHODES D'INSTANCE ==========
+
+    /**
+     * Met à jour le statut de l'utilisateur courant
+     */
+    public async updateStatus(enabled: boolean): Promise<User> {
+        try {
+            const response = await User.updateUserStatus(this.id, enabled);
+            return this.fromJSON(response.toJSON());
+        } catch (error) {
+            console.error('Error updating user status:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Envoie un email de réinitialisation de mot de passe pour l'utilisateur courant
+     */
+    public async sendPasswordReset(): Promise<void> {
+        try {
+            await User.sendPasswordResetEmail(this.id);
+        } catch (error) {
+            console.error('Error sending password reset email:', error);
+            throw error;
+        }
+    }
 
     /**
      * Crée un nouvel utilisateur (si implémenté côté backend)
@@ -325,6 +390,19 @@ export class User {
             this.displayName = this.firstName;
         } else {
             this.displayName = this.username;
+        }
+    }
+
+    /**
+     * Récupère tous les utilisateurs (actifs et inactifs)
+     */
+    public static async getAllUsers(): Promise<User[]> {
+        try {
+            const usersData = await ApiService.get(`${User.baseEndpoint}/all`);
+            return (usersData || []).map((userData: any) => new User().fromJSON(userData));
+        } catch (error) {
+            console.error('Error fetching all users:', error);
+            throw new Error('Impossible de récupérer la liste complète des utilisateurs');
         }
     }
 }

@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -84,8 +85,6 @@ public class KeycloakAdminService {
             throw new RuntimeException("Failed to get Keycloak admin token", e);
         }
     }
-
-    // ... (reste du code identique)
 
     public List<UserDTO> getAllActiveUsers() {
         try {
@@ -176,6 +175,97 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             LOGGER.warning("⚠️ Keycloak connection test failed: " + e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Met à jour le statut (enabled/disabled) d'un utilisateur
+     */
+    public UserDTO updateUserStatus(String userId, boolean enabled) {
+        try {
+            LOGGER.info("🔄 Updating user status for " + userId + " to: " + (enabled ? "enabled" : "disabled"));
+
+            String token = getValidAdminToken();
+            LOGGER.info("✓ Admin token obtained");
+            String authHeader = "Bearer " + token;
+
+            // Récupérer d'abord l'utilisateur actuel
+            LOGGER.info("⬇️ Fetching current user data for userId: " + userId);
+            KeycloakUserResponse user = keycloakClient.getUser(adminRealm, userId, authHeader);
+            LOGGER.info("✓ User data fetched successfully: " + user.username);
+
+            // Mettre à jour le statut
+            user.enabled = enabled;
+            LOGGER.info("⬆️ Sending user update with new status: " + enabled);
+
+            // Enregistrer les modifications
+            keycloakClient.updateUser(adminRealm, userId, authHeader, user);
+            LOGGER.info("✅ Update request sent successfully");
+
+            // Récupérer l'utilisateur mis à jour pour confirmation
+            KeycloakUserResponse updatedUser = keycloakClient.getUser(adminRealm, userId, authHeader);
+            LOGGER.info("✓ Updated user retrieved, new status: " + updatedUser.enabled);
+
+            return mapToUserDTO(updatedUser);
+
+        } catch (Exception e) {
+            LOGGER.severe("❌ Error updating user status: " + e.getMessage());
+            LOGGER.severe("Stack trace: " + java.util.Arrays.toString(e.getStackTrace()));
+            throw new RuntimeException("Failed to update user status", e);
+        }
+    }
+
+    /**
+     * Envoie un email de réinitialisation de mot de passe
+     */
+    public void sendPasswordResetEmail(String userId) {
+        try {
+            LOGGER.info("📧 Sending password reset email to user: " + userId);
+
+            String token = getValidAdminToken();
+            String authHeader = "Bearer " + token;
+
+            // Liste des actions à effectuer
+            List<String> actions = Collections.singletonList("UPDATE_PASSWORD");
+
+            keycloakClient.sendResetPasswordEmail(adminRealm, userId, authHeader, actions);
+
+            LOGGER.info("✅ Password reset email sent to user: " + userId);
+
+        } catch (Exception e) {
+            LOGGER.severe("❌ Error sending password reset email: " + e.getMessage());
+            throw new RuntimeException("Failed to send password reset email", e);
+        }
+    }
+
+    /**
+     * Récupère tous les utilisateurs, actifs et inactifs
+     */
+    public List<UserDTO> getAllUsers() {
+        try {
+            LOGGER.info("🔍 Fetching all users (including inactive) from Keycloak realm: " + adminRealm);
+
+            String token = getValidAdminToken();
+            String authHeader = "Bearer " + token;
+
+            List<KeycloakUserResponse> keycloakUsers = keycloakClient.getUsers(
+                    adminRealm,
+                    authHeader,
+                    100,
+                    true
+            );
+
+            // Ne pas filtrer par statut enabled
+            List<UserDTO> users = keycloakUsers.stream()
+                    .map(this::mapToUserDTO)
+                    .collect(Collectors.toList());
+
+            LOGGER.info("✅ Retrieved " + users.size() + " users (active and inactive) from Keycloak");
+            return users;
+
+        } catch (Exception e) {
+            LOGGER.severe("❌ Error fetching users from Keycloak: " + e.getMessage());
+            throw new RuntimeException("Failed to fetch users from Keycloak", e);
         }
     }
 }

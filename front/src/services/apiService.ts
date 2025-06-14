@@ -183,6 +183,13 @@ class ApiService {
         // Then delete the room
         await this.delete(`/rooms/${roomId}`);
     }
+
+    public static patch(endpoint: string, data: any): Promise<any> {
+        return this.fetchAuthenticated(endpoint, {
+            method: 'PATCH',
+            body: JSON.stringify(data)
+        });
+    }
 }
 
 export default ApiService;
