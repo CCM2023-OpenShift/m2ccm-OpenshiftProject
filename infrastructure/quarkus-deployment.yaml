@@ -22,11 +22,6 @@ spec:
           env:
             - name: QUARKUS_PROFILE
               value: "prod"
-            - name: KEYCLOAK_CLIENT_BACKEND_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: keycloak-client-backend
-                  key: KEYCLOAK_CLIENT_BACKEND_SECRET
             - name: IMAGE_UPLOAD_DIRECTORY
               value: "/uploads/images"
             - name: APP_SUPABASE_KEY
@@ -59,16 +54,16 @@ spec:
                 secretKeyRef:
                   name: keycloak-secret
                   key: PROD_KC_SERVICE_SECRET
-            - name: PROD_KC_ADMIN_USERNAME
+            - name: KEYCLOAK_ADMIN
               valueFrom:
                 secretKeyRef:
                   name: keycloak-secret
-                  key: PROD_KC_ADMIN_USERNAME
-            - name: PROD_KC_ADMIN_PASSWORD
+                  key: KEYCLOAK_ADMIN
+            - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: keycloak-secret
-                  key: PROD_KC_ADMIN_PASSWORD
+                  key: KEYCLOAK_ADMIN_PASSWORD
 
           resources:
             requests:

@@ -66,4 +66,28 @@ public interface KeycloakAdminResource {
             @PathParam("userId") String userId,
             @HeaderParam("Authorization") String authorization
     );
+
+    /**
+     * Met à jour un utilisateur
+     */
+    @PUT
+    @Path("/admin/realms/{realm}/users/{userId}")
+    void updateUser(
+            @PathParam("realm") String realm,
+            @PathParam("userId") String userId,
+            @HeaderParam("Authorization") String authorization,
+            KeycloakUserResponse user
+    );
+
+    /**
+     * Envoie un email de réinitialisation de mot de passe
+     */
+    @PUT
+    @Path("/admin/realms/{realm}/users/{userId}/execute-actions-email")
+    void sendResetPasswordEmail(
+            @PathParam("realm") String realm,
+            @PathParam("userId") String userId,
+            @HeaderParam("Authorization") String authorization,
+            List<String> actions
+    );
 }

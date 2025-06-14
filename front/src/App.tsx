@@ -10,7 +10,9 @@ import { BookingHistory } from './components/BookingHistory';
 import { BookingCalendar } from './components/BookingCalendar';
 import { NotAuthorized } from './components/NotAuthorized';
 
-import { LayoutGrid, Calendar, BookOpen, Monitor, History } from 'lucide-react';
+import {LayoutGrid, Calendar, BookOpen, Monitor, History, UserIcon, Users} from 'lucide-react';
+import ProfilePage from "./components/ProfilePage.tsx";
+import UserManagementPage from "./components/UserManagementProfile.tsx";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -84,8 +86,13 @@ function Sidebar() {
                     <LayoutGrid className="w-5 h-5 mr-3" />
                     Tableau de bord
                 </Link>
+
                 {(hasRole('user') || hasRole('admin')) && (
                     <>
+                        <Link to="/profile" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <UserIcon className="w-5 h-5 mr-3" />
+                            Mon profil
+                        </Link>
                         <Link to="/calendar" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                             <Calendar className="w-5 h-5 mr-3" />
                             Calendrier
@@ -102,6 +109,10 @@ function Sidebar() {
                 )}
                 {hasRole('admin') && (
                     <>
+                        <Link to="/admin/users" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                            <Users className="w-5 h-5 mr-3" />
+                            Gestion utilisateurs
+                        </Link>
                         <Link to="/rooms" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                             <BookOpen className="w-5 h-5 mr-3" />
                             Salles
@@ -140,6 +151,8 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
 
+                        <Route path="/profile" element={<ProfilePage />} />
+
                         <Route
                             path="/calendar"
                             element={
@@ -177,6 +190,15 @@ function App() {
                             element={
                                 <ProtectedRoute allowedRoles={['admin']}>
                                     <EquipmentList />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/admin/users"
+                            element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                    <UserManagementPage />
                                 </ProtectedRoute>
                             }
                         />

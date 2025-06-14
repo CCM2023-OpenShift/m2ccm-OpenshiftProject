@@ -145,4 +145,46 @@ public class UserService {
                 username.length() >= 2 &&
                 username.length() <= 50;
     }
+
+    /**
+     * Met à jour le statut d'un utilisateur (active/désactive)
+     */
+    public UserDTO updateUserStatus(String userId, boolean enabled) {
+        try {
+            LOGGER.info("🔄 Request to update status for user: " + userId + " to: " + (enabled ? "enabled" : "disabled"));
+
+            UserDTO updatedUser = keycloakAdminService.updateUserStatus(userId, enabled);
+
+            LOGGER.info("✅ User status updated successfully");
+            return updatedUser;
+
+        } catch (Exception e) {
+            LOGGER.severe("❌ Error updating user status: " + e.getMessage());
+            throw new RuntimeException("Failed to update user status", e);
+        }
+    }
+
+    /**
+     * Envoie un email de réinitialisation de mot de passe
+     */
+    public void sendPasswordResetEmail(String userId) {
+        try {
+            LOGGER.info("📧 Request to send password reset email to user: " + userId);
+
+            keycloakAdminService.sendPasswordResetEmail(userId);
+
+            LOGGER.info("✅ Password reset email request processed");
+
+        } catch (Exception e) {
+            LOGGER.severe("❌ Error sending password reset email: " + e.getMessage());
+            throw new RuntimeException("Failed to send password reset email", e);
+        }
+    }
+
+    /**
+     * Récupère tous les utilisateurs (actifs et inactifs)
+     */
+    public List<UserDTO> getAllUsers() {
+        return keycloakAdminService.getAllUsers();
+    }
 }
