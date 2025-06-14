@@ -43,6 +43,61 @@ export default function formatTimestamp(timestamp: string): string {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+// Format une date pour l'affichage dans l'historique des réservations
+export const formatDateForDisplay = (isoString: string): string => {
+    const date = new Date(isoString);
+
+    // Options pour le formattage de la date
+    const dateOptions: Intl.DateTimeFormatOptions = {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+    };
+
+    // Options pour le formattage de l'heure
+    const timeOptions: Intl.DateTimeFormatOptions = {
+        hour: "2-digit",
+        minute: "2-digit"
+    };
+
+    // Formatter la date et l'heure
+    const formattedDate = date.toLocaleDateString("fr-FR", dateOptions);
+    const formattedTime = date.toLocaleTimeString("fr-FR", timeOptions);
+
+    return `${formattedDate} à ${formattedTime}`;
+};
+
+export const formatBookingTimeRange = (startTime: string, endTime: string): string => {
+    const startDate = new Date(startTime);
+    const endDate = new Date(endTime);
+
+    // Options pour le formatage de la date et de l'heure
+    const dateOptions: Intl.DateTimeFormatOptions = {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+    };
+
+    const timeOptions: Intl.DateTimeFormatOptions = {
+        hour: "2-digit",
+        minute: "2-digit"
+    };
+
+    // Formater les dates et heures en français
+    const formattedStartDate = startDate.toLocaleDateString("fr-FR", dateOptions);
+    const formattedStartTime = startDate.toLocaleTimeString("fr-FR", timeOptions);
+    const formattedEndTime = endDate.toLocaleTimeString("fr-FR", timeOptions);
+
+    // Si la réservation commence et se termine le même jour
+    if (startDate.toDateString() === endDate.toDateString()) {
+        return `${formattedStartDate} de ${formattedStartTime} à ${formattedEndTime}`;
+    } else {
+        // Pour les réservations sur plusieurs jours
+        const formattedEndDate = endDate.toLocaleDateString("fr-FR", dateOptions);
+        return `Du ${formattedStartDate} à ${formattedStartTime} au ${formattedEndDate} à ${formattedEndTime}`;
+    }
+};
+
 // Exemple d'utilisation dans le cas où tu as besoin de l'heure actuelle arrondie
 export const now = new Date();  // Heure locale
 export const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);  // Heure locale, une heure plus tard
