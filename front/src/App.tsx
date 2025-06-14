@@ -10,7 +10,8 @@ import { BookingHistory } from './components/BookingHistory';
 import { BookingCalendar } from './components/BookingCalendar';
 import { NotAuthorized } from './components/NotAuthorized';
 
-import { LayoutGrid, Calendar, BookOpen, Monitor, History } from 'lucide-react';
+import {LayoutGrid, Calendar, BookOpen, Monitor, History, UserIcon} from 'lucide-react';
+import ProfilePage from "./components/ProfilePage.tsx";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -84,6 +85,12 @@ function Sidebar() {
                     <LayoutGrid className="w-5 h-5 mr-3" />
                     Tableau de bord
                 </Link>
+
+                <Link to="/profile" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <UserIcon className="w-5 h-5 mr-3" />
+                    Mon profil
+                </Link>
+
                 {(hasRole('user') || hasRole('admin')) && (
                     <>
                         <Link to="/calendar" className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
@@ -139,6 +146,8 @@ function App() {
                 <div className="flex-1 p-4">
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
+
+                        <Route path="/profile" element={<ProfilePage />} />
 
                         <Route
                             path="/calendar"
