@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Path("/users")
+@Path("/api/users")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class UserResource {
@@ -48,14 +48,14 @@ public class UserResource {
 
     /**
      * GET /api/users/booking-organizers
-     * Récupère la liste des organisateurs possibles (admin seulement)
+     * Récupère la liste des organisateurs possibles depuis Keycloak (admin seulement)
      */
     @GET
     @Path("/booking-organizers")
     @RolesAllowed({"admin"})
     public Response getBookingOrganizers() {
         try {
-            LOGGER.info("🔍 Request: Admin requesting booking organizers list");
+            LOGGER.info("🔍 Request: Admin requesting booking organizers list from Keycloak");
 
             List<UserDTO> users = userService.getUsersForBooking();
 
@@ -66,6 +66,30 @@ public class UserResource {
             LOGGER.log(Level.SEVERE, "❌ Error fetching booking organizers", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("{\"error\": \"Erreur lors de la récupération des organisateurs\"}")
+                    .build();
+        }
+    }
+
+    /**
+     * GET /api/users/search?q=terme
+     * Recherche d'utilisateurs dans Keycloak (admin seulement)
+     */
+    @GET
+    @Path("/search")
+    @RolesAllowed({"admin"})
+    public Response searchUsers(@QueryParam("q") String searchTerm) {
+        try {
+            LOGGER.info("🔍 Request: Admin searching users with term: " + searchTerm);
+
+            List<UserDTO> users = userService.searchUsers(searchTerm);
+
+            LOGGER.info("✅ Response: " + users.size() + " users found");
+            return Response.ok(users).build();
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "❌ Error searching users", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"Erreur lors de la recherche d'utilisateurs\"}")
                     .build();
         }
     }

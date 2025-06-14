@@ -5,9 +5,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.logging.Logger;
 
 @ApplicationScoped
@@ -17,6 +16,9 @@ public class UserService {
 
     @Inject
     JsonWebToken jwt;
+
+    @Inject
+    KeycloakAdminService keycloakAdminService;
 
     /**
      * Récupère l'utilisateur actuel depuis le token JWT
@@ -52,48 +54,80 @@ public class UserService {
     }
 
     /**
-     * Liste des utilisateurs connus pour les réservations (admins seulement)
+     * Récupère les utilisateurs depuis Keycloak (admin seulement)
      */
     public List<UserDTO> getUsersForBooking() {
         try {
+            LOGGER.info("🔍 Getting users for booking from Keycloak...");
+
+            // Test de connectivité Keycloak d'abord
+            if (!keycloakAdminService.testConnection()) {
+                LOGGER.warning("⚠️ Keycloak connection failed, returning only current admin user");
+                return getCurrentAdminOnly();
+            }
+
+            // Récupérer depuis Keycloak
+            List<UserDTO> users = keycloakAdminService.getAllActiveUsers();
+
+            // Marquer l'utilisateur actuel
             UserDTO currentUser = getCurrentUser();
+            users.forEach(user -> {
+                if (user.username.equals(currentUser.username)) {
+                    user.displayName = user.displayName + " (Vous)";
+                }
+            });
 
-            // 🎯 Liste des utilisateurs connus dans ton système
-            // Tu peux la modifier selon tes besoins
-            List<String> knownUsernames = Arrays.asList(
-                    "M0rd0rian",    // Toi
-                    "admin",        // Admin principal
-                    "user1",        // Autres utilisateurs
-                    "user2",
-                    "user3",
-                    "manager",
-                    "secretary",
-                    "director"
-            );
-
-            List<UserDTO> users = knownUsernames.stream()
-                    .map(username -> {
-                        UserDTO user = new UserDTO();
-                        user.username = username;
-                        user.enabled = true;
-
-                        // Marquer l'utilisateur actuel
-                        if (username.equals(currentUser.username)) {
-                            user.displayName = username + " (Vous)";
-                        } else {
-                            user.displayName = username;
-                        }
-
-                        return user;
-                    })
-                    .collect(Collectors.toList());
-
-            LOGGER.info("✅ Retrieved " + users.size() + " known users for booking");
+            LOGGER.info("✅ Retrieved " + users.size() + " users from Keycloak for booking");
             return users;
 
         } catch (Exception e) {
-            LOGGER.severe("❌ Error getting users for booking: " + e.getMessage());
-            throw new RuntimeException("Error retrieving users for booking", e);
+            LOGGER.severe("❌ Error getting users from Keycloak: " + e.getMessage());
+            LOGGER.warning("⚠️ Keycloak connection failed, returning only current admin user");
+            return getCurrentAdminOnly();
+        }
+    }
+
+    /**
+     * Recherche d'utilisateurs (admin seulement)
+     */
+    public List<UserDTO> searchUsers(String searchTerm) {
+        try {
+            if (searchTerm == null || searchTerm.trim().isEmpty()) {
+                return getUsersForBooking();
+            }
+
+            LOGGER.info("🔍 Searching users with term: " + searchTerm);
+            return keycloakAdminService.searchUsers(searchTerm.trim());
+
+        } catch (Exception e) {
+            LOGGER.severe("❌ Error searching users: " + e.getMessage());
+            return getCurrentAdminOnly();
+        }
+    }
+
+    /**
+     * Retourne seulement l'utilisateur admin connecté (fallback minimal)
+     */
+    private List<UserDTO> getCurrentAdminOnly() {
+        try {
+            UserDTO currentUser = getCurrentUser();
+            currentUser.displayName = currentUser.displayName + " (Vous - Connexion Keycloak échouée)";
+
+            LOGGER.info("⚠️ Using admin-only fallback: " + currentUser.username);
+            return Collections.singletonList(currentUser);
+
+        } catch (Exception e) {
+            LOGGER.severe("❌ Error getting current admin user: " + e.getMessage());
+
+            // Fallback ultime si même le JWT ne fonctionne pas
+            UserDTO fallback = new UserDTO();
+            fallback.id = "ultimate-fallback";
+            fallback.username = "M0rd0rian";
+            fallback.displayName = "M0rd0rian (Fallback ultime)";
+            fallback.enabled = true;
+
+            LOGGER.warning("⚠️ Using ultimate fallback user: M0rd0rian");
+            return Collections.singletonList(fallback);
         }
     }
 
@@ -110,22 +144,5 @@ public class UserService {
         return username.matches("^[a-zA-Z0-9._-]+$") &&
                 username.length() >= 2 &&
                 username.length() <= 50;
-    }
-
-    /**
-     * Ajoute un utilisateur à la liste des connus (pour les admins)
-     */
-    public UserDTO createKnownUser(String username) {
-        if (!isValidUsername(username)) {
-            throw new IllegalArgumentException("Username invalide: " + username);
-        }
-
-        UserDTO user = new UserDTO();
-        user.username = username;
-        user.displayName = username;
-        user.enabled = true;
-
-        LOGGER.info("✅ Created known user: " + username);
-        return user;
     }
 }

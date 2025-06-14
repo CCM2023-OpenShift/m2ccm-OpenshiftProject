@@ -27,7 +27,7 @@ data:
           ]
         },
         {
-          "username": "admin-dev",
+          "username": "devadmin1",
           "enabled": true,
           "email": "admin@example.com",
           "firstName": "Admin",
@@ -36,27 +36,357 @@ data:
           "credentials": [
             {
               "type": "password",
-              "value": "adminpass"
+              "value": "devadmin1"
             }
           ],
           "realmRoles": [
             "admin"
+          ]
+        },
+        {
+          "username": "admin.univ",
+          "enabled": true,
+          "email": "admin@univ-paris.fr",
+          "firstName": "Sophie",
+          "lastName": "ADMINISTRATEUR",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "AdminUniv2025!"
+            }
+          ],
+          "realmRoles": [
+            "admin"
+          ]
+        },
+        {
+          "username": "admin.tech",
+          "enabled": true,
+          "email": "tech@univ-paris.fr",
+          "firstName": "Pierre",
+          "lastName": "TECHNIQUE",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "TechAdmin2025!"
+            }
+          ],
+          "realmRoles": [
+            "admin"
+          ]
+        },
+        {
+          "username": "prof.martin",
+          "enabled": true,
+          "email": "jean.martin@univ-paris.fr",
+          "firstName": "Jean",
+          "lastName": "MARTIN",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "ProfMartin2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "prof.dubois",
+          "enabled": true,
+          "email": "marie.dubois@univ-paris.fr",
+          "firstName": "Marie",
+          "lastName": "DUBOIS",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "ProfDubois2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "prof.leclerc",
+          "enabled": true,
+          "email": "paul.leclerc@univ-paris.fr",
+          "firstName": "Paul",
+          "lastName": "LECLERC",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "ProfLeclerc2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "prof.rousseau",
+          "enabled": true,
+          "email": "claire.rousseau@univ-paris.fr",
+          "firstName": "Claire",
+          "lastName": "ROUSSEAU",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "ProfRousseau2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "staff.secretariat",
+          "enabled": true,
+          "email": "secretariat@univ-paris.fr",
+          "firstName": "Isabelle",
+          "lastName": "SECRÉTARIAT",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "SecretariatUniv2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "staff.planning",
+          "enabled": true,
+          "email": "planning@univ-paris.fr",
+          "firstName": "Michel",
+          "lastName": "PLANNING",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "PlanningUniv2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.alice",
+          "enabled": true,
+          "email": "alice.bernard@etu.univ-paris.fr",
+          "firstName": "Alice",
+          "lastName": "BERNARD",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "AliceEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.thomas",
+          "enabled": true,
+          "email": "thomas.petit@etu.univ-paris.fr",
+          "firstName": "Thomas",
+          "lastName": "PETIT",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "ThomasEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.laura",
+          "enabled": true,
+          "email": "laura.moreau@etu.univ-paris.fr",
+          "firstName": "Laura",
+          "lastName": "MOREAU",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "LauraEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.maxime",
+          "enabled": true,
+          "email": "maxime.simon@etu.univ-paris.fr",
+          "firstName": "Maxime",
+          "lastName": "SIMON",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "MaximeEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.julie",
+          "enabled": true,
+          "email": "julie.laurent@etu.univ-paris.fr",
+          "firstName": "Julie",
+          "lastName": "LAURENT",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "JulieEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.antoine",
+          "enabled": true,
+          "email": "antoine.garcia@etu.univ-paris.fr",
+          "firstName": "Antoine",
+          "lastName": "GARCIA",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "AntoineEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.emma",
+          "enabled": true,
+          "email": "emma.roux@etu.univ-paris.fr",
+          "firstName": "Emma",
+          "lastName": "ROUX",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "EmmaEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.lucas",
+          "enabled": true,
+          "email": "lucas.david@etu.univ-paris.fr",
+          "firstName": "Lucas",
+          "lastName": "DAVID",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "LucasEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "etudiant.camille",
+          "enabled": true,
+          "email": "camille.michel@etu.univ-paris.fr",
+          "firstName": "Camille",
+          "lastName": "MICHEL",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "CamilleEtu2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "guest.conference",
+          "enabled": true,
+          "email": "conference@external.com",
+          "firstName": "Invité",
+          "lastName": "CONFÉRENCE",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "GuestConf2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
+          ]
+        },
+        {
+          "username": "guest.entreprise",
+          "enabled": true,
+          "email": "partenariat@entreprise.fr",
+          "firstName": "Partenaire",
+          "lastName": "ENTREPRISE",
+          "emailVerified": true,
+          "credentials": [
+            {
+              "type": "password",
+              "value": "GuestEnt2025"
+            }
+          ],
+          "realmRoles": [
+            "user"
           ]
         }
       ],
       "roles": {
         "realm": [
           {
-            "name": "user"
+            "name": "user",
+            "description": "Utilisateur standard"
           },
           {
-            "name": "admin"
+            "name": "admin",
+            "description": "Administrateur - Accès complet"
           }
         ]
       },
       "clients": [
         {
           "clientId": "my-app-dev",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "directAccessGrantsEnabled": true,
+          "standardFlowEnabled": true,
           "redirectUris": [
             "https://vite-oc-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com/*",
             "http://localhost:3000/*"
@@ -64,10 +394,7 @@ data:
           "webOrigins": [
             "https://vite-oc-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com",
             "http://localhost:3000"
-          ],
-          "publicClient": true,
-          "directAccessGrantsEnabled": true,
-          "standardFlowEnabled": true
+          ]
         },
         {
           "clientId": "my-backend-dev",
@@ -78,8 +405,62 @@ data:
           "directAccessGrantsEnabled": true,
           "standardFlowEnabled": false,
           "serviceAccountsEnabled": true,
+          "secret": "3uwVqrgBzUuoS0dgOHuMcfXgvm4AzquJ",
           "redirectUris": [],
           "webOrigins": []
+        },
+        {
+          "clientId": "api-admin-service",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "super-secret-api-admin-2025-dev",
+          "serviceAccountsEnabled": true,
+          "standardFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "implicitFlowEnabled": false,
+          "authorizationServicesEnabled": false,
+          "fullScopeAllowed": true,
+          "protocolMappers": [
+            {
+              "name": "audience-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "config": {
+                "included.client.audience": "api-admin-service",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+              }
+            }
+          ]
         }
+      ],
+      "clientScopeMappings": {
+        "realm-management": [
+          {
+            "client": "api-admin-service",
+            "roles": [
+              "view-users",
+              "query-users",
+              "manage-users",
+              "view-realm",
+              "view-clients",
+              "view-events",
+              "view-identity-providers"
+            ]
+          }
+        ]
+      },
+      "defaultDefaultClientScopes": [
+        "role_list",
+        "profile",
+        "email"
+      ],
+      "defaultOptionalClientScopes": [
+        "offline_access",
+        "address",
+        "phone",
+        "microprofile-jwt"
       ]
     }

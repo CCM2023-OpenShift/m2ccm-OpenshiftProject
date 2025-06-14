@@ -7,7 +7,7 @@ import { Equipment } from "../services/Equipment.ts";
 import { RoomEquipment } from "../services/RoomEquipment.ts";
 import { User } from '../services/User.ts';
 import { roundUpToNextHalfHour, formatDateTimeLocal } from '../composable/formatTimestamp.ts';
-import { Lock, User as UserIcon, Shield, AlertCircle, CheckCircle } from 'lucide-react';
+import { User as UserIcon, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const BookingForm = () => {
     const { keycloak } = useKeycloak();
@@ -79,10 +79,11 @@ export const BookingForm = () => {
         } catch (error) {
             console.error('Error loading users:', error);
 
+            // Fallback : seulement l'utilisateur connecté
             const fallbackUser = new User().fromJSON({
-                id: '',
+                id: 'current-user',
                 username: currentUser,
-                displayName: `${currentUser} (Vous)`,
+                displayName: `${currentUser} (Vous - Keycloak indisponible)`,
                 enabled: true
             });
 

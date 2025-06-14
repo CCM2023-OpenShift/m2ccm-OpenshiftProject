@@ -60,3 +60,34 @@ spec:
         - name: realm-config
           configMap:
             name: keycloak-realm-config-dev
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-dev
+  namespace: gregorydhmccm-dev
+spec:
+  selector:
+    app: keycloak-dev
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: keycloak-dev
+  namespace: gregorydhmccm-dev
+spec:
+  host: keycloak-dev-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com
+  to:
+    kind: Service
+    name: keycloak-dev
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
