@@ -34,6 +34,16 @@ spec:
                 secretKeyRef:
                   name: supabase
                   key: APP_SUPABASE_KEY
+            - name: APP_SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: supabase
+                  key: APP_SUPABASE_URL
+            - name: PROD_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: quarkus-secrets
+                  key: PROD_DB_USERNAME
             - name: PROD_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -44,6 +54,21 @@ spec:
                 secretKeyRef:
                   name: quarkus-secrets
                   key: PROD_KC_SECRET
+            - name: PROD_KC_SERVICE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: PROD_KC_SERVICE_SECRET
+            - name: PROD_KC_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: PROD_KC_ADMIN_USERNAME
+            - name: PROD_KC_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: PROD_KC_ADMIN_PASSWORD
 
           resources:
             requests:
