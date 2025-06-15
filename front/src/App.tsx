@@ -10,7 +10,6 @@ import {BookingHistory} from './components/BookingHistory';
 import {BookingCalendar} from './components/BookingCalendar';
 import {NotAuthorized} from './components/NotAuthorized';
 import {RoomFinder} from './components/RoomFinder';
-import {NotificationCenter} from './components/NotificationCenter';
 
 import {LayoutGrid, Calendar, BookOpen, Monitor, History, Users, Search, LogOut} from 'lucide-react';
 import ProfilePage from "./components/ProfilePage.tsx";
@@ -86,7 +85,6 @@ function Sidebar() {
             <div className="flex items-center justify-between p-4 border-b">
                 <h1 className="text-2xl font-bold text-gray-800">Réservation</h1>
                 <div className="flex items-center">
-                    <NotificationCenter/>
                     <div className="relative ml-4">
                         <button
                             onClick={() => setShowUserMenu(!showUserMenu)}
