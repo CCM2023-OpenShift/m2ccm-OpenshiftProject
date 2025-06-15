@@ -4,6 +4,9 @@ export interface Room {
     id: string;
     name: string;
     capacity: number;
+    building: string;
+    floor: string;
+    type: string;
     imageUrl?: string;
     roomEquipments: RoomEquipment[];
 }
