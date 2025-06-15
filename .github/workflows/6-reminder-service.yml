@@ -1,0 +1,80 @@
+name: Deploy Reminder Service on OpenShift
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'infrastructure/reminder/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'infrastructure/reminder/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-reminder-cronjobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+          OPENSHIFT_PROJECT: ${{ secrets.OPENSHIFT_PROJECT }}
+        run: |
+          oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+          oc project $OPENSHIFT_PROJECT
+
+      - name: Apply Infrastructure Configuration
+        run: |
+          echo "🔍 Applying reminder configuration..."
+          
+          # ImageStream pour le service de rappel
+          echo "Creating/updating reminder ImageStream..."
+          oc apply -f infrastructure/reminder-imagestream.yaml
+          
+          # Vérifier si le secret mail existe déjà
+          if ! oc get secret mail-credentials &>/dev/null; then
+            echo "⚠️ Mail secret doesn't exist. Please create it manually in OpenShift."
+            echo "Example: oc create secret generic mail-credentials --from-literal=MAIL_USER=email@example.com --from-literal=MAIL_PASSWORD=password"
+          fi
+          
+          # Appliquer les CronJobs
+          echo "Deploying reminder CronJobs..."
+          oc apply -f infrastructure/reminder-cronjobs.yaml
+          
+          echo "✅ Reminder service infrastructure deployed"
+
+      - name: Tag Main App Image for Reminder Service
+        run: |
+          echo "🏷️ Tagging latest quarkus-app image for reminder service..."
+          
+          # Vérifier que quarkus-app:latest existe
+          if oc get is quarkus-app &>/dev/null; then
+            # Tagger l'image principale pour le service de rappel
+            oc tag quarkus-app:latest booking-reminder:latest
+            echo "✅ Successfully tagged quarkus-app:latest as booking-reminder:latest"
+          else
+            echo "⚠️ quarkus-app ImageStream not found. Will need to be created by the main build job."
+          fi
+
+      - name: Display Status
+        run: |
+          echo "📊 Checking status of deployed components..."
+          echo "CronJobs:"
+          oc get cronjob | grep reminder
+          
+          echo "✅ Reminder service setup completed"
+          echo "Note: To test the service manually, run: oc create job --from=cronjob/booking-reminder-24h test-reminder"
