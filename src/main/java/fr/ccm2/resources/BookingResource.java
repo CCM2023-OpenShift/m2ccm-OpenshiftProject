@@ -14,6 +14,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Path("/bookings")
 @Produces(MediaType.APPLICATION_JSON)
@@ -76,8 +78,12 @@ public class BookingResource {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Erreur de validation: " + e.getMessage()).build();
         } catch (IllegalStateException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
             return Response.status(Response.Status.CONFLICT)
-                    .entity("Conflit: " + e.getMessage()).build();
+                    .entity(error)
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
     }
 

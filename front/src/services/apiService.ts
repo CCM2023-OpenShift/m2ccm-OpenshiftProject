@@ -60,12 +60,28 @@ class ApiService {
             if (!response.ok) {
                 let errorMessage: string;
                 try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.message || `Erreur HTTP ${response.status}`;
+                    // Essayer d'extraire le message d'erreur détaillé
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorData.error || `Erreur HTTP ${response.status}`;
+                    } else {
+                        // Pour les réponses textuelles
+                        errorMessage = await response.text();
+                    }
                 } catch (e) {
                     errorMessage = `Erreur HTTP ${response.status}`;
                 }
 
+                // Gestion spécifique pour les erreurs 409 (Conflict)
+                if (response.status === 409) {
+                    // Création d'une erreur spécifique pour les conflits de réservation
+                    const error = new Error(errorMessage);
+                    error.name = "ConflictError";
+                    return Promise.reject(error);
+                }
+
+                // Gestion des erreurs d'authentification (comme avant)
                 if (response.status === 401 || response.status === 403) {
                     try {
                         await keycloak.updateToken(0);
