@@ -1,17 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { useKeycloak } from '@react-keycloak/web';
-import { useStore } from "../store.ts";
-import { Room } from '../services/Room';
-import { Booking } from '../services/Booking';
-import { Equipment } from "../services/Equipment.ts";
-import { RoomEquipment } from "../services/RoomEquipment.ts";
-import { User } from '../services/User.ts';
-import { roundUpToNextHalfHour, formatDateTimeLocal } from '../composable/formatTimestamp.ts';
-import { User as UserIcon, Shield, AlertCircle, CheckCircle } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import {useKeycloak} from '@react-keycloak/web';
+import {useStore} from "../store.ts";
+import {useLocation} from 'react-router-dom';
+import {Room} from '../services/Room';
+import {Booking} from '../services/Booking';
+import {Equipment} from "../services/Equipment.ts";
+import {RoomEquipment} from "../services/RoomEquipment.ts";
+import {User} from '../services/User.ts';
+import {roundUpToNextHalfHour, formatDateTimeLocal} from '../composable/formatTimestamp.ts';
+import {User as UserIcon, Shield, AlertCircle, CheckCircle} from 'lucide-react';
 
 export const BookingForm = () => {
-    const { keycloak } = useKeycloak();
-    const { fetchEquipment } = useStore();
+    const location = useLocation();
+    const {keycloak} = useKeycloak();
+    const {fetchEquipment} = useStore();
     const [rooms, setRooms] = useState<Room[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [availableEquipments, setAvailableEquipments] = useState<any[]>([]);
@@ -19,6 +21,7 @@ export const BookingForm = () => {
     const [availableUsers, setAvailableUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
     const [customOrganizerInput, setCustomOrganizerInput] = useState('');
+    const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
 
     const roles = keycloak.tokenParsed?.realm_access?.roles || [];
     const isAdmin = roles.includes('admin');
@@ -48,6 +51,47 @@ export const BookingForm = () => {
 
     const [formData, setFormData] = useState(initialBookingData);
 
+    // Extraire les paramètres de l'URL
+    useEffect(() => {
+        if (urlParamsLoaded) return;
+
+        const queryParams = new URLSearchParams(location.search);
+        const roomId = queryParams.get('roomId');
+        const date = queryParams.get('date');
+        const start = queryParams.get('start');
+        const end = queryParams.get('end');
+        const capacity = queryParams.get('capacity');
+
+        const newFormData = {...formData};
+
+        if (roomId) {
+            newFormData.roomId = roomId;
+        }
+
+        if (date && start) {
+            newFormData.startTime = `${date}T${start}`;
+        }
+
+        if (date && end) {
+            newFormData.endTime = `${date}T${end}`;
+        }
+
+        if (capacity) {
+            newFormData.attendees = capacity;
+        }
+
+        // Définir un titre par défaut si une salle est sélectionnée
+        if (roomId && rooms.length > 0) {
+            const selectedRoom = rooms.find(r => r.id === roomId);
+            if (selectedRoom) {
+                newFormData.title = `Réservation de ${selectedRoom.name}`;
+            }
+        }
+
+        setFormData(newFormData);
+        setUrlParamsLoaded(true);
+    }, [location.search, rooms, urlParamsLoaded]);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -72,6 +116,27 @@ export const BookingForm = () => {
         void fetchData();
     }, [isAdmin]);
 
+    // Effet pour charger les paramètres d'URL après le chargement des salles
+    useEffect(() => {
+        if (rooms.length > 0 && !urlParamsLoaded) {
+            const queryParams = new URLSearchParams(location.search);
+            const roomId = queryParams.get('roomId');
+
+            if (roomId) {
+                const selectedRoom = rooms.find(r => r.id === roomId);
+                if (selectedRoom) {
+                    setFormData(prev => ({
+                        ...prev,
+                        roomId,
+                        title: prev.title || `Réservation de ${selectedRoom.name}`
+                    }));
+                }
+            }
+
+            setUrlParamsLoaded(true);
+        }
+    }, [rooms, location.search, urlParamsLoaded]);
+
     const fetchAvailableUsers = async () => {
         try {
             const users = await User.getBookingOrganizers();
@@ -94,12 +159,12 @@ export const BookingForm = () => {
     // Gestion de l'input libre pour les admins
     const handleCustomOrganizerChange = (value: string) => {
         setCustomOrganizerInput(value);
-        setFormData(prev => ({ ...prev, organizer: value }));
+        setFormData(prev => ({...prev, organizer: value}));
     };
 
     // Gestion de la sélection dans le dropdown
     const handleOrganizerSelect = (value: string) => {
-        setFormData(prev => ({ ...prev, organizer: value }));
+        setFormData(prev => ({...prev, organizer: value}));
         setCustomOrganizerInput(''); // Reset l'input libre
     };
 
@@ -123,7 +188,10 @@ export const BookingForm = () => {
                     const detail = equipments.find((e: Equipment) => e.id === equipId);
                     return {
                         ...roomEquip,
-                        equipment: detail ? { name: detail.name, mobile: detail.mobile } : { name: 'Inconnu', mobile: false },
+                        equipment: detail ? {name: detail.name, mobile: detail.mobile} : {
+                            name: 'Inconnu',
+                            mobile: false
+                        },
                     } as RoomEquipment;
                 });
 
@@ -160,14 +228,16 @@ export const BookingForm = () => {
         setLoading(true);
 
         try {
-            const selectedRoom = rooms.find((room) => Number(room.id) === Number(formData.roomId));
+            const selectedRoom = rooms.find((room) => String(room.id) === String(formData.roomId));
             if (!selectedRoom) {
                 setErrorMessage("La salle sélectionnée n'est pas valide.");
+                setLoading(false);
                 return;
             }
 
             if (!formData.organizer.trim()) {
                 setErrorMessage('L\'organisateur est obligatoire');
+                setLoading(false);
                 return;
             }
 
@@ -176,6 +246,7 @@ export const BookingForm = () => {
                     const validation = await User.validateUsername(customOrganizerInput.trim());
                     if (!validation.valid) {
                         setErrorMessage(`Nom d'utilisateur invalide: ${validation.message}`);
+                        setLoading(false);
                         return;
                     }
                 } catch (validationError) {
@@ -187,7 +258,7 @@ export const BookingForm = () => {
                 title: formData.title,
                 startTime: formData.startTime,
                 endTime: formData.endTime,
-                attendees: parseInt(formData.attendees),
+                attendees: parseInt(formData.attendees as string),
                 organizer: formData.organizer,
                 room: selectedRoom,
                 bookingEquipments: formData.bookingEquipments
@@ -354,7 +425,7 @@ export const BookingForm = () => {
                                 title="Seuls les administrateurs peuvent modifier l'organisateur"
                             />
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                <UserIcon className="w-5 h-5 text-gray-400" />
+                                <UserIcon className="w-5 h-5 text-gray-400"/>
                             </div>
                         </div>
                     ) : (
@@ -392,7 +463,7 @@ export const BookingForm = () => {
                                     disabled={loading}
                                 />
                                 <p className="text-xs text-gray-500 mt-1 flex items-center">
-                                    <Shield className="w-3 h-3 mr-1" />
+                                    <Shield className="w-3 h-3 mr-1"/>
                                     En tant qu'admin, vous pouvez saisir n'importe quel nom d'utilisateur
                                 </p>
                             </div>
@@ -400,7 +471,7 @@ export const BookingForm = () => {
                             {/* Affichage de l'organisateur sélectionné */}
                             {formData.organizer && (
                                 <div className="flex items-center text-sm">
-                                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                                    <CheckCircle className="w-4 h-4 text-green-500 mr-2"/>
                                     <span className="text-green-700">
                                         Organisateur: <strong>{formData.organizer}</strong>
                                     </span>
@@ -482,7 +553,7 @@ export const BookingForm = () => {
 
                 {errorMessage && (
                     <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded flex items-start">
-                        <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
+                        <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0"/>
                         <div>
                             {errorMessage
                                 .split('\n')
