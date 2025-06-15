@@ -18,13 +18,20 @@ interface RoomAvailabilityCalendarProps {
         endTime: string;
         title?: string;
     };
+    // Nouvelle propriété pour les réservations récurrentes
+    recurringBookings?: Array<{
+        startTime: string;
+        endTime: string;
+        title?: string;
+    }>;
 }
 
 export const RoomAvailabilityCalendar = ({
                                              roomId,
                                              selectedDate = new Date(),
                                              onSlotSelect,
-                                             currentBooking
+                                             currentBooking,
+                                             recurringBookings
                                          }: RoomAvailabilityCalendarProps) => {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(false);
@@ -131,7 +138,20 @@ export const RoomAvailabilityCalendar = ({
             textColor: '#ffffff',
             editable: false,
             durationEditable: false
-        }] : [])
+        }] : []),
+
+        // Ajouter les réservations récurrentes si elles existent
+        ...(recurringBookings ? recurringBookings.map((booking, index) => ({
+            id: `recurring-${index}`,
+            title: booking.title || 'Réservation récurrente',
+            start: booking.startTime,
+            end: booking.endTime,
+            backgroundColor: '#60a5fa', // Bleu plus clair pour les récurrences
+            borderColor: '#3b82f6',
+            textColor: '#ffffff',
+            editable: false,
+            durationEditable: false
+        })) : [])
     ];
 
     const handleDateSelect = (selectInfo: DateSelectArg) => {
@@ -185,7 +205,7 @@ export const RoomAvailabilityCalendar = ({
                 eventContent={(arg) => (
                     <div className="p-1">
                         <div className="font-medium text-sm">{arg.event.title}</div>
-                        {arg.event.id !== 'current' && (
+                        {arg.event.id !== 'current' && arg.event.id.toString().indexOf('recurring') === -1 && (
                             <div className="text-xs opacity-80">
                                 {arg.event.extendedProps.organizer} ·
                                 {arg.event.extendedProps.attendees} pers.
@@ -195,14 +215,23 @@ export const RoomAvailabilityCalendar = ({
                 )}
             />
 
-            <div className="mt-3 text-sm text-gray-500 grid grid-cols-2 gap-2">
-                <div className="flex items-center">
-                    <div className="w-3 h-3 bg-red-500 rounded-sm mr-2"></div>
-                    <span>Créneaux réservés</span>
-                </div>
-                <div className="flex items-center">
-                    <div className="w-3 h-3 bg-blue-500 rounded-sm mr-2"></div>
-                    <span>Votre réservation</span>
+            {/* Légende corrigée */}
+            <div className="mt-3 text-sm text-gray-500">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div className="flex items-center">
+                        <div className="w-3 h-3 bg-red-500 rounded-sm mr-2"></div>
+                        <span>Créneaux réservés</span>
+                    </div>
+                    <div className="flex items-center">
+                        <div className="w-3 h-3 bg-blue-600 rounded-sm mr-2"></div>
+                        <span>Réservation initiale</span>
+                    </div>
+                    {recurringBookings && recurringBookings.length > 0 && (
+                        <div className="flex items-center">
+                            <div className="w-3 h-3 bg-blue-400 rounded-sm mr-2"></div>
+                            <span>Récurrences prévues</span>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

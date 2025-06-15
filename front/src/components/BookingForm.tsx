@@ -1013,9 +1013,6 @@ export const BookingForm = () => {
                                     <Calendar size={20} className="mr-2"/>
                                     Disponibilité de {selectedRoom.name}
                                 </h2>
-                                <p className="text-sm mt-1 text-blue-100">
-                                    Cliquez sur un créneau disponible pour le sélectionner
-                                </p>
                             </div>
 
                             <div className="calendar-container">
