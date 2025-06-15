@@ -3,11 +3,10 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import frLocale from '@fullcalendar/core/locales/fr';
 import {DateSelectArg} from '@fullcalendar/core';
-import {Booking} from '../services/Booking';
-import {Room} from '../services/Room';
 import {AlertCircle} from 'lucide-react';
 import {useStore} from '../store';
 import {useKeycloak} from "@react-keycloak/web";
+import {Booking, Room} from '../types';
 
 // Interface des props
 interface RoomAvailabilityCalendarProps {
@@ -19,7 +18,7 @@ interface RoomAvailabilityCalendarProps {
         endTime: string;
         title?: string;
     };
-    // Nouvelle propriété pour les réservations récurrentes
+    // Propriété pour les réservations récurrentes
     recurringBookings?: Array<{
         startTime: string;
         endTime: string;
@@ -34,85 +33,88 @@ export const RoomAvailabilityCalendar = ({
                                              currentBooking,
                                              recurringBookings
                                          }: RoomAvailabilityCalendarProps) => {
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(false);
+    // Utiliser les données et états du store
+    const {
+        rooms,
+        bookings,
+        currentUser,
+        loading,
+        fetchRooms,
+        fetchBookings
+    } = useStore(state => ({
+        rooms: state.rooms,
+        bookings: state.bookings,
+        currentUser: state.currentUser,
+        loading: {
+            rooms: state.loading.rooms,
+            bookings: state.loading.bookings
+        },
+        fetchRooms: state.fetchRooms,
+        fetchBookings: state.fetchBookings
+    }));
+
     const [error, setError] = useState<string | null>(null);
     const [, setRoomInfo] = useState<Room | null>(null);
-
-    // Utiliser le store pour accéder aux salles déjà chargées et au rôle de l'utilisateur
-    const {rooms, currentUser} = useStore();
+    const [roomBookings, setRoomBookings] = useState<Booking[]>([]);
 
     // Vérifier si l'utilisateur est admin
     const isAdmin = useKeycloak().keycloak.tokenParsed?.realm_access?.roles?.includes('admin') || false;
 
+    // Charger les salles et réservations si nécessaire
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                // Si nous n'avons pas encore les salles, les charger
+                if (rooms.length === 0) {
+                    await fetchRooms();
+                }
+
+                // Si nous n'avons pas encore les réservations, les charger
+                if (bookings.length === 0) {
+                    await fetchBookings();
+                }
+            } catch (err) {
+                console.error("Erreur lors du chargement des données:", err);
+                setError("Impossible de charger les données nécessaires.");
+            }
+        };
+
+        void loadData();
+    }, [fetchRooms, fetchBookings, rooms.length, bookings.length]);
+
+    // Filtrer les réservations pour la salle sélectionnée et récupérer les infos de la salle
     useEffect(() => {
         if (!roomId) {
-            setBookings([]);
+            setRoomBookings([]);
             setRoomInfo(null);
             return;
         }
 
-        const fetchRoomBookings = async () => {
-            setLoading(true);
+        try {
+            // Récupérer les infos de la salle
+            const selectedRoom = rooms.find(r => String(r.id) === String(roomId));
+
+            if (selectedRoom) {
+                setRoomInfo(selectedRoom);
+            } else {
+                console.warn(`Salle avec ID ${roomId} non trouvée`);
+                setError(`Salle avec ID ${roomId} non trouvée`);
+                return;
+            }
+
+            // Filtrer les réservations pour cette salle
+            const filteredBookings = bookings.filter(booking =>
+                booking.room && String(booking.room.id) === String(roomId)
+            );
+
+            setRoomBookings(filteredBookings);
             setError(null);
 
-            try {
-                // 1. Récupérer les infos de la salle depuis le store ou l'API
-                let roomInstance: Room | null = null;
-
-                // D'abord chercher dans les salles déjà chargées dans le store
-                if (rooms && rooms.length > 0) {
-                    // Trouver la room par id depuis le store
-                    const storeRoom = rooms.find(r => String(r.id) === String(roomId));
-
-                    if (storeRoom) {
-                        // Convertir l'objet du store en instance de Room
-                        roomInstance = new Room();
-                        roomInstance.id = storeRoom.id;
-                        roomInstance.name = storeRoom.name;
-                        roomInstance.capacity = storeRoom.capacity;
-                        roomInstance.imageUrl = storeRoom.imageUrl;
-                        roomInstance.roomEquipments = storeRoom.roomEquipments || [];
-                    }
-                }
-
-                // Si la salle n'est pas trouvée dans le store, charger depuis l'API
-                if (!roomInstance) {
-                    try {
-                        roomInstance = await Room.getById(roomId);
-                    } catch (e) {
-                        const allRooms = await Room.getAll();
-                        const foundRoom = allRooms.find(r => String(r.id) === String(roomId));
-                        if (foundRoom) roomInstance = foundRoom;
-                    }
-                }
-
-                if (!roomInstance) {
-                    console.warn(`Salle avec ID ${roomId} non trouvée`);
-                    setError(`Salle avec ID ${roomId} non trouvée`);
-                    return;
-                }
-
-                setRoomInfo(roomInstance);
-
-                const allBookings = await Booking.getAll();
-
-                // Filtrer par salle en utilisant strictement String() pour les IDs
-                const roomBookings = allBookings.filter(booking =>
-                    booking.room && String(booking.room.id) === String(roomId)
-                );
-
-                setBookings(roomBookings);
-            } catch (err) {
-                console.error("Erreur lors du chargement des réservations :", err);
-                setError("Impossible de charger les disponibilités de la salle.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        void fetchRoomBookings();
-    }, [roomId, rooms, selectedDate]);
+        } catch (err) {
+            console.error("Erreur lors du filtrage des réservations :", err);
+            setError("Impossible de récupérer les réservations de la salle.");
+        }
+    }, [roomId, rooms, bookings]);
 
     // Vérifier si l'utilisateur est l'organisateur de la réservation
     const isOrganizerOf = (booking: Booking) => {
@@ -122,7 +124,7 @@ export const RoomAvailabilityCalendar = ({
     // Créer les événements pour le calendrier
     const events = [
         // Réservations existantes
-        ...bookings.map(booking => {
+        ...roomBookings.map(booking => {
             // Vérifier si l'utilisateur peut voir les détails complets
             const showDetails = isAdmin || isOrganizerOf(booking);
 
@@ -175,24 +177,31 @@ export const RoomAvailabilityCalendar = ({
         }
     };
 
-    if (loading) {
-        return <div className="h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2">Chargement des disponibilités...</span>
-        </div>;
+    // Affichage des états de chargement
+    if (loading.rooms || loading.bookings) {
+        return (
+            <div className="h-64 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-2">Chargement des disponibilités...</span>
+            </div>
+        );
     }
 
     if (error) {
-        return <div className="p-4 bg-red-50 text-red-700 rounded-lg flex items-center">
-            <AlertCircle className="mr-2" size={16}/>
-            {error}
-        </div>;
+        return (
+            <div className="p-4 bg-red-50 text-red-700 rounded-lg flex items-center">
+                <AlertCircle className="mr-2" size={16}/>
+                {error}
+            </div>
+        );
     }
 
     if (!roomId) {
-        return <div className="p-4 bg-blue-50 text-blue-600 rounded-lg">
-            Sélectionnez une salle pour voir ses disponibilités
-        </div>;
+        return (
+            <div className="p-4 bg-blue-50 text-blue-600 rounded-lg">
+                Sélectionnez une salle pour voir ses disponibilités
+            </div>
+        );
     }
 
     return (
@@ -232,7 +241,7 @@ export const RoomAvailabilityCalendar = ({
                 )}
             />
 
-            {/* Légende corrigée */}
+            {/* Légende */}
             <div className="mt-3 text-sm text-gray-500">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <div className="flex items-center">

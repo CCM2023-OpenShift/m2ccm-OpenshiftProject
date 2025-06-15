@@ -1,5 +1,5 @@
 import {useState, useEffect} from 'react';
-import {Booking} from '../services/Booking';
+import {Booking} from '../types.ts';
 import {Repeat, Calendar, AlertCircle, Check, ChevronLeft, X} from 'lucide-react';
 import {RoomAvailabilityCalendar} from './RoomAvailabilityCalendar';
 
@@ -296,7 +296,8 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
 
                         {recurrenceType === 'weekly' && (
                             <div className="mb-6">
-                                <label className="block text-lg font-medium text-gray-800 mb-3">Jours de la semaine</label>
+                                <label className="block text-lg font-medium text-gray-800 mb-3">Jours de la
+                                    semaine</label>
                                 <div className="flex flex-wrap gap-2">
                                     {dayNames.map((day, index) => (
                                         <button
@@ -376,7 +377,8 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
                         )}
 
                         {errorMessage && (
-                            <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg flex items-center">
+                            <div
+                                className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg flex items-center">
                                 <AlertCircle size={18} className="mr-2 flex-shrink-0"/>
                                 {errorMessage}
                             </div>
@@ -388,10 +390,12 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
                                     <Calendar size={18} className="mr-2 text-blue-500"/>
                                     Aperçu des dates ({preview.length})
                                 </h3>
-                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-64 overflow-y-auto">
+                                <div
+                                    className="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-64 overflow-y-auto">
                                     <ul className="space-y-2">
                                         {preview.map((date, index) => (
-                                            <li key={index} className="flex items-center p-2 hover:bg-gray-100 rounded-md">
+                                            <li key={index}
+                                                className="flex items-center p-2 hover:bg-gray-100 rounded-md">
                                                 <div
                                                     className="h-8 w-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mr-3 font-bold">
                                                     {index + 1}
@@ -404,7 +408,10 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
                                                         year: 'numeric'
                                                     })}</p>
                                                     <p className="text-sm text-gray-500">
-                                                        {date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}
+                                                        {date.toLocaleTimeString('fr-FR', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
                                                     </p>
                                                 </div>
                                             </li>

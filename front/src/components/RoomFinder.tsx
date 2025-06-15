@@ -1,17 +1,36 @@
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Room} from '../services/Room';
-import {Equipment} from '../services/Equipment';
-import {Booking} from '../services/Booking';
-import {Search, Calendar, Users, Clock, Map, CheckCircle, AlertTriangle} from 'lucide-react';
+import {Search, Calendar, Users, Clock, Map, CheckCircle, AlertTriangle, Loader} from 'lucide-react';
+import {useStore} from '../store';
+import {Room, Booking} from '../types';
 import {roundUpToNextHalfHour} from '../composable/formatTimestamp';
 
 export const RoomFinder = () => {
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(true);
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [equipments, setEquipments] = useState<Equipment[]>([]);
+
+    // Utiliser le store pour accéder aux données et aux fonctions
+    const {
+        rooms,
+        equipment,
+        bookings,
+        loading,
+        fetchRooms,
+        fetchEquipment,
+        fetchBookings
+    } = useStore(state => ({
+        rooms: state.rooms,
+        equipment: state.equipment,
+        bookings: state.bookings,
+        loading: {
+            rooms: state.loading.rooms,
+            equipment: state.loading.equipment,
+            bookings: state.loading.bookings
+        },
+        fetchRooms: state.fetchRooms,
+        fetchEquipment: state.fetchEquipment,
+        fetchBookings: state.fetchBookings
+    }));
+
     const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
     const [availabilityMap, setAvailabilityMap] = useState<Record<string, boolean>>({});
 
@@ -34,34 +53,33 @@ export const RoomFinder = () => {
     const [selectedEquipments, setSelectedEquipments] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [showUnavailable, setShowUnavailable] = useState<boolean>(true);
+    const [isSearching, setIsSearching] = useState<boolean>(false);
 
+    // Charger les données au montage du composant
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [roomsData, equipmentsData, bookingsData] = await Promise.all([
-                    Room.getAll(),
-                    Equipment.getAll(),
-                    Booking.getAll()
+                // Utiliser les méthodes du store pour charger les données
+                await Promise.all([
+                    fetchRooms(),
+                    fetchEquipment(),
+                    fetchBookings()
                 ]);
-
-                setRooms(roomsData);
-                setEquipments(equipmentsData);
-                setBookings(bookingsData);
-
-                // Initialiser avec toutes les salles au départ
-                setFilteredRooms(roomsData);
-
-                // Calculer la disponibilité initiale
-                calculateAvailability(roomsData, bookingsData);
             } catch (error) {
                 console.error("Erreur lors du chargement des données:", error);
-            } finally {
-                setLoading(false);
             }
         };
 
         void fetchData();
-    }, []);
+    }, [fetchRooms, fetchEquipment, fetchBookings]);
+
+    // Initialiser les salles filtrées quand les données sont chargées
+    useEffect(() => {
+        if (rooms.length > 0 && !isSearching) {
+            setFilteredRooms(rooms);
+            calculateAvailability(rooms, bookings);
+        }
+    }, [rooms, bookings, isSearching]);
 
     // Fonction pour vérifier la disponibilité des salles
     const isRoomAvailable = (roomId: string, start: Date, end: Date, bookingsList: Booking[]): boolean => {
@@ -95,6 +113,8 @@ export const RoomFinder = () => {
     };
 
     const searchRooms = () => {
+        setIsSearching(true);
+
         // Convertir les entrées en dates pour la comparaison
         const searchStart = new Date(`${date}T${startTime}:00`);
         const searchEnd = new Date(`${date}T${endTime}:00`);
@@ -102,13 +122,14 @@ export const RoomFinder = () => {
         // Vérifier que l'heure de début est avant l'heure de fin
         if (searchStart >= searchEnd) {
             alert("L'heure de début doit être antérieure à l'heure de fin");
+            setIsSearching(false);
             return;
         }
 
         // Vérifier que la date n'est pas dans le passé
-        const now = new Date();
         if (searchStart < now && date === now.toISOString().split('T')[0]) {
             alert("Vous ne pouvez pas rechercher de salles pour une heure déjà passée");
+            setIsSearching(false);
             return;
         }
 
@@ -116,6 +137,14 @@ export const RoomFinder = () => {
 
         // Filtrer les salles selon les critères
         const filtered = rooms.filter(room => {
+            // Recherche textuelle
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                if (!room.name.toLowerCase().includes(query)) {
+                    return false;
+                }
+            }
+
             // Vérifier la capacité
             if (capacity > 0 && room.capacity < capacity) {
                 return false;
@@ -139,6 +168,7 @@ export const RoomFinder = () => {
 
         setAvailabilityMap(newAvailabilityMap);
         setFilteredRooms(filtered);
+        setIsSearching(false);
     };
 
     const handleEquipmentToggle = (equipmentId: string) => {
@@ -164,7 +194,9 @@ export const RoomFinder = () => {
         navigate(`/booking?roomId=${roomId}&date=${date}&start=${startTime}&end=${endTime}&capacity=${capacity}`);
     };
 
-    if (loading) {
+    // Affichage du chargement global
+    const isLoading = loading.rooms || loading.equipment || loading.bookings;
+    if (isLoading && (rooms.length === 0 || equipment.length === 0)) {
         return (
             <div className="p-6 flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -269,17 +301,17 @@ export const RoomFinder = () => {
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Équipements nécessaires</label>
                     <div className="flex flex-wrap gap-2">
-                        {equipments.map(equipment => (
+                        {equipment.map(item => (
                             <button
-                                key={equipment.id}
-                                onClick={() => handleEquipmentToggle(equipment.id)}
+                                key={item.id}
+                                onClick={() => handleEquipmentToggle(item.id)}
                                 className={`px-3 py-1 text-sm rounded-full ${
-                                    selectedEquipments.includes(equipment.id)
+                                    selectedEquipments.includes(item.id)
                                         ? 'bg-blue-100 text-blue-800 border border-blue-300'
                                         : 'bg-gray-100 text-gray-800 border border-gray-200'
                                 }`}
                             >
-                                {equipment.name}
+                                {item.name}
                             </button>
                         ))}
                     </div>
@@ -300,17 +332,27 @@ export const RoomFinder = () => {
 
                 <button
                     onClick={searchRooms}
-                    className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    disabled={isSearching}
+                    className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center justify-center"
                 >
-                    <Search size={16} className="inline mr-2"/>
-                    Rechercher des salles disponibles
+                    {isSearching ? (
+                        <>
+                            <Loader size={16} className="inline mr-2 animate-spin"/>
+                            Recherche en cours...
+                        </>
+                    ) : (
+                        <>
+                            <Search size={16} className="inline mr-2"/>
+                            Rechercher des salles disponibles
+                        </>
+                    )}
                 </button>
             </div>
 
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
                     <h2 className="font-semibold text-lg">
-                        {totalShownRooms} salle{totalShownRooms !== 1 ? 's' : ''} disponible{totalShownRooms !== 1 ? 's' : ''}
+                        {totalShownRooms} salle{totalShownRooms !== 1 ? 's' : ''} trouvée{totalShownRooms !== 1 ? 's' : ''}
                     </h2>
                     <div className="text-sm text-gray-600">
                         <span
@@ -358,11 +400,11 @@ export const RoomFinder = () => {
                                             {room.roomEquipments && room.roomEquipments.length > 0 && (
                                                 <div className="mt-1 flex flex-wrap gap-1">
                                                     {room.roomEquipments.map((re, index) => {
-                                                        const equipment = equipments.find(e => e.id === re.equipmentId);
-                                                        return equipment ? (
+                                                        const equipmentItem = equipment.find(e => e.id === re.equipmentId);
+                                                        return equipmentItem ? (
                                                             <span key={index}
                                                                   className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                                                {equipment.name}
+                                                                {equipmentItem.name}
                                                             </span>
                                                         ) : null;
                                                     })}

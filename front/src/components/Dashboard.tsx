@@ -1,60 +1,50 @@
-import { useEffect, useState } from 'react';
-import { Room } from '../services/Room';
-import { Booking } from '../services/Booking';
-import { Calendar, Users, BookOpen, MapPin, User as UserIcon, Clock, CheckCircle, ChevronDown } from 'lucide-react';
-import { formatBookingTimeRange } from '../composable/formatTimestamp';
-import { formatOrganizer } from '../composable/userFormatter';
-import { useStore } from '../store';
+import {useState, useEffect} from 'react';
+import {Calendar, MapPin, User as UserIcon, Users, ChevronDown, CheckCircle, BookOpen, Clock} from 'lucide-react';
+import {formatBookingTimeRange} from '../composable/formatTimestamp';
+import {formatOrganizer} from '../composable/userFormatter';
+import {useStore} from '../store';
 import {useKeycloak} from "@react-keycloak/web";
+import {Booking} from '../types';
 
 export const Dashboard = () => {
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
     const [visibleOngoing, setVisibleOngoing] = useState(5);
     const [visibleUpcoming, setVisibleUpcoming] = useState(5);
     const [visiblePastToday, setVisiblePastToday] = useState(5);
 
-    // Récupérer l'utilisateur courant depuis le store
-    const { currentUser } = useStore();
+    // Extraction des données et méthodes du store
+    const {currentUser, rooms, bookings, loading, fetchAllData} = useStore(state => ({
+        currentUser: state.currentUser,
+        rooms: state.rooms,
+        bookings: state.bookings,
+        loading: {
+            rooms: state.loading.rooms,
+            bookings: state.loading.bookings,
+            currentUser: state.loading.currentUser
+        },
+        fetchAllData: state.fetchAllData
+    }));
 
-    // Déterminer si l'utilisateur est admin
-    const isAdmin = useKeycloak().keycloak.tokenParsed?.realm_access?.roles?.includes('admin') || false;
+    // Récupération de l'état admin depuis Keycloak
+    const {keycloak} = useKeycloak();
+    const isAdmin = keycloak.tokenParsed?.realm_access?.roles?.includes('admin') || false;
 
+    // Charger les données au montage du composant
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const roomsData = await Room.getAll();
-                setRooms(roomsData);
-
-                const bookingsData = await Booking.getAll();
-                setBookings(bookingsData);
-            } catch (error) {
-                console.error("Erreur lors du chargement des données :", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        void fetchData();
-    }, []);
+        void fetchAllData();
+    }, [fetchAllData]);
 
     const now = new Date();
 
-    // Formatter l'heure actuelle pour l'affichage
     const currentTimeFormatted = new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
         minute: '2-digit'
     }).format(now);
 
-    // Fonction pour comparer les dates sans tenir compte de l'heure
-    const isSameDay = (date1: Date, date2: Date): boolean => {
-        return date1.getFullYear() === date2.getFullYear() &&
-            date1.getMonth() === date2.getMonth() &&
-            date1.getDate() === date2.getDate();
-    };
+    const isSameDay = (date1: Date, date2: Date): boolean =>
+        date1.getFullYear() === date2.getFullYear() &&
+        date1.getMonth() === date2.getMonth() &&
+        date1.getDate() === date2.getDate();
 
-    // Réservations en cours
     const ongoingBookings = bookings
         .filter(booking => {
             const startTime = new Date(booking.startTime);
@@ -63,12 +53,10 @@ export const Dashboard = () => {
         })
         .sort((a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime());
 
-    // Réservations à venir (futures)
     const upcomingBookings = bookings
         .filter(booking => new Date(booking.startTime) > now)
         .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-    // Réservations terminées aujourd'hui
     const pastBookingsToday = bookings
         .filter(booking => {
             const startTime = new Date(booking.startTime);
@@ -77,21 +65,21 @@ export const Dashboard = () => {
         })
         .sort((a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime());
 
-    // Réservations à venir aujourd'hui
     const upcomingBookingsToday = upcomingBookings.filter(booking => {
         const bookingStartDate = new Date(booking.startTime);
         return isSameDay(bookingStartDate, now);
     });
 
-    // Statistiques générales
     const totalCapacity = rooms.reduce((acc, room) => acc + room.capacity, 0);
 
-    // Fonction pour vérifier si l'utilisateur est l'organisateur d'une réservation
     const isOrganizerOf = (booking: Booking) => {
         return currentUser && booking.organizer === currentUser.username;
     };
 
-    if (loading) {
+    // Afficher un indicateur de chargement si des données sont en cours de chargement
+    const isLoading = loading.rooms || loading.bookings || loading.currentUser;
+
+    if (isLoading) {
         return (
             <div className="p-6 flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -100,9 +88,7 @@ export const Dashboard = () => {
         );
     }
 
-    // Composant réutilisable pour afficher une réservation
-    const BookingCard = ({ booking }: { booking: Booking }) => {
-        // Déterminer si l'utilisateur peut voir les détails complets
+    const BookingCard = ({booking}: { booking: Booking }) => {
         const showDetails = isAdmin || isOrganizerOf(booking);
 
         return (
@@ -111,18 +97,18 @@ export const Dashboard = () => {
 
                 <div className="mt-2 space-y-1.5">
                     <p className="text-gray-600 flex items-start">
-                        <Calendar size={16} className="mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
+                        <Calendar size={16} className="mr-2 mt-0.5 text-blue-500 flex-shrink-0"/>
                         <span>{formatBookingTimeRange(booking.startTime, booking.endTime)}</span>
                     </p>
 
                     <p className="text-gray-600 flex items-start">
-                        <MapPin size={16} className="mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+                        <MapPin size={16} className="mr-2 mt-0.5 text-green-500 flex-shrink-0"/>
                         <span>Salle : {booking.room?.name || 'Salle inconnue'}</span>
                     </p>
 
                     {showDetails && (
                         <p className="text-gray-600 flex items-start">
-                            <UserIcon size={16} className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" />
+                            <UserIcon size={16} className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0"/>
                             <span>Organisateur : {formatOrganizer(booking.organizer)}</span>
                         </p>
                     )}
@@ -131,7 +117,7 @@ export const Dashboard = () => {
                 {showDetails && booking.attendees > 0 && (
                     <div className="mt-2 text-sm text-gray-500">
                         <span className="flex items-center">
-                            <Users size={14} className="mr-1" />
+                            <Users size={14} className="mr-1"/>
                             {booking.attendees} participant{booking.attendees > 1 ? 's' : ''}
                         </span>
                     </div>
@@ -140,12 +126,7 @@ export const Dashboard = () => {
         );
     };
 
-    // Bouton "Voir plus" réutilisable
-    const LoadMoreButton = ({
-                                currentCount,
-                                totalCount,
-                                onClick
-                            }: {
+    const LoadMoreButton = ({currentCount, totalCount, onClick}: {
         currentCount: number,
         totalCount: number,
         onClick: () => void
@@ -158,7 +139,7 @@ export const Dashboard = () => {
                 onClick={onClick}
                 className="mt-4 w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-                <ChevronDown className="w-4 h-4 mr-2" />
+                <ChevronDown className="w-4 h-4 mr-2"/>
                 Afficher {Math.min(5, remainingCount)} réservation{Math.min(5, remainingCount) > 1 ? 's' : ''} supplémentaire{Math.min(5, remainingCount) > 1 ? 's' : ''}
             </button>
         );
@@ -246,7 +227,7 @@ export const Dashboard = () => {
                 {ongoingBookings.length > 0 ? (
                     <div className="space-y-4">
                         {ongoingBookings.slice(0, visibleOngoing).map((booking) => (
-                            <BookingCard key={booking.id} booking={booking} />
+                            <BookingCard key={booking.id} booking={booking}/>
                         ))}
 
                         <LoadMoreButton
@@ -257,7 +238,7 @@ export const Dashboard = () => {
                     </div>
                 ) : (
                     <div className="bg-gray-50 p-6 rounded-lg text-center">
-                        <Calendar size={36} className="mx-auto text-gray-400 mb-2" />
+                        <Calendar size={36} className="mx-auto text-gray-400 mb-2"/>
                         <p className="text-gray-500">Aucune réservation en cours actuellement</p>
                     </div>
                 )}
@@ -277,12 +258,13 @@ export const Dashboard = () => {
                     </h2>
 
                     <div className="mb-3 px-3 py-2 bg-blue-50 text-blue-700 text-sm rounded">
-                        <p>Cette section affiche les réservations du jour qui sont déjà terminées (l'heure de fin est passée).</p>
+                        <p>Cette section affiche les réservations du jour qui sont déjà terminées (l'heure de fin est
+                            passée).</p>
                     </div>
 
                     <div className="space-y-4">
                         {pastBookingsToday.slice(0, visiblePastToday).map((booking) => (
-                            <BookingCard key={booking.id} booking={booking} />
+                            <BookingCard key={booking.id} booking={booking}/>
                         ))}
 
                         <LoadMoreButton
@@ -306,7 +288,7 @@ export const Dashboard = () => {
                 {upcomingBookings.length > 0 ? (
                     <div className="space-y-4">
                         {upcomingBookings.slice(0, visibleUpcoming).map((booking) => (
-                            <BookingCard key={booking.id} booking={booking} />
+                            <BookingCard key={booking.id} booking={booking}/>
                         ))}
 
                         <LoadMoreButton
@@ -317,7 +299,7 @@ export const Dashboard = () => {
                     </div>
                 ) : (
                     <div className="bg-gray-50 p-6 rounded-lg text-center">
-                        <Clock size={36} className="mx-auto text-gray-400 mb-2" />
+                        <Clock size={36} className="mx-auto text-gray-400 mb-2"/>
                         <p className="text-gray-500">Aucune réservation planifiée</p>
                     </div>
                 )}

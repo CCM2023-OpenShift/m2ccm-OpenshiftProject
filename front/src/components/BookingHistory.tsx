@@ -1,46 +1,45 @@
-import { useEffect, useState } from 'react';
-import { Booking } from '../services/Booking';
-import { formatBookingTimeRange } from '../composable/formatTimestamp';
-import { User as UserIcon, Calendar, MapPin, Users } from 'lucide-react';
-import { formatOrganizer } from '../composable/userFormatter';
-import { useStore } from '../store';
+import {useEffect, useState} from 'react';
+import {formatBookingTimeRange} from '../composable/formatTimestamp';
+import {User as UserIcon, Calendar, MapPin, Users} from 'lucide-react';
+import {formatOrganizer} from '../composable/userFormatter';
+import {useStore} from '../store';
 import {useKeycloak} from "@react-keycloak/web";
 
 export const BookingHistory = () => {
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
+    const {
+        bookings,
+        fetchBookings,
+        currentUser,
+        loading
+    } = useStore();
 
-    // Accès au store pour récupérer l'utilisateur courant
-    const { currentUser } = useStore();
+    const [localLoading, setLocalLoading] = useState(true);
 
-    // Vérifier si l'utilisateur est admin
     const isAdmin = useKeycloak().keycloak.tokenParsed?.realm_access?.roles?.includes('admin') || false;
 
     useEffect(() => {
-        const fetchBookings = async () => {
+        const fetchData = async () => {
             try {
-                const data = await Booking.getAll();
-                setBookings(data);
+                await fetchBookings();
             } catch (error) {
                 console.error("Erreur lors du chargement des réservations :", error);
             } finally {
-                setLoading(false);
+                setLocalLoading(false);
             }
         };
 
-        void fetchBookings();
+        void fetchData();
     }, []);
 
     const pastBookings = bookings
         .filter((booking) => new Date(booking.endTime) < new Date())
         .sort((a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime());
 
-    // Vérifier si l'utilisateur est l'organisateur de la réservation
-    const isOrganizerOf = (booking: Booking) => {
+    const isOrganizerOf = (booking: any) => {
         return currentUser && booking.organizer === currentUser.username;
     };
 
-    if (loading) {
+    if (localLoading || loading.bookings) {
         return (
             <div className="p-6 flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -56,27 +55,27 @@ export const BookingHistory = () => {
             {pastBookings.length > 0 ? (
                 <div className="space-y-4">
                     {pastBookings.map((booking) => {
-                        // Vérifier si l'utilisateur peut voir les détails complets
                         const showDetails = isAdmin || isOrganizerOf(booking);
 
                         return (
-                            <div key={booking.id} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                            <div key={booking.id}
+                                 className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                                 <h3 className="font-semibold text-lg">{showDetails ? booking.title : "Réservé"}</h3>
 
                                 <div className="mt-2 space-y-1.5">
                                     <p className="text-gray-600 flex items-start">
-                                        <Calendar size={16} className="mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
+                                        <Calendar size={16} className="mr-2 mt-0.5 text-blue-500 flex-shrink-0"/>
                                         <span>{formatBookingTimeRange(booking.startTime, booking.endTime)}</span>
                                     </p>
 
                                     <p className="text-gray-600 flex items-start">
-                                        <MapPin size={16} className="mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+                                        <MapPin size={16} className="mr-2 mt-0.5 text-green-500 flex-shrink-0"/>
                                         <span>Salle : {booking.room?.name ?? 'Salle inconnue'}</span>
                                     </p>
 
                                     {showDetails && (
                                         <p className="text-gray-600 flex items-start">
-                                            <UserIcon size={16} className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" />
+                                            <UserIcon size={16} className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0"/>
                                             <span>Organisateur : {formatOrganizer(booking.organizer)}</span>
                                         </p>
                                     )}
@@ -85,7 +84,7 @@ export const BookingHistory = () => {
                                 {showDetails && booking.attendees > 0 && (
                                     <div className="mt-2 text-sm text-gray-500">
                                         <span className="flex items-center">
-                                            <Users size={14} className="mr-1" />
+                                            <Users size={14} className="mr-1"/>
                                             {booking.attendees} participant{booking.attendees > 1 ? 's' : ''}
                                         </span>
                                     </div>
@@ -96,9 +95,11 @@ export const BookingHistory = () => {
                 </div>
             ) : (
                 <div className="bg-gray-50 p-8 text-center rounded-lg border border-gray-200">
-                    <Calendar size={48} className="mx-auto text-gray-400 mb-3" />
+                    <Calendar size={48} className="mx-auto text-gray-400 mb-3"/>
                     <p className="text-gray-500 text-lg">Aucune réservation passée.</p>
-                    <p className="text-gray-400 text-sm mt-1">L'historique des réservations apparaîtra ici une fois les réservations terminées.</p>
+                    <p className="text-gray-400 text-sm mt-1">
+                        L'historique des réservations apparaîtra ici une fois les réservations terminées.
+                    </p>
                 </div>
             )}
         </div>

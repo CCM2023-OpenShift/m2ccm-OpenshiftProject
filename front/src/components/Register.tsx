@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { UserCircle, Lock, Mail, Phone } from 'lucide-react';
+import React, {useState} from 'react';
+import {UserCircle, Lock, Mail, Phone} from 'lucide-react';
 
 interface RegisterProps {
     onRegister: (email: string, password: string, name: string, phone: string) => void;
     onSwitchToLogin: () => void;
 }
 
-export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
+export const Register = ({onRegister, onSwitchToLogin}: RegisterProps) => {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -38,12 +38,12 @@ export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <UserCircle className="h-5 w-5 text-gray-400" />
+                                <UserCircle className="h-5 w-5 text-gray-400"/>
                             </div>
                             <input
                                 type="text"
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                onChange={(e) => setFormData({...formData, name: e.target.value})}
                                 className="w-full pl-10 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="John Doe"
                                 required
@@ -57,12 +57,12 @@ export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Mail className="h-5 w-5 text-gray-400" />
+                                <Mail className="h-5 w-5 text-gray-400"/>
                             </div>
                             <input
                                 type="email"
                                 value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                onChange={(e) => setFormData({...formData, email: e.target.value})}
                                 className="w-full pl-10 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="votre@email.com"
                                 required
@@ -76,12 +76,12 @@ export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Phone className="h-5 w-5 text-gray-400" />
+                                <Phone className="h-5 w-5 text-gray-400"/>
                             </div>
                             <input
                                 type="tel"
                                 value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
                                 className="w-full pl-10 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="+33 6 12 34 56 78"
                                 required
@@ -95,12 +95,12 @@ export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Lock className="h-5 w-5 text-gray-400" />
+                                <Lock className="h-5 w-5 text-gray-400"/>
                             </div>
                             <input
                                 type="password"
                                 value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                onChange={(e) => setFormData({...formData, password: e.target.value})}
                                 className="w-full pl-10 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="••••••••"
                                 required
@@ -114,12 +114,12 @@ export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Lock className="h-5 w-5 text-gray-400" />
+                                <Lock className="h-5 w-5 text-gray-400"/>
                             </div>
                             <input
                                 type="password"
                                 value={formData.confirmPassword}
-                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                                 className="w-full pl-10 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="••••••••"
                                 required

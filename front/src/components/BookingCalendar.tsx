@@ -1,70 +1,54 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
-import { Booking } from '../services/Booking';
-import { useStore } from '../store';
-import {useKeycloak} from "@react-keycloak/web";
+import {useStore} from '../store';
+import {useKeycloak} from '@react-keycloak/web';
+import {Booking} from '../types';
 
 export const BookingCalendar = () => {
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Extraction des données et fonctions du store
+    const {bookings, loading, fetchBookings, currentUser} = useStore(state => ({
+        bookings: state.bookings,
+        loading: state.loading.bookings, // Accès spécifique à l'état de chargement des réservations
+        fetchBookings: state.fetchBookings,
+        currentUser: state.currentUser
+    }));
+
     const [selectedRoom, setSelectedRoom] = useState<string>('all');
 
-    // Accès au store pour récupérer l'utilisateur courant
-    const { currentUser } = useStore();
-
-    // Vérifier si l'utilisateur est admin
-    const isAdmin = useKeycloak().keycloak.tokenParsed?.realm_access?.roles?.includes('admin') || false;
+    const {keycloak} = useKeycloak();
+    const isAdmin = keycloak.tokenParsed?.realm_access?.roles?.includes('admin') || false;
 
     useEffect(() => {
-        const fetchBookings = async () => {
-            try {
-                const data = await Booking.getAll();
-                setBookings(data);
-            } catch (error) {
-                console.error("Erreur lors du chargement des réservations :", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         void fetchBookings();
-    }, []);
+    }, [fetchBookings]);
 
-    // Récupération des noms de salles uniques
     const rooms = Array.from(new Set(bookings.map(b => b.room?.name).filter(Boolean)));
 
-    // Filtrage des bookings en fonction de la salle sélectionnée
     const filteredBookings = selectedRoom === 'all'
         ? bookings
         : bookings.filter(b => b.room?.name === selectedRoom);
 
-    // Vérifier si l'utilisateur est l'organisateur de la réservation
-    const isOrganizerOf = (booking: Booking) => {
-        return currentUser && booking.organizer === currentUser.username;
-    };
+    const isOrganizerOf = (booking: Booking) =>
+        currentUser && booking.organizer === currentUser.username;
 
     const events = filteredBookings.map((booking) => {
-        // Vérifier si l'utilisateur peut voir les détails complets
         const showDetails = isAdmin || isOrganizerOf(booking);
-
         return {
-            title: showDetails ? booking.title : "Réservé",
+            title: showDetails ? booking.title : 'Réservé',
             start: booking.startTime,
             end: booking.endTime,
             extendedProps: {
                 room: booking.room?.name,
-                showDetails: showDetails
+                showDetails
             }
         };
     });
 
-    if (loading) {
-        return <div className="p-6">Chargement du calendrier...</div>;
-    }
+    if (loading) return <div className="p-6">Chargement du calendrier...</div>;
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -97,7 +81,7 @@ export const BookingCalendar = () => {
                 height="auto"
                 eventContent={(arg) => (
                     <div>
-                        <strong>{arg.event.title}</strong><br />
+                        <strong>{arg.event.title}</strong><br/>
                         {arg.event.extendedProps.showDetails && (
                             <span className="text-xs">{arg.event.extendedProps.room}</span>
                         )}

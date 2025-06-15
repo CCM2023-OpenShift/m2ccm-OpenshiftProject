@@ -1,38 +1,100 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {useKeycloak} from '@react-keycloak/web';
 import {useStore} from "../store.ts";
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Room} from '../services/Room';
-import {Booking} from '../services/Booking';
-import {Equipment} from "../services/Equipment.ts";
-import {RoomEquipment} from "../services/RoomEquipment.ts";
-import {User} from '../services/User.ts';
+import {Booking, Room} from '../types';
 import {formatDateTimeLocal, roundUpToNextHalfHour} from '../composable/formatTimestamp.ts';
 import {
-    AlertCircle,
-    Building,
-    Calendar,
-    CheckCircle,
-    Clock,
-    Info,
-    Repeat,
-    Shield,
-    User as UserIcon,
-    Users
+    AlertCircle, Building, Calendar, CheckCircle, Clock, Info,
+    Repeat, Shield, User as UserIcon, Users, X
 } from 'lucide-react';
 import {RecurringBookingForm} from './RecurringBookingForm';
 import {RoomAvailabilityCalendar} from "./RoomAvailabilityCalendar.tsx";
+
+// Composant Snackbar pour les notifications
+interface SnackbarProps {
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    onClose: () => void;
+    autoClose?: boolean;
+    duration?: number;
+}
+
+const Snackbar = ({message, type, onClose, autoClose = true, duration = 5000}: SnackbarProps) => {
+    useEffect(() => {
+        if (autoClose) {
+            const timer = setTimeout(() => {
+                onClose();
+            }, duration);
+            return () => clearTimeout(timer);
+        }
+    }, [autoClose, duration, onClose]);
+
+    const bgColor = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        warning: 'bg-amber-500',
+        info: 'bg-blue-500'
+    };
+
+    const icon = {
+        success: <CheckCircle className="h-6 w-6"/>,
+        error: <AlertCircle className="h-6 w-6"/>,
+        warning: <AlertCircle className="h-6 w-6"/>,
+        info: <Info className="h-6 w-6"/>
+    };
+
+    return (
+        <div
+            className={`fixed bottom-4 right-4 z-50 flex items-center py-3 px-4 ${bgColor[type]} text-white rounded-lg shadow-lg min-w-[300px] max-w-md animate-fade-in`}>
+            <div className="mr-3">{icon[type]}</div>
+            <div className="flex-grow mr-3">{message}</div>
+            <button onClick={onClose} className="text-white hover:text-gray-100">
+                <X className="h-5 w-5"/>
+            </button>
+        </div>
+    );
+};
 
 export const BookingForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const {keycloak} = useKeycloak();
-    const {fetchEquipment} = useStore();
-    const [rooms, setRooms] = useState<Room[]>([]);
+
+    // Extraire données et méthodes du store
+    const {
+        rooms,
+        availableOrganizers,
+        equipment,
+        loading: storeLoading,
+        fetchRooms,
+        fetchEquipment,
+        fetchCurrentUser,
+        fetchBookingOrganizers,
+        validateUsername,
+        getAvailableEquipments,
+        createBooking,
+        updateBooking
+    } = useStore(state => ({
+        rooms: state.rooms,
+        currentUser: state.currentUser,
+        availableOrganizers: state.availableOrganizers,
+        equipment: state.equipment,
+        loading: state.loading,
+        fetchRooms: state.fetchRooms,
+        fetchEquipment: state.fetchEquipment,
+        fetchCurrentUser: state.fetchCurrentUser,
+        fetchBookingOrganizers: state.fetchBookingOrganizers,
+        validateUsername: state.validateUsername,
+        getAvailableEquipments: state.getAvailableEquipments,
+        createBooking: state.createBooking,
+        updateBooking: state.updateBooking
+    }));
+
+    // État local pour les éléments qui ne font pas partie du store
     const [errorMessage, setErrorMessage] = useState('');
     const [availableEquipments, setAvailableEquipments] = useState<any[]>([]);
     const [availableEquipmentsMobile, setAvailableEquipmentsMobile] = useState<any[]>([]);
-    const [availableUsers, setAvailableUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
     const [customOrganizerInput, setCustomOrganizerInput] = useState('');
     const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
@@ -40,15 +102,43 @@ export const BookingForm = () => {
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [lastCreatedBooking, setLastCreatedBooking] = useState<Partial<Booking> | null>(null);
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+    const [equipmentsLoaded, setEquipmentsLoaded] = useState(false);
+
+    // État pour suivre quels champs ont été touchés
+    const [formDataTouched, setFormDataTouched] = useState({
+        title: false,
+        roomId: false,
+        startTime: false,
+        endTime: false,
+        attendees: false,
+        organizer: false
+    });
+
+    // État pour les snackbars
+    const [snackbar, setSnackbar] = useState<{
+        show: boolean;
+        message: string;
+        type: 'success' | 'error' | 'warning' | 'info';
+    }>({show: false, message: '', type: 'info'});
+
+    // Fonction pour afficher un snackbar
+    const showSnackbar = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+        setSnackbar({show: true, message, type});
+    };
+
+    // Fonction pour fermer le snackbar
+    const closeSnackbar = () => {
+        setSnackbar({...snackbar, show: false});
+    };
 
     // Date actuelle pour l'affichage et la validation
-    const currentDate = new Date("2025-06-15 13:50:00");
+    const currentDate = new Date("2025-06-15 19:49:46");
 
     const roles = keycloak.tokenParsed?.realm_access?.roles || [];
     const isAdmin = roles.includes('admin');
 
     // Récupérer le nom d'utilisateur de Keycloak avec fallback
-    const currentUser = keycloak.tokenParsed?.preferred_username;
+    const username = keycloak.tokenParsed?.preferred_username;
 
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -69,10 +159,50 @@ export const BookingForm = () => {
             startTime: string;
             endTime: string;
         }[],
-        organizer: currentUser,
+        organizer: username,
     };
 
     const [formData, setFormData] = useState(initialBookingData);
+
+    // Fonction de validation améliorée pour chaque champ
+    const validateField = useCallback((fieldName: string) => {
+        switch (fieldName) {
+            case 'title':
+                return formData.title.trim() ? null : "Le titre est obligatoire";
+            case 'roomId':
+                return formData.roomId ? null : "Veuillez sélectionner une salle";
+            case 'startTime':
+                if (!formData.startTime) return "L'heure de début est obligatoire";
+                if (new Date(formData.startTime) < currentDate) return "L'heure de début ne peut pas être dans le passé";
+                return null;
+            case 'endTime':
+                if (!formData.endTime) return "L'heure de fin est obligatoire";
+                if (formData.startTime && new Date(formData.endTime) <= new Date(formData.startTime))
+                    return "L'heure de fin doit être après l'heure de début";
+                return null;
+            case 'attendees':
+                if (!formData.attendees || Number(formData.attendees) <= 0)
+                    return "Le nombre de participants doit être supérieur à zéro";
+                if (selectedRoom && Number(formData.attendees) > selectedRoom.capacity)
+                    return `La salle peut accueillir au maximum ${selectedRoom.capacity} personnes`;
+                return null;
+            case 'organizer':
+                return formData.organizer?.trim() ? null : "L'organisateur est obligatoire";
+            default:
+                return null;
+        }
+    }, [formData, selectedRoom, currentDate]);
+
+    useEffect(() => {
+        // Réinitialiser loading après 10 secondes pour éviter un chargement infini
+        if (loading) {
+            const timeout = setTimeout(() => {
+                setLoading(false);
+                console.log("État de chargement réinitialisé par le timeout de sécurité");
+            }, 10000); // 10 secondes
+            return () => clearTimeout(timeout);
+        }
+    }, [loading]);
 
     // Extraire les paramètres de l'URL
     useEffect(() => {
@@ -105,31 +235,33 @@ export const BookingForm = () => {
 
         setFormData(newFormData);
         setUrlParamsLoaded(true);
-    }, [location.search, urlParamsLoaded]);
+    }, [location.search, urlParamsLoaded, formData]);
 
+    // Charger les données initiales
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
 
-                // Charger les salles
-                const roomsData = await Room.getAll();
-                setRooms(roomsData);
+                // Utiliser les méthodes du store pour charger les données
+                await fetchRooms();
+                await fetchCurrentUser();
 
                 if (isAdmin) {
-                    await fetchAvailableUsers();
+                    await fetchBookingOrganizers();
                 }
 
             } catch (error) {
                 console.error('Erreur lors du chargement des données', error);
                 setErrorMessage('Erreur lors du chargement des données');
+                showSnackbar('Erreur lors du chargement des données', 'error');
             } finally {
                 setLoading(false);
             }
         };
 
         void fetchData();
-    }, [isAdmin]);
+    }, [isAdmin, fetchRooms, fetchCurrentUser, fetchBookingOrganizers]);
 
     // Effet pour charger les paramètres d'URL après le chargement des salles
     useEffect(() => {
@@ -176,46 +308,32 @@ export const BookingForm = () => {
         }
     }, [formData.roomId, rooms]);
 
-    const fetchAvailableUsers = async () => {
-        try {
-            const users = await User.getBookingOrganizers();
-            setAvailableUsers(users);
-        } catch (error) {
-            console.error('Error loading users:', error);
-
-            // Fallback : seulement l'utilisateur connecté
-            const fallbackUser = new User().fromJSON({
-                id: 'current-user',
-                username: currentUser,
-                displayName: `${currentUser} (Vous - Keycloak indisponible)`,
-                enabled: true
-            });
-
-            setAvailableUsers([fallbackUser]);
-        }
-    };
-
     // Gestion de l'input libre pour les admins
     const handleCustomOrganizerChange = (value: string) => {
         setCustomOrganizerInput(value);
         setFormData(prev => ({...prev, organizer: value}));
+        setFormDataTouched(prev => ({...prev, organizer: true}));
     };
 
     // Gestion de la sélection dans le dropdown
     const handleOrganizerSelect = (value: string) => {
         setFormData(prev => ({...prev, organizer: value}));
+        setFormDataTouched(prev => ({...prev, organizer: true}));
         setCustomOrganizerInput('');
     };
 
+    // Récupérer les équipements pour la salle sélectionnée
     useEffect(() => {
-        if (!formData.roomId) {
-            setAvailableEquipments([]);
-            return;
+        if (!formData.roomId || equipmentsLoaded) {
+            return; // Éviter les rechargements inutiles
         }
 
         const getEquipments = async () => {
             try {
-                const equipments = await Equipment.getAll();
+                // Charger les équipements via le store
+                await fetchEquipment();
+                const equipments = equipment;
+
                 const selectedRoom = rooms.find(room => String(room.id) === String(formData.roomId));
                 if (!selectedRoom) {
                     setAvailableEquipments([]);
@@ -224,84 +342,74 @@ export const BookingForm = () => {
 
                 const merged = selectedRoom.roomEquipments.map(roomEquip => {
                     const equipId = roomEquip.equipmentId;
-                    const detail = equipments.find((e: Equipment) => e.id === equipId);
+                    const detail = equipments.find(e => e.id === equipId);
                     return {
                         ...roomEquip,
                         equipment: detail ? {name: detail.name, mobile: detail.mobile} : {
                             name: 'Inconnu',
                             mobile: false
                         },
-                    } as RoomEquipment;
+                    };
                 });
 
                 setAvailableEquipments(merged);
+                setEquipmentsLoaded(true); // Marquer comme chargé
             } catch (err) {
                 console.error('Erreur lors de la récupération des équipements :', err);
+                showSnackbar('Erreur lors du chargement des équipements', 'error');
                 setAvailableEquipments([]);
             }
         };
 
         void getEquipments();
-    }, [formData.roomId, rooms, fetchEquipment]);
+    }, [formData.roomId, rooms, fetchEquipment, equipment, equipmentsLoaded]);
 
+    // Récupérer les équipements mobiles disponibles
     useEffect(() => {
         const fetchAvailableEquipments = async () => {
             if (!formData.startTime || !formData.endTime) return;
 
             try {
-                const availableEquipment = await Booking.getAvailableEquipments(formData.startTime, formData.endTime);
-                const filteredAndMapped = availableEquipment
-                    .filter((e) => e.available > 0);
+                // Utiliser la méthode du store pour récupérer les équipements disponibles
+                const availableEquipment = await getAvailableEquipments(formData.startTime, formData.endTime);
+                const filteredAndMapped = availableEquipment.filter((e) => e.available > 0);
                 setAvailableEquipmentsMobile(filteredAndMapped);
             } catch (error) {
                 console.error("Erreur lors du chargement des équipements disponibles :", error);
+                showSnackbar('Erreur lors du chargement des équipements disponibles', 'warning');
                 setAvailableEquipmentsMobile([]);
             }
         };
 
         void fetchAvailableEquipments();
-    }, [formData.startTime, formData.endTime]);
+    }, [formData.startTime, formData.endTime, getAvailableEquipments]);
 
     // Validation de la réservation avant soumission
     const validateBooking = (): string | null => {
-        if (!formData.title.trim()) {
-            return "Le titre de la réservation est obligatoire.";
-        }
+        // Marquer tous les champs comme touchés pour afficher les erreurs
+        setFormDataTouched({
+            title: true,
+            roomId: true,
+            startTime: true,
+            endTime: true,
+            attendees: true,
+            organizer: true
+        });
 
-        if (!formData.roomId) {
-            return "Veuillez sélectionner une salle.";
-        }
+        const validationErrors: string[] = [];
+        const fields = ['title', 'roomId', 'startTime', 'endTime', 'attendees', 'organizer'];
 
-        if (!formData.startTime || !formData.endTime) {
-            return "Les dates et heures de début et de fin sont obligatoires.";
-        }
+        fields.forEach(field => {
+            const error = validateField(field);
+            if (error) {
+                validationErrors.push(error);
+            }
+        });
 
-        const startTime = new Date(formData.startTime);
-        const endTime = new Date(formData.endTime);
-
-        if (startTime >= endTime) {
-            return "L'heure de début doit être antérieure à l'heure de fin.";
-        }
-
-        if (startTime < currentDate) {
-            return "Vous ne pouvez pas réserver une salle dans le passé.";
-        }
-
-        if (!formData.attendees || Number(formData.attendees) <= 0) {
-            return "Le nombre de participants doit être supérieur à zéro.";
-        }
-
-        if (selectedRoom && Number(formData.attendees) > selectedRoom.capacity) {
-            return `La salle peut accueillir au maximum ${selectedRoom.capacity} personnes.`;
-        }
-
-        if (!formData.organizer?.trim()) {
-            return "L'organisateur est obligatoire.";
-        }
-
-        return null;
+        return validationErrors.length > 0 ? validationErrors.join('\n') : null;
     };
 
+    // Soumission du formulaire
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -310,21 +418,27 @@ export const BookingForm = () => {
             const validationError = validateBooking();
             if (validationError) {
                 setErrorMessage(validationError);
+                showSnackbar('Certains champs contiennent des erreurs', 'error');
                 setLoading(false);
+                // Faire défiler vers le haut pour voir l'erreur
+                window.scrollTo({top: 0, behavior: 'smooth'});
                 return;
             }
 
             if (!selectedRoom) {
                 setErrorMessage("La salle sélectionnée n'est pas valide.");
+                showSnackbar("La salle sélectionnée n'est pas valide", 'error');
                 setLoading(false);
                 return;
             }
 
             if (isAdmin && customOrganizerInput.trim()) {
                 try {
-                    const validation = await User.validateUsername(customOrganizerInput.trim());
+                    // Utiliser validateUsername du store
+                    const validation = await validateUsername(customOrganizerInput.trim());
                     if (!validation.valid) {
                         setErrorMessage(`Nom d'utilisateur invalide: ${validation.message}`);
+                        showSnackbar(`Nom d'utilisateur invalide: ${validation.message}`, 'error');
                         setLoading(false);
                         return;
                     }
@@ -333,23 +447,24 @@ export const BookingForm = () => {
                 }
             }
 
-            // Créer d'abord l'objet booking sans les équipements
-            const booking = new Booking();
-            Object.assign(booking, {
+            // Préparation des données pour la création
+            const bookingData = {
                 title: formData.title,
                 startTime: formData.startTime,
                 endTime: formData.endTime,
                 attendees: Number(formData.attendees),
                 organizer: formData.organizer,
                 room: selectedRoom,
-            });
+            };
 
-            // Créer le booking
-            await booking.create();
+            // Utiliser createBooking du store
+            const booking = await createBooking(bookingData);
+
+            // Afficher un snackbar de succès
+            showSnackbar('Réservation créée avec succès!', 'success');
 
             // Ajouter les équipements après la création du booking
             if (formData.bookingEquipments.filter((be) => be.quantity > 0).length > 0) {
-                // Mettre à jour l'objet booking avec les équipements
                 booking.bookingEquipments = formData.bookingEquipments
                     .filter((be) => be.quantity > 0)
                     .map((be) => ({
@@ -360,7 +475,9 @@ export const BookingForm = () => {
                         startTime: formData.startTime,
                         endTime: formData.endTime,
                     }));
-                await booking.update();
+
+                // Utiliser updateBooking du store
+                await updateBooking(booking);
             }
 
             // Un seul appel à setLastCreatedBooking
@@ -378,11 +495,14 @@ export const BookingForm = () => {
             if (error instanceof Error) {
                 if (error.message.includes("La salle est déjà réservée")) {
                     setErrorMessage(error.message);
+                    showSnackbar('Conflit de réservation: La salle est déjà réservée pour cette période', 'warning');
                 } else {
                     setErrorMessage(error.message);
+                    showSnackbar(`Erreur: ${error.message}`, 'error');
                 }
             } else {
                 setErrorMessage('Une erreur inconnue est survenue.');
+                showSnackbar('Une erreur inconnue est survenue', 'error');
             }
 
             setBookingSuccess(false);
@@ -398,13 +518,12 @@ export const BookingForm = () => {
             let createdCount = 0;
 
             for (const bookingData of bookings) {
-                const booking = new Booking();
-                Object.assign(booking, bookingData);
-                await booking.create();
+                // Utiliser createBooking du store pour chaque réservation récurrente
+                await createBooking(bookingData);
                 createdCount++;
             }
 
-            alert(`${createdCount} réservations récurrentes créées avec succès!`);
+            showSnackbar(`${createdCount} réservations récurrentes créées avec succès!`, 'success');
             setErrorMessage('');
             setFormData(initialBookingData);
             setCustomOrganizerInput('');
@@ -415,8 +534,10 @@ export const BookingForm = () => {
             console.error("Erreur lors de la création des réservations récurrentes:", error);
             if (error instanceof Error) {
                 setErrorMessage(`Erreur lors de la création des réservations récurrentes: ${error.message}`);
+                showSnackbar(`Erreur: ${error.message}`, 'error');
             } else {
                 setErrorMessage('Une erreur inconnue est survenue lors de la création des réservations récurrentes.');
+                showSnackbar('Une erreur inconnue est survenue', 'error');
             }
         } finally {
             setLoading(false);
@@ -429,6 +550,15 @@ export const BookingForm = () => {
         setFormData(initialBookingData);
         setCustomOrganizerInput('');
         setSelectedRoom(null);
+        setEquipmentsLoaded(false);
+        setFormDataTouched({
+            title: false,
+            roomId: false,
+            startTime: false,
+            endTime: false,
+            attendees: false,
+            organizer: false
+        });
     };
 
     // Préparation de l'objet complet pour le RecurringBookingForm
@@ -458,7 +588,11 @@ export const BookingForm = () => {
         };
     };
 
-    if (loading && rooms.length === 0) {
+    // État de chargement global - MODIFICATION ICI pour éviter les blocages
+    const isPageLoading = loading && rooms.length === 0;
+    const isSubmitting = loading;
+
+    if (isPageLoading) {
         return (
             <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -582,9 +716,60 @@ export const BookingForm = () => {
         <div className="p-6 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-bold mb-8 text-gray-800">Réserver une salle</h1>
 
+            {/* Indicateur de progression */}
+            <div className="max-w-2xl mx-auto mb-6">
+                <div className="flex items-center mb-2">
+                    <div
+                        className={`h-2 flex-grow rounded-full ${formData.roomId ? "bg-blue-500" : "bg-gray-200"}`}></div>
+                    <div className="mx-2 text-gray-400">•</div>
+                    <div
+                        className={`h-2 flex-grow rounded-full ${formData.startTime && formData.endTime ? "bg-blue-500" : "bg-gray-200"}`}></div>
+                    <div className="mx-2 text-gray-400">•</div>
+                    <div
+                        className={`h-2 flex-grow rounded-full ${formData.title ? "bg-blue-500" : "bg-gray-200"}`}></div>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                    <span>Sélection de la salle</span>
+                    <span>Date et heure</span>
+                    <span>Finalisation</span>
+                </div>
+            </div>
+
             <div className="flex flex-col xl:flex-row gap-6">
                 {/* Colonne gauche Formulaire */}
-                <form onSubmit={handleSubmit} className="flex-1 bg-white rounded-lg shadow-md p-8">
+                <form onSubmit={handleSubmit} className="flex-1 bg-white rounded-lg shadow-md p-8 relative z-20">
+                    {/* Message pour indiquer les champs obligatoires */}
+                    <div className="mb-4 text-sm text-gray-500">
+                        Les champs marqués d'un <span className="text-red-500">*</span> sont obligatoires
+                    </div>
+
+                    {/* Affichage des états de chargement pour debug */}
+                    <div className="text-xs text-gray-500 my-2 p-2 bg-gray-100 rounded">
+                        État de chargement: Local: {loading.toString()},
+                        Rooms: {storeLoading.rooms?.toString()},
+                        Equipment: {storeLoading.equipment?.toString()},
+                        Bookings: {storeLoading.bookings?.toString()}
+                    </div>
+
+                    {/* Affichage des erreurs en haut du formulaire */}
+                    {errorMessage && (
+                        <div
+                            className="mb-6 p-4 bg-red-50 border border-red-300 text-red-700 rounded-lg flex items-start">
+                            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5"/>
+                            <div>
+                                <p className="font-medium">Des erreurs ont été trouvées :</p>
+                                <ul className="list-disc list-inside mt-1">
+                                    {errorMessage
+                                        .split('\n')
+                                        .filter(line => line.trim() !== '')
+                                        .map((line, index) => (
+                                            <li key={index}>{line}</li>
+                                        ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Section information */}
                     <div className="mb-8">
                         <h2 className="text-xl font-semibold mb-6 pb-2 border-b border-gray-200 text-gray-700">
@@ -593,30 +778,37 @@ export const BookingForm = () => {
 
                         <div className="mb-5">
                             <label className="block text-gray-700 font-medium mb-2">
-                                Titre de la réservation
+                                Titre de la réservation <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 value={formData.title}
                                 onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                onBlur={() => setFormDataTouched({...formDataTouched, title: true})}
+                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
+                                    !formData.title && formDataTouched.title ? "border-red-500" : ""
+                                }`}
                                 placeholder="Ex: Réunion d'équipe, Présentation client..."
                                 required
-                                disabled={loading}
                             />
+                            {!formData.title && formDataTouched.title && (
+                                <p className="mt-1 text-red-500 text-sm">Le titre est obligatoire</p>
+                            )}
                         </div>
 
                         <div className="mb-5">
                             <label className="block text-gray-700 font-medium mb-2 items-center">
                                 <Building size={18} className="inline-block mr-2 text-blue-500 align-text-bottom"/>
-                                Salle
+                                Salle <span className="text-red-500">*</span>
                             </label>
                             <select
                                 value={formData.roomId}
                                 onChange={(e) => setFormData({...formData, roomId: e.target.value})}
-                                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                onBlur={() => setFormDataTouched({...formDataTouched, roomId: true})}
+                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
+                                    !formData.roomId && formDataTouched.roomId ? "border-red-500" : ""
+                                }`}
                                 required
-                                disabled={loading}
                             >
                                 <option value="">Sélectionner une salle</option>
                                 {rooms.map((room) => (
@@ -625,6 +817,9 @@ export const BookingForm = () => {
                                     </option>
                                 ))}
                             </select>
+                            {!formData.roomId && formDataTouched.roomId && (
+                                <p className="mt-1 text-red-500 text-sm">Veuillez sélectionner une salle</p>
+                            )}
                         </div>
 
                         {selectedRoom && (
@@ -667,7 +862,7 @@ export const BookingForm = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                             <div>
                                 <label className="block text-gray-700 font-medium mb-2">
-                                    Date et heure de début
+                                    Date et heure de début <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="datetime-local"
@@ -675,16 +870,28 @@ export const BookingForm = () => {
                                     onChange={(e) =>
                                         setFormData({...formData, startTime: e.target.value})
                                     }
+                                    onBlur={() => setFormDataTouched({...formDataTouched, startTime: true})}
                                     min={formatDateTimeLocal(new Date())}
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
+                                        !formData.startTime && formDataTouched.startTime ? "border-red-500" : ""
+                                    }`}
                                     required
-                                    disabled={loading}
                                 />
+                                {!formData.startTime && formDataTouched.startTime && (
+                                    <p className="mt-1 text-red-500 text-sm">La date et l'heure de début sont
+                                        obligatoires</p>
+                                )}
+                                {formData.startTime && new Date(formData.startTime) < currentDate && (
+                                    <p className="mt-1 text-amber-600 text-sm flex items-center">
+                                        <AlertCircle size={14} className="mr-1"/>
+                                        L'heure de début ne peut pas être dans le passé
+                                    </p>
+                                )}
                             </div>
 
                             <div>
                                 <label className="block text-gray-700 font-medium mb-2">
-                                    Date et heure de fin
+                                    Date et heure de fin <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="datetime-local"
@@ -692,11 +899,23 @@ export const BookingForm = () => {
                                     onChange={(e) =>
                                         setFormData({...formData, endTime: e.target.value})
                                     }
+                                    onBlur={() => setFormDataTouched({...formDataTouched, endTime: true})}
                                     min={formData.startTime}
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
+                                        !formData.endTime && formDataTouched.endTime ? "border-red-500" : ""
+                                    }`}
                                     required
-                                    disabled={loading}
                                 />
+                                {!formData.endTime && formDataTouched.endTime && (
+                                    <p className="mt-1 text-red-500 text-sm">La date et l'heure de fin sont
+                                        obligatoires</p>
+                                )}
+                                {formData.startTime && formData.endTime && new Date(formData.endTime) <= new Date(formData.startTime) && (
+                                    <p className="mt-1 text-amber-600 text-sm flex items-center">
+                                        <AlertCircle size={14} className="mr-1"/>
+                                        L'heure de fin doit être après l'heure de début
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -710,7 +929,7 @@ export const BookingForm = () => {
 
                         <div className="mb-5">
                             <label className="block text-gray-700 font-medium mb-2">
-                                Nombre de participants
+                                Nombre de participants <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="number"
@@ -719,12 +938,18 @@ export const BookingForm = () => {
                                     const value = e.target.value ? Number(e.target.value) : 1;
                                     setFormData({...formData, attendees: value});
                                 }}
-                                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                onBlur={() => setFormDataTouched({...formDataTouched, attendees: true})}
+                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
+                                    (!formData.attendees || formData.attendees <= 0) && formDataTouched.attendees ? "border-red-500" : ""
+                                }`}
                                 placeholder="Nombre de personnes attendues"
                                 required
                                 min="1"
-                                disabled={loading}
                             />
+                            {(!formData.attendees || formData.attendees <= 0) && formDataTouched.attendees && (
+                                <p className="mt-1 text-red-500 text-sm">Le nombre de participants doit être supérieur à
+                                    zéro</p>
+                            )}
                             {formData.roomId && rooms.length > 0 && formData.attendees && (
                                 <div className="mt-2">
                                     {(() => {
@@ -765,7 +990,7 @@ export const BookingForm = () => {
                         {/* CHAMP ORGANISATEUR */}
                         <div className="mb-5">
                             <label className="block text-gray-700 font-medium mb-2 items-center">
-                                Organisateur
+                                Organisateur <span className="text-red-500">*</span>
                             </label>
 
                             {!isAdmin ? (
@@ -787,11 +1012,13 @@ export const BookingForm = () => {
                                     <select
                                         value={customOrganizerInput ? '' : formData.organizer}
                                         onChange={(e) => handleOrganizerSelect(e.target.value)}
-                                        className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                                        disabled={loading}
+                                        onBlur={() => setFormDataTouched({...formDataTouched, organizer: true})}
+                                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
+                                            !formData.organizer && formDataTouched.organizer ? "border-red-500" : ""
+                                        }`}
                                     >
                                         <option value="">Sélectionner un organisateur connu</option>
-                                        {availableUsers.map((user) => (
+                                        {availableOrganizers.map((user) => (
                                             <option key={user.getUsername()} value={user.getUsername()}>
                                                 {user.getDisplayName()}
                                             </option>
@@ -811,15 +1038,22 @@ export const BookingForm = () => {
                                             type="text"
                                             value={customOrganizerInput}
                                             onChange={(e) => handleCustomOrganizerChange(e.target.value)}
+                                            onBlur={() => setFormDataTouched({...formDataTouched, organizer: true})}
                                             placeholder="Tapez un autre nom d'utilisateur..."
-                                            className="w-full px-4 py-3 border rounded-lg border-dashed border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                                            disabled={loading}
+                                            className={`w-full px-4 py-3 border rounded-lg border-dashed border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
+                                                !formData.organizer && formDataTouched.organizer ? "border-red-500" : ""
+                                            }`}
                                         />
                                         <p className="text-xs text-gray-500 mt-1 flex items-center">
                                             <Shield className="w-3 h-3 mr-1"/>
                                             En tant qu'admin, vous pouvez saisir n'importe quel nom d'utilisateur
                                         </p>
                                     </div>
+
+                                    {/* Message d'erreur */}
+                                    {!formData.organizer && formDataTouched.organizer && (
+                                        <p className="mt-1 text-red-500 text-sm">L'organisateur est obligatoire</p>
+                                    )}
 
                                     {/* Affichage de l'organisateur sélectionné */}
                                     {formData.organizer && (
@@ -854,6 +1088,8 @@ export const BookingForm = () => {
                                     const validation = validateBooking();
                                     if (validation) {
                                         setErrorMessage(validation);
+                                        showSnackbar('Certains champs contiennent des erreurs', 'error');
+                                        window.scrollTo({top: 0, behavior: 'smooth'});
                                         return;
                                     }
 
@@ -864,14 +1100,24 @@ export const BookingForm = () => {
                                         setTimeout(() => setShowRecurringForm(true), 0);
                                     } else {
                                         setErrorMessage("La salle sélectionnée est introuvable. Veuillez essayer de la sélectionner à nouveau.");
+                                        showSnackbar("La salle sélectionnée est introuvable", 'error');
                                     }
                                 }}
-                                className="w-full sm:w-auto flex items-center justify-center bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                                disabled={loading || !formData.roomId}
+                                className={`w-full sm:w-auto flex items-center justify-center px-5 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium ${
+                                    !formData.roomId ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"
+                                }`}
+                                disabled={!formData.roomId}
+                                title={!formData.roomId ? "Veuillez d'abord sélectionner une salle" : ""}
                             >
                                 <Repeat size={18} className="mr-2"/>
                                 Configurer une récurrence
                             </button>
+                            {!formData.roomId && (
+                                <p className="mt-2 text-amber-600 text-sm flex items-center">
+                                    <AlertCircle size={14} className="mr-1"/>
+                                    Veuillez d'abord sélectionner une salle pour créer une réservation récurrente
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -906,9 +1152,10 @@ export const BookingForm = () => {
                                                             type="number"
                                                             min="0"
                                                             max={quantity}
-                                                            className="w-16 text-center border rounded-md py-1 px-2"
+                                                            className={`w-16 text-center border rounded-md py-1 px-2 ${
+                                                                existing.quantity > quantity ? "border-red-500 bg-red-50" : ""
+                                                            }`}
                                                             value={existing.quantity}
-                                                            disabled={loading}
                                                             onChange={(e) => {
                                                                 const qty = Number(e.target.value);
                                                                 setFormData((prev) => {
@@ -941,6 +1188,10 @@ export const BookingForm = () => {
                                                         />
                                                         <span className="ml-2 text-gray-600">/ {quantity}</span>
                                                     </div>
+                                                    {existing.quantity > quantity && (
+                                                        <span
+                                                            className="ml-2 text-red-500 text-xs">Quantité limitée</span>
+                                                    )}
                                                 </div>
                                             );
                                         })}
@@ -963,50 +1214,35 @@ export const BookingForm = () => {
                         )}
                     </div>
 
-                    {errorMessage && (
-                        <div
-                            className="mb-6 p-4 bg-red-50 border border-red-300 text-red-700 rounded-lg flex items-start">
-                            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5"/>
-                            <div>
-                                {errorMessage
-                                    .split('\n')
-                                    .filter(line => line.trim() !== '')
-                                    .map((line, index) => (
-                                        <p key={index} className={index > 0 ? 'mt-1 ml-4' : ''}>
-                                            {index === 0 ? line : `- ${line}`}
-                                        </p>
-                                    ))}
-                            </div>
-                        </div>
-                    )}
-
                     <div className="flex flex-col sm:flex-row justify-end gap-3">
                         <button
                             type="button"
                             onClick={() => navigate(-1)}
                             className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 font-medium"
-                            disabled={loading}
                         >
                             Annuler
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={isSubmitting}
                             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                         >
-                            {loading ? (
+                            {isSubmitting ? (
                                 <span className="flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                Création en cours...
-                            </span>
+                                    <div
+                                        className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                    Création en cours...
+                                </span>
                             ) : (
                                 'Réserver la salle'
                             )}
                         </button>
                     </div>
                 </form>
+
+                {/* Calendrier */}
                 {selectedRoom && formData.roomId && (
-                    <div className="xl:w-[450px]">
+                    <div className="xl:w-[450px] relative z-10">
                         <div className="sticky top-6 bg-white rounded-lg shadow-md overflow-hidden">
                             <div className="bg-blue-600 text-white p-4">
                                 <h2 className="text-xl font-semibold flex items-center">
@@ -1025,6 +1261,7 @@ export const BookingForm = () => {
                                             startTime: start.substring(0, 16),
                                             endTime: end.substring(0, 16)
                                         });
+                                        setFormDataTouched({...formDataTouched, startTime: true, endTime: true});
                                     }}
                                     // Ajouter les données de la réservation en cours
                                     currentBooking={{
@@ -1038,6 +1275,15 @@ export const BookingForm = () => {
                     </div>
                 )}
             </div>
+
+            {/* Snackbar */}
+            {snackbar.show && (
+                <Snackbar
+                    message={snackbar.message}
+                    type={snackbar.type}
+                    onClose={closeSnackbar}
+                />
+            )}
         </div>
     );
 };
