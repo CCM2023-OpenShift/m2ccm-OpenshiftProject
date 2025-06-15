@@ -8,6 +8,9 @@ public class RoomResponseDTO {
     public Long id;
     public String name;
     public Integer capacity;
+    public String building;
+    public String floor;
+    public String type;
     public String imageUrl;
     public List<RoomEquipmentResponseDTO> roomEquipments;
 }
