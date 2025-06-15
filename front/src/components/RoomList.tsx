@@ -1,8 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useStore } from '../store';
-import { Monitor, Users, Plus, Edit, Trash, X, Upload, Image as ImageIcon, Search, Filter, SlidersHorizontal } from 'lucide-react';
-import { Room } from '../types';
-import { useImageValidation } from '../hooks/useImageValidation';
+import React, {useState, useEffect, useMemo} from 'react';
+import {useStore} from '../store';
+import {
+    Monitor,
+    Users,
+    Plus,
+    Edit,
+    Trash,
+    X,
+    Upload,
+    Image as ImageIcon,
+    Search,
+    Filter,
+    SlidersHorizontal
+} from 'lucide-react';
+import {Room} from '../types';
+import {useImageValidation} from '../hooks/useImageValidation';
 
 interface RoomFilters {
     search: string;
@@ -52,7 +64,14 @@ export const RoomList = () => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const { loading, validateFile, getMaxSizeMB, getAcceptedTypes, getAcceptedExtensions, isConfigReady } = useImageValidation('room');
+    const {
+        loading,
+        validateFile,
+        getMaxSizeMB,
+        getAcceptedTypes,
+        getAcceptedExtensions,
+        isConfigReady
+    } = useImageValidation('room');
 
     useEffect(() => {
         void fetchRooms();
@@ -211,7 +230,7 @@ export const RoomList = () => {
 
         try {
             if (editingRoom?.id) {
-                await updateRoom({ ...roomData, id: editingRoom.id } as Room);
+                await updateRoom({...roomData, id: editingRoom.id} as Room);
 
                 // Upload de l'image si présente
                 if (imageFile) {
@@ -238,7 +257,7 @@ export const RoomList = () => {
 
             setIsModalOpen(false);
             setEditingRoom(null);
-            setFormData({ name: '', capacity: '', roomEquipments: [] });
+            setFormData({name: '', capacity: '', roomEquipments: []});
             setImageFile(null);
             setImagePreview(null);
         } catch (error) {
@@ -299,14 +318,14 @@ export const RoomList = () => {
                 <button
                     onClick={() => {
                         setEditingRoom(null);
-                        setFormData({ name: '', capacity: '', roomEquipments: [] });
+                        setFormData({name: '', capacity: '', roomEquipments: []});
                         setImageFile(null);
                         setImagePreview(null);
                         setIsModalOpen(true);
                     }}
                     className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center"
                 >
-                    <Plus className="w-5 h-5 mr-2" />
+                    <Plus className="w-5 h-5 mr-2"/>
                     Ajouter une salle
                 </button>
             </div>
@@ -316,12 +335,12 @@ export const RoomList = () => {
                 <div className="flex items-center space-x-4 mb-4">
                     {/* Recherche */}
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"/>
                         <input
                             type="text"
                             placeholder="Rechercher par nom de salle..."
                             value={filters.search}
-                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                            onChange={(e) => setFilters({...filters, search: e.target.value})}
                             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
@@ -333,7 +352,7 @@ export const RoomList = () => {
                             showFilters ? 'bg-blue-500 text-white border-blue-500' : 'hover:bg-gray-50'
                         }`}
                     >
-                        <SlidersHorizontal className="w-5 h-5" />
+                        <SlidersHorizontal className="w-5 h-5"/>
                         <span>Filtres</span>
                     </button>
 
@@ -356,7 +375,7 @@ export const RoomList = () => {
                                 type="number"
                                 min="0"
                                 value={filters.minCapacity}
-                                onChange={(e) => setFilters({ ...filters, minCapacity: Number(e.target.value) })}
+                                onChange={(e) => setFilters({...filters, minCapacity: Number(e.target.value)})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -368,7 +387,7 @@ export const RoomList = () => {
                                 type="number"
                                 min="0"
                                 value={filters.maxCapacity}
-                                onChange={(e) => setFilters({ ...filters, maxCapacity: Number(e.target.value) })}
+                                onChange={(e) => setFilters({...filters, maxCapacity: Number(e.target.value)})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -378,7 +397,7 @@ export const RoomList = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
                             <select
                                 value={filters.hasImage}
-                                onChange={(e) => setFilters({ ...filters, hasImage: e.target.value as any })}
+                                onChange={(e) => setFilters({...filters, hasImage: e.target.value as any})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">Toutes</option>
@@ -392,7 +411,7 @@ export const RoomList = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Équipements</label>
                             <select
                                 value={filters.hasEquipment}
-                                onChange={(e) => setFilters({ ...filters, hasEquipment: e.target.value as any })}
+                                onChange={(e) => setFilters({...filters, hasEquipment: e.target.value as any})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">Toutes</option>
@@ -403,12 +422,13 @@ export const RoomList = () => {
 
                         {/* Recherche par équipement spécifique */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Équipement spécifique</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Équipement
+                                spécifique</label>
                             <input
                                 type="text"
                                 placeholder="Nom d'équipement..."
                                 value={filters.equipmentName}
-                                onChange={(e) => setFilters({ ...filters, equipmentName: e.target.value })}
+                                onChange={(e) => setFilters({...filters, equipmentName: e.target.value})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -418,7 +438,7 @@ export const RoomList = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Trier par</label>
                             <select
                                 value={filters.sortBy}
-                                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
+                                onChange={(e) => setFilters({...filters, sortBy: e.target.value as any})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="name">Nom</option>
@@ -432,7 +452,7 @@ export const RoomList = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
                             <select
                                 value={filters.sortOrder}
-                                onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value as any })}
+                                onChange={(e) => setFilters({...filters, sortOrder: e.target.value as any})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="asc">Croissant</option>
@@ -455,7 +475,7 @@ export const RoomList = () => {
                             {equipmentInRooms.slice(0, 8).map(eq => (
                                 <button
                                     key={eq!.id}
-                                    onClick={() => setFilters({ ...filters, equipmentName: eq!.name })}
+                                    onClick={() => setFilters({...filters, equipmentName: eq!.name})}
                                     className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200 transition-colors"
                                 >
                                     {eq!.name}
@@ -488,12 +508,12 @@ export const RoomList = () => {
                                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
                                     title="Supprimer l'image"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="w-4 h-4"/>
                                 </button>
                             </div>
                         ) : (
                             <div className="h-48 bg-gray-200 flex items-center justify-center">
-                                <ImageIcon className="w-12 h-12 text-gray-400" />
+                                <ImageIcon className="w-12 h-12 text-gray-400"/>
                             </div>
                         )}
 
@@ -505,19 +525,19 @@ export const RoomList = () => {
                                         onClick={() => handleEdit(room)}
                                         className="text-blue-500 hover:text-blue-600"
                                     >
-                                        <Edit className="w-5 h-5" />
+                                        <Edit className="w-5 h-5"/>
                                     </button>
                                     <button
                                         onClick={() => handleDelete(room.id)}
                                         className="text-red-500 hover:text-red-600"
                                     >
-                                        <Trash className="w-5 h-5" />
+                                        <Trash className="w-5 h-5"/>
                                     </button>
                                 </div>
                             </div>
 
                             <div className="flex items-center mb-4">
-                                <Users className="w-5 h-5 text-gray-500 mr-2" />
+                                <Users className="w-5 h-5 text-gray-500 mr-2"/>
                                 <span>Capacité: {room.capacity} personnes</span>
                             </div>
 
@@ -531,7 +551,7 @@ export const RoomList = () => {
 
                                             return (
                                                 <li key={index} className="flex items-center">
-                                                    <Monitor className="w-4 h-4 text-gray-500 mr-2" />
+                                                    <Monitor className="w-4 h-4 text-gray-500 mr-2"/>
                                                     <span>{matchedEquipment.name} – {re.quantity}x</span>
                                                 </li>
                                             );
@@ -568,7 +588,7 @@ export const RoomList = () => {
             {/* Affichage si aucun résultat */}
             {filteredAndSortedRooms.length === 0 && rooms.length > 0 && (
                 <div className="text-center py-12">
-                    <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4"/>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune salle trouvée</h3>
                     <p className="text-gray-500 mb-4">Essayez de modifier vos critères de recherche</p>
                     <button
@@ -592,7 +612,7 @@ export const RoomList = () => {
                                 onClick={() => setIsModalOpen(false)}
                                 className="text-gray-500 hover:text-gray-700"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5"/>
                             </button>
                         </div>
 
@@ -604,7 +624,7 @@ export const RoomList = () => {
                                 <input
                                     type="text"
                                     value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, name: e.target.value})}
                                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                 />
@@ -617,7 +637,7 @@ export const RoomList = () => {
                                 <input
                                     type="number"
                                     value={formData.capacity}
-                                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, capacity: e.target.value})}
                                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                     min="0"
@@ -629,7 +649,8 @@ export const RoomList = () => {
                                 <label className="block text-gray-700 font-semibold mb-2">
                                     Image de la salle
                                 </label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center relative">
+                                <div
+                                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center relative">
                                     {imagePreview ? (
                                         <div className="relative">
                                             <img
@@ -645,12 +666,12 @@ export const RoomList = () => {
                                                 }}
                                                 className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 transform translate-x-2 -translate-y-2"
                                             >
-                                                <X className="w-3 h-3" />
+                                                <X className="w-3 h-3"/>
                                             </button>
                                         </div>
                                     ) : (
                                         <div>
-                                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2"/>
                                             <p className="text-gray-500">Cliquez pour sélectionner une image</p>
                                         </div>
                                     )}
@@ -690,7 +711,7 @@ export const RoomList = () => {
                                                                             ...prev,
                                                                             roomEquipments: [
                                                                                 ...prev.roomEquipments,
-                                                                                { equipmentId: re.id, quantity: 1 },
+                                                                                {equipmentId: re.id, quantity: 1},
                                                                             ],
                                                                         }));
                                                                     } else {
@@ -716,7 +737,10 @@ export const RoomList = () => {
                                                                     setFormData((prev) => ({
                                                                         ...prev,
                                                                         roomEquipments: prev.roomEquipments.map((eq) =>
-                                                                            eq.equipmentId === re.id ? { ...eq, quantity: qty } : eq
+                                                                            eq.equipmentId === re.id ? {
+                                                                                ...eq,
+                                                                                quantity: qty
+                                                                            } : eq
                                                                         ),
                                                                     }));
                                                                 }}

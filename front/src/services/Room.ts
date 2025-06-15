@@ -1,5 +1,5 @@
 import ApiService from './apiService';
-import { RoomEquipment } from './RoomEquipment';
+import {RoomEquipment} from './RoomEquipment';
 
 export class Room {
     public id!: string;
@@ -75,6 +75,19 @@ export class Room {
         }
     }
 
+    /**
+     * Récupère une salle par son ID
+     */
+    public static async getById(id: string): Promise<Room> {
+        try {
+            const json = await ApiService.get(`${Room.baseEndpoint}/${id}`);
+            return new Room().fromJSON(json);
+        } catch (error) {
+            console.error(`Error fetching room with ID ${id}:`, error);
+            throw error;
+        }
+    }
+
     public async delete(): Promise<void> {
         try {
             await ApiService.deleteRoomWithImage(this.id);
@@ -118,7 +131,7 @@ export class Room {
             }
 
             // Appel à l'endpoint de suppression d'image room par URL
-            await ApiService.post('/images/rooms/delete-by-url', { imageUrl });
+            await ApiService.post('/images/rooms/delete-by-url', {imageUrl});
         } catch (error) {
             console.error('Error deleting room image by URL:', error);
             throw error;

@@ -44,12 +44,33 @@ export interface BookingEquipment {
     endTime: string;
 }
 
+export interface LoadingState {
+    rooms: boolean;
+    equipment: boolean;
+    bookings: boolean;
+    currentUser: boolean;
+    organizers: boolean;
+}
+
+export interface UserType {
+    getId: () => string;
+    getUsername: () => string;
+    getEmail: () => string | null;
+    getDisplayName: () => string;
+    getFirstName: () => string | null;
+    getLastName: () => string | null;
+    isEnabled: () => boolean;
+    getRoles: () => string[];
+}
+
 export interface AppState {
     rooms: Room[];
     equipment: Equipment[];
     bookings: Booking[];
     currentUser: User | null;
     availableOrganizers: User[];
+    loading: LoadingState;
+    fetchAllData: () => Promise<void>;
     fetchRooms: () => Promise<void>;
     fetchEquipment: () => Promise<void>;
     fetchEquipmentFixed: () => Promise<void>;
@@ -66,4 +87,11 @@ export interface AppState {
     deleteRoomImage: (roomId: string) => Promise<void>;
     fetchCurrentUser: () => Promise<void>;
     fetchBookingOrganizers: () => Promise<void>;
+    validateUsername: (username: string) => Promise<{ valid: boolean, message: string }>;
+    getAvailableEquipments: (startTime: string, endTime: string) => Promise<any[]>;
+    createBooking: (bookingData: any) => Promise<any>;
+    updateBooking: (booking: any) => Promise<any>;
+    fetchAllUsers: () => Promise<User[]>;
+    updateUserStatus: (userId: string, status: boolean) => Promise<User>;
+    sendPasswordResetEmail: (userId: string) => Promise<void>;
 }

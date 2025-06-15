@@ -14,6 +14,10 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Path("/bookings")
 @Produces(MediaType.APPLICATION_JSON)
@@ -29,14 +33,38 @@ public class BookingResource {
     @GET
     @RolesAllowed({"user", "admin"})
     public Response list() {
-        if (securityIdentity.hasRole("admin")) {
-            // Admin peut voir toutes les réservations
-            return Response.ok(bookingService.getBookingsWithRelations()).build();
-        } else {
-            // User ne peut voir que ses propres réservations
-            String currentUser = securityIdentity.getPrincipal().getName();
-            return Response.ok(bookingService.getBookingsByOrganizer(currentUser)).build();
-        }
+        String currentUser = securityIdentity.getPrincipal().getName();
+        boolean isAdmin = securityIdentity.hasRole("admin");
+
+        // Tous les utilisateurs voient toutes les réservations
+        List<Booking> allBookings = bookingService.getBookingsWithRelations();
+
+        // Transformer les réservations en DTOs en masquant les informations sensibles si nécessaire
+        List<BookingResponseDTO> bookingDTOs = allBookings.stream()
+                .map(booking -> {
+                    // Pour les administrateurs ou les réservations de l'utilisateur actuel,
+                    // afficher toutes les informations
+                    boolean isOwner = booking.getOrganizer().equals(currentUser);
+                    boolean showFullDetails = isAdmin || isOwner;
+
+                    // Obtenir le DTO avec toutes les informations
+                    BookingResponseDTO dto = BookingMapper.toResponse(booking, true, true);
+
+                    // Si ce n'est pas l'admin ni le propriétaire, anonymiser les informations sensibles
+                    if (!showFullDetails) {
+                        // Remplacer le titre par "Réservé"
+                        dto.title = "Réservé";
+                        // Masquer l'organisateur
+                        dto.organizer = "—";
+                        // Masquer le nombre de participants
+                        dto.attendees = 0;
+                        // On garde startTime, endTime et roomId qui sont nécessaires pour le planning
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return Response.ok(bookingDTOs).build();
     }
 
     @GET
@@ -48,16 +76,27 @@ public class BookingResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        // Vérifier les permissions
+        // Déterminer si l'utilisateur actuel peut voir les détails complets
         String currentUser = securityIdentity.getPrincipal().getName();
-        if (!securityIdentity.hasRole("admin") && !booking.getOrganizer().equals(currentUser)) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity("Vous n'êtes pas autorisé à voir cette réservation").build();
+        boolean isAdmin = securityIdentity.hasRole("admin");
+        boolean isOwner = booking.getOrganizer().equals(currentUser);
+        boolean showFullDetails = isAdmin || isOwner;
+
+        // Obtenir le DTO avec toutes les informations
+        BookingResponseDTO dto = BookingMapper.toResponse(booking, true, true);
+
+        // Si ce n'est pas l'admin ni le propriétaire, anonymiser les informations sensibles
+        if (!showFullDetails) {
+            dto.title = "Réservé";
+            dto.organizer = "—";
+            dto.attendees = 0;
+            // On garde uniquement les informations de base : salle, dates de début et fin
         }
 
-        BookingResponseDTO responseDTO = BookingMapper.toResponse(booking, true, true);
-        return Response.ok(responseDTO).build();
+        return Response.ok(dto).build();
     }
+
+    // Le reste du code reste inchangé...
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -76,8 +115,12 @@ public class BookingResource {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Erreur de validation: " + e.getMessage()).build();
         } catch (IllegalStateException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
             return Response.status(Response.Status.CONFLICT)
-                    .entity("Conflit: " + e.getMessage()).build();
+                    .entity(error)
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
     }
 

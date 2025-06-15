@@ -1,6 +1,6 @@
 import ApiService from './apiService';
-import { Room } from './Room';
-import { BookingEquipment } from "./BookingEquipment";
+import {Room} from './Room';
+import {BookingEquipment} from "./BookingEquipment";
 
 export class Booking {
     public id!: string;
@@ -62,9 +62,27 @@ export class Booking {
         try {
             const bookingJSON = await ApiService.post(Booking.baseEndpoint, this.toUpdate());
             return this.fromJSON(bookingJSON);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating booking:', error);
-            throw error;
+
+            if (error.status === 409) {
+                // Forme spécifique du message d'erreur pour les conflits de réservation
+                let errorMessage = "La salle est déjà réservée pour ce créneau.";
+
+                // Essayer d'extraire le message détaillé
+                if (error.message && error.message.includes("La salle est déjà réservée")) {
+                    errorMessage = error.message.replace("Conflit: ", "");
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            // Pour les autres erreurs, afficher le message tel quel
+            if (error.message) {
+                throw new Error(error.message);
+            }
+
+            throw new Error("Une erreur s'est produite lors de la création de la réservation.");
         }
     }
 

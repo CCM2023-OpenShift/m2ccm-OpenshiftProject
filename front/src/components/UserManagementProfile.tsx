@@ -1,26 +1,42 @@
-import { useEffect, useState } from 'react';
-import { useStore } from '../store';
-import { ArrowLeft, Users, Search, UserCircle, ExternalLink, X, UserCheck, UserX, Mail, Filter,
-    ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import User from '../services/User';
+import {useEffect, useState} from 'react';
+import {useStore} from '../store';
+import {
+    ArrowLeft, Users, Search, UserCircle, ExternalLink, X, UserCheck, UserX, Mail, Filter,
+    ChevronUp, ChevronDown, ChevronsUpDown, Loader
+} from 'lucide-react';
+import {Link} from 'react-router-dom';
+import {UserType} from '../types';
 
 // Type pour la gestion du tri
 type SortField = 'name' | 'username' | 'email' | 'status' | 'role';
 type SortDirection = 'asc' | 'desc' | null;
 
 export function UserManagementPage() {
-    const { currentUser } = useStore();
-    const [loading, setLoading] = useState(true);
+    const {
+        currentUser,
+        allUsers,
+        loading,
+        fetchAllUsers,
+        updateUserStatus,
+        sendPasswordResetEmail
+    } = useStore(state => ({
+        currentUser: state.currentUser,
+        allUsers: state.availableOrganizers,
+        loading: {
+            users: state.loading.organizers,
+        },
+        fetchAllUsers: state.fetchAllUsers,
+        updateUserStatus: state.updateUserStatus,
+        sendPasswordResetEmail: state.sendPasswordResetEmail
+    }));
+
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
-
-    // État pour la gestion des utilisateurs
-    const [users, setUsers] = useState<User[]>([]);
     const [showInactive, setShowInactive] = useState(true);
+    const [users, setUsers] = useState<UserType[]>([]);
 
     // État pour le tri
     const [sortField, setSortField] = useState<SortField>('name');
@@ -29,23 +45,51 @@ export function UserManagementPage() {
     // État pour le filtre de rôle
     const [roleFilter, setRoleFilter] = useState<string | null>(null);
 
+    // Charger les utilisateurs depuis le store
     useEffect(() => {
         async function loadAllUsers() {
             try {
-                setLoading(true);
                 setError(null);
-                const allUsers = await User.getAllUsers();
-                setUsers(allUsers);
+                await fetchAllUsers();
             } catch (err) {
                 setError('Impossible de charger la liste des utilisateurs');
                 console.error('Error fetching users:', err);
-            } finally {
-                setLoading(false);
             }
         }
 
         void loadAllUsers();
-    }, []);
+    }, [fetchAllUsers]);
+
+    useEffect(() => {
+        if (allUsers?.length > 0) {
+            const adaptedUsers = allUsers.map(user => {
+                const adaptedUser: UserType = {
+                    getId: () => user.getId(),
+                    getUsername: () => user.getUsername(),
+                    getEmail: () => user.getEmail() ?? null,
+                    getDisplayName: () => user.getDisplayName(),
+                    getFirstName: () => user.getFirstName() ?? null,
+                    getLastName: () => user.getLastName() ?? null,
+                    isEnabled: () => user.isEnabled(),
+                    getRoles: () => {
+                        const username = user.getUsername();
+                        const roles = [];
+                        if (username.includes('admin')) roles.push('admin');
+                        if (username.includes('prof')) roles.push('professor');
+                        if (username.includes('etudiant')) roles.push('student');
+                        if (username.includes('staff')) roles.push('staff');
+                        if (username.includes('guest')) roles.push('guest');
+                        if (roles.length === 0) roles.push('user');
+                        return roles;
+                    }
+                };
+
+                return adaptedUser;
+            });
+
+            setUsers(adaptedUsers);
+        }
+    }, [allUsers]);
 
     // Fonction pour déterminer le rôle d'un utilisateur
     const getUserRole = (username: string): string => {
@@ -58,10 +102,10 @@ export function UserManagementPage() {
     };
 
     // Fonction de tri des utilisateurs
-    const sortUsers = (users: User[]) => {
-        if (!sortField || !sortDirection) return users;
+    const sortUsers = (usersList: UserType[]) => {
+        if (!sortField || !sortDirection) return usersList;
 
-        return [...users].sort((a, b) => {
+        return [...usersList].sort((a, b) => {
             let valueA: string | boolean;
             let valueB: string | boolean;
 
@@ -129,26 +173,23 @@ export function UserManagementPage() {
 
     // Fonction pour obtenir l'icône de tri
     const getSortIcon = (field: SortField) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="ml-1 text-gray-400" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="ml-1 text-indigo-500" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="ml-1 text-indigo-500" />;
-        return <ChevronsUpDown size={14} className="ml-1 text-gray-400" />;
+        if (sortField !== field) return <ChevronsUpDown size={14} className="ml-1 text-gray-400"/>;
+        if (sortDirection === 'asc') return <ChevronUp size={14} className="ml-1 text-indigo-500"/>;
+        if (sortDirection === 'desc') return <ChevronDown size={14} className="ml-1 text-indigo-500"/>;
+        return <ChevronsUpDown size={14} className="ml-1 text-gray-400"/>;
     };
 
     // Fonction pour rafraîchir les utilisateurs après une modification
     const refreshUsers = async () => {
         try {
-            setLoading(true);
-            const allUsers = await User.getAllUsers();
-            setUsers(allUsers);
+            await fetchAllUsers();
         } catch (err) {
             console.error('Error refreshing users:', err);
-        } finally {
-            setLoading(false);
+            setError('Impossible de rafraîchir la liste des utilisateurs');
         }
     };
 
-    const handleEditClick = (user: User) => {
+    const handleEditClick = (user: UserType) => {
         setSelectedUser(user);
         setIsModalOpen(true);
     };
@@ -164,7 +205,9 @@ export function UserManagementPage() {
         try {
             setIsUpdating(true);
             const newStatus = !selectedUser.isEnabled();
-            await User.updateUserStatus(selectedUser.getId(), newStatus);
+
+            await updateUserStatus(selectedUser.getId(), newStatus);
+
             await refreshUsers();
             alert(`L'utilisateur ${selectedUser.getDisplayName()} a été ${newStatus ? 'activé' : 'désactivé'} avec succès.`);
             closeModal();
@@ -176,12 +219,12 @@ export function UserManagementPage() {
         }
     };
 
-    const sendPasswordResetEmail = async () => {
+    const handleSendPasswordResetEmail = async () => {
         if (!selectedUser || !selectedUser.getEmail()) return;
 
         try {
             setIsUpdating(true);
-            await User.sendPasswordResetEmail(selectedUser.getId());
+            await sendPasswordResetEmail(selectedUser.getId());
             alert(`Un email de réinitialisation de mot de passe a été envoyé à ${selectedUser.getEmail()}`);
         } catch (error) {
             console.error('Erreur lors de l\'envoi de l\'email:', error);
@@ -192,23 +235,35 @@ export function UserManagementPage() {
     };
 
     const getKeycloakUserLink = (userId: string) => {
-        return `https://keycloak-dev-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com/admin/master/console/#/myrealm-dev/users/${userId}/settings`;
+        return `${import.meta.env.VITE_KEYCLOAK_URL}/admin/master/console/#/${import.meta.env.VITE_KEYCLOAK_REALM}/users/${userId}/settings`;
     };
 
     // Liste des rôles pour les filtres
     const roles = ['Admin', 'Professeur', 'Étudiant', 'Personnel', 'Invité', 'User'];
+
+    // Affichage du chargement
+    if (loading.users && users.length === 0) {
+        return (
+            <div className="max-w-6xl mx-auto p-6">
+                <div className="flex justify-center items-center h-64">
+                    <Loader className="h-12 w-12 text-blue-500 animate-spin"/>
+                    <span className="ml-3 text-gray-600 text-lg">Chargement des utilisateurs...</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center">
                     <Link to="/profile" className="mr-4 p-2 hover:bg-gray-100 rounded-full">
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={20}/>
                     </Link>
                     <h1 className="text-2xl font-bold">Gestion des utilisateurs</h1>
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
-                    <Users size={16} className="mr-1" />
+                    <Users size={16} className="mr-1"/>
                     <span>{filteredUsers.length} utilisateurs</span>
                 </div>
             </div>
@@ -224,7 +279,7 @@ export function UserManagementPage() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"/>
                     </div>
 
                     <button
@@ -235,7 +290,7 @@ export function UserManagementPage() {
                                 : 'bg-gray-50 border-gray-300 text-gray-700'
                         }`}
                     >
-                        <Filter size={16} className="mr-2" />
+                        <Filter size={16} className="mr-2"/>
                         {showInactive ? 'Tous les statuts' : 'Actifs uniquement'}
                     </button>
                 </div>
@@ -277,7 +332,9 @@ export function UserManagementPage() {
                     <div className="flex">
                         <div className="flex-shrink-0">
                             <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                <path fillRule="evenodd"
+                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                      clipRule="evenodd"/>
                             </svg>
                         </div>
                         <div className="ml-3">
@@ -295,7 +352,7 @@ export function UserManagementPage() {
                 </div>
             )}
 
-            {loading ? (
+            {loading.users && users.length > 0 ? (
                 <div className="flex justify-center p-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
@@ -363,8 +420,8 @@ export function UserManagementPage() {
                         {filteredUsers.map((user) => {
                             const role = getUserRole(user.getUsername());
                             const isAdmin = role === 'Admin';
-                            const isCurrentUser = currentUser ? user.getUsername() === currentUser.getUsername() : false;
-                            const showEditButton = !isAdmin || isCurrentUser;
+                            const isCurrentUserView = currentUser ? user.getUsername() === currentUser.username : false;
+                            const showEditButton = !isAdmin || isCurrentUserView;
 
                             return (
                                 <tr
@@ -383,7 +440,7 @@ export function UserManagementPage() {
                                             `}>
                                                 <UserCircle size={24} className={`
                                                     ${isAdmin ? 'text-purple-600' : user.isEnabled() ? 'text-gray-500' : 'text-red-500'}
-                                                `} />
+                                                `}/>
                                             </div>
                                             <div className="ml-4">
                                                 <div className={`
@@ -391,7 +448,8 @@ export function UserManagementPage() {
                                                     ${isAdmin ? 'text-purple-900 font-semibold' : user.isEnabled() ? 'text-gray-900' : 'text-gray-500'}
                                                 `}>
                                                     {user.getDisplayName()}
-                                                    {isCurrentUser && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Vous</span>}
+                                                    {isCurrentUserView && <span
+                                                        className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Vous</span>}
                                                 </div>
                                             </div>
                                         </div>
@@ -406,17 +464,19 @@ export function UserManagementPage() {
                                         <div className="text-sm text-gray-500">{user.getEmail() || '—'}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isEnabled() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                        <span
+                                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isEnabled() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                             {user.isEnabled() ? 'Actif' : 'Désactivé'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            role === 'Admin' ? 'bg-purple-100 text-purple-800' :
-                                                role === 'Professeur' ? 'bg-blue-100 text-blue-800' :
-                                                    role === 'Étudiant' ? 'bg-green-100 text-green-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                        }`}>
+                                        <span
+                                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                role === 'Admin' ? 'bg-purple-100 text-purple-800' :
+                                                    role === 'Professeur' ? 'bg-blue-100 text-blue-800' :
+                                                        role === 'Étudiant' ? 'bg-green-100 text-green-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                            }`}>
                                             {role}
                                         </span>
                                     </td>
@@ -440,7 +500,7 @@ export function UserManagementPage() {
                                     {searchTerm.trim() !== '' || roleFilter !== null ? (
                                         <>
                                             <div className="flex justify-center mb-2">
-                                                <Search size={24} />
+                                                <Search size={24}/>
                                             </div>
                                             <p>Aucun utilisateur ne correspond aux critères de recherche</p>
                                             <button
@@ -467,7 +527,8 @@ export function UserManagementPage() {
 
             <div className="mt-6 text-center text-sm text-gray-500">
                 <p>Les informations des utilisateurs sont synchronisées depuis Keycloak.</p>
-                <p>Pour effectuer des modifications complètes, veuillez utiliser l'interface d'administration de Keycloak.</p>
+                <p>Pour effectuer des modifications complètes, veuillez utiliser l'interface d'administration de
+                    Keycloak.</p>
             </div>
 
             {isModalOpen && selectedUser && (
@@ -485,7 +546,7 @@ export function UserManagementPage() {
                                 onClick={closeModal}
                                 className="text-white hover:text-gray-200 focus:outline-none"
                             >
-                                <X size={20} />
+                                <X size={20}/>
                             </button>
                         </div>
 
@@ -530,29 +591,29 @@ export function UserManagementPage() {
                                         ${selectedUser.isEnabled()
                                         ? 'bg-red-100 text-red-700 hover:bg-red-200'
                                         : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                    } transition-colors`}
+                                    } transition-colors ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {selectedUser.isEnabled() ? (
                                         <>
-                                            <UserX size={18} className="mr-2" />
+                                            <UserX size={18} className="mr-2"/>
                                             Désactiver l'utilisateur
                                         </>
                                     ) : (
                                         <>
-                                            <UserCheck size={18} className="mr-2" />
+                                            <UserCheck size={18} className="mr-2"/>
                                             Activer l'utilisateur
                                         </>
                                     )}
                                 </button>
 
                                 <button
-                                    onClick={sendPasswordResetEmail}
+                                    onClick={handleSendPasswordResetEmail}
                                     disabled={isUpdating || !selectedUser.getEmail()}
                                     className={`flex items-center justify-center px-4 py-2 rounded-md 
                                         bg-blue-100 text-blue-700 hover:bg-blue-200 
                                         ${(!selectedUser.getEmail() || isUpdating) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    <Mail size={18} className="mr-2" />
+                                    <Mail size={18} className="mr-2"/>
                                     Réinitialiser le mot de passe
                                 </button>
                             </div>
@@ -564,7 +625,7 @@ export function UserManagementPage() {
                                     rel="noopener noreferrer"
                                     className="flex items-center text-indigo-600 hover:text-indigo-800"
                                 >
-                                    <ExternalLink size={16} className="mr-1" />
+                                    <ExternalLink size={16} className="mr-1"/>
                                     <span>
                                         Accéder à la configuration complète dans Keycloak
                                     </span>
@@ -584,7 +645,8 @@ export function UserManagementPage() {
 
                         {isUpdating && (
                             <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                                <div
+                                    className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
                             </div>
                         )}
                     </div>

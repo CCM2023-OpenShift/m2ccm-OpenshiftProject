@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useStore } from '../store';
-import { Monitor, Plus, Edit, Trash, X, Camera, Upload, Search, Filter, SlidersHorizontal } from 'lucide-react';
-import { Equipment } from '../types';
-import { useImageValidation } from '../hooks/useImageValidation';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
+import {useStore} from '../store';
+import {Monitor, Plus, Edit, Trash, X, Camera, Upload, Search, Filter, SlidersHorizontal} from 'lucide-react';
+import {Equipment} from '../types';
+import {useImageValidation} from '../hooks/useImageValidation';
 
 interface EquipmentFilters {
     search: string;
@@ -15,7 +15,15 @@ interface EquipmentFilters {
 }
 
 export const EquipmentList = () => {
-    const { equipment, fetchEquipment, addEquipment, updateEquipment, deleteEquipment, uploadEquipmentImage, deleteEquipmentImage } = useStore();
+    const {
+        equipment,
+        fetchEquipment,
+        addEquipment,
+        updateEquipment,
+        deleteEquipment,
+        uploadEquipmentImage,
+        deleteEquipmentImage
+    } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
     const [errorMessage, setErrorMessage] = useState('');
@@ -43,7 +51,14 @@ export const EquipmentList = () => {
         mobile: false,
     });
 
-    const { loading, validateFile, getMaxSizeMB, getAcceptedTypes, getAcceptedExtensions, isConfigReady } = useImageValidation('equipment');
+    const {
+        loading,
+        validateFile,
+        getMaxSizeMB,
+        getAcceptedTypes,
+        getAcceptedExtensions,
+        isConfigReady
+    } = useImageValidation('equipment');
 
     useEffect(() => {
         void fetchEquipment();
@@ -123,7 +138,7 @@ export const EquipmentList = () => {
         const withImages = equipment.filter((e: Equipment) => e.imageUrl && e.imageUrl.trim() !== '').length;
         const totalQuantity = equipment.reduce((sum: number, e: Equipment) => sum + e.quantity, 0);
 
-        return { total, mobile, static: total - mobile, withImages, totalQuantity };
+        return {total, mobile, static: total - mobile, withImages, totalQuantity};
     }, [equipment]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,7 +242,7 @@ export const EquipmentList = () => {
 
     const resetModal = () => {
         setEditingEquipment(null);
-        setFormData({ name: '', description: '', quantity: 0, mobile: false });
+        setFormData({name: '', description: '', quantity: 0, mobile: false});
         setSelectedFile(null);
         setImagePreview(null);
         setErrorMessage('');
@@ -243,7 +258,7 @@ export const EquipmentList = () => {
             let savedEquipment: Equipment;
 
             if (editingEquipment?.id) {
-                savedEquipment = await updateEquipment({ ...formData, id: editingEquipment.id } as Equipment);
+                savedEquipment = await updateEquipment({...formData, id: editingEquipment.id} as Equipment);
             } else {
                 savedEquipment = await addEquipment(formData);
             }
@@ -295,7 +310,7 @@ export const EquipmentList = () => {
                     }}
                     className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center"
                 >
-                    <Plus className="w-5 h-5 mr-2" />
+                    <Plus className="w-5 h-5 mr-2"/>
                     Ajouter un équipement
                 </button>
             </div>
@@ -305,12 +320,12 @@ export const EquipmentList = () => {
                 <div className="flex items-center space-x-4 mb-4">
                     {/* Recherche */}
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"/>
                         <input
                             type="text"
                             placeholder="Rechercher par nom ou description..."
                             value={filters.search}
-                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                            onChange={(e) => setFilters({...filters, search: e.target.value})}
                             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
@@ -322,7 +337,7 @@ export const EquipmentList = () => {
                             showFilters ? 'bg-blue-500 text-white border-blue-500' : 'hover:bg-gray-50'
                         }`}
                     >
-                        <SlidersHorizontal className="w-5 h-5" />
+                        <SlidersHorizontal className="w-5 h-5"/>
                         <span>Filtres</span>
                     </button>
 
@@ -343,7 +358,7 @@ export const EquipmentList = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                             <select
                                 value={filters.type}
-                                onChange={(e) => setFilters({ ...filters, type: e.target.value as any })}
+                                onChange={(e) => setFilters({...filters, type: e.target.value as any})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">Tous</option>
@@ -359,7 +374,7 @@ export const EquipmentList = () => {
                                 type="number"
                                 min="0"
                                 value={filters.minQuantity}
-                                onChange={(e) => setFilters({ ...filters, minQuantity: Number(e.target.value) })}
+                                onChange={(e) => setFilters({...filters, minQuantity: Number(e.target.value)})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -371,7 +386,7 @@ export const EquipmentList = () => {
                                 type="number"
                                 min="0"
                                 value={filters.maxQuantity}
-                                onChange={(e) => setFilters({ ...filters, maxQuantity: Number(e.target.value) })}
+                                onChange={(e) => setFilters({...filters, maxQuantity: Number(e.target.value)})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -381,7 +396,7 @@ export const EquipmentList = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
                             <select
                                 value={filters.hasImage}
-                                onChange={(e) => setFilters({ ...filters, hasImage: e.target.value as any })}
+                                onChange={(e) => setFilters({...filters, hasImage: e.target.value as any})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">Tous</option>
@@ -395,7 +410,7 @@ export const EquipmentList = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Trier par</label>
                             <select
                                 value={filters.sortBy}
-                                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
+                                onChange={(e) => setFilters({...filters, sortBy: e.target.value as any})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="name">Nom</option>
@@ -409,7 +424,7 @@ export const EquipmentList = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
                             <select
                                 value={filters.sortOrder}
-                                onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value as any })}
+                                onChange={(e) => setFilters({...filters, sortOrder: e.target.value as any})}
                                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="asc">Croissant</option>
@@ -431,9 +446,11 @@ export const EquipmentList = () => {
                     <div key={equip.id} className="bg-white rounded-lg shadow-md overflow-hidden relative">
                         {/* Overlay de chargement lors de la suppression */}
                         {isDeleting === equip.id && (
-                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                            <div
+                                className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
                                 <div className="bg-white p-4 rounded-lg">
-                                    <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                                    <div
+                                        className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
                                     <p className="text-sm text-gray-600">Suppression en cours...</p>
                                 </div>
                             </div>
@@ -449,7 +466,7 @@ export const EquipmentList = () => {
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                    <Monitor className="w-16 h-16 text-gray-400" />
+                                    <Monitor className="w-16 h-16 text-gray-400"/>
                                 </div>
                             )}
 
@@ -470,7 +487,7 @@ export const EquipmentList = () => {
                                     }`}
                                     title={!isConfigReady() ? "Configuration en cours..." : "Changer l'image"}
                                 >
-                                    <Camera className="w-4 h-4" />
+                                    <Camera className="w-4 h-4"/>
                                 </label>
 
                                 {equip.imageUrl && (
@@ -483,9 +500,10 @@ export const EquipmentList = () => {
                                         title="Supprimer l'image"
                                     >
                                         {isDeleting === equip.id ? (
-                                            <div className="w-4 h-4 animate-spin border border-white border-t-transparent rounded-full"></div>
+                                            <div
+                                                className="w-4 h-4 animate-spin border border-white border-t-transparent rounded-full"></div>
                                         ) : (
-                                            <X className="w-4 h-4" />
+                                            <X className="w-4 h-4"/>
                                         )}
                                     </button>
                                 )}
@@ -517,7 +535,8 @@ export const EquipmentList = () => {
                                         title={equip.imageUrl ? 'Supprimer l\'équipement et son image' : 'Supprimer l\'équipement'}
                                     >
                                         {isDeleting === equip.id ? (
-                                            <div className="w-5 h-5 animate-spin border border-red-500 border-t-transparent rounded-full"></div>
+                                            <div
+                                                className="w-5 h-5 animate-spin border border-red-500 border-t-transparent rounded-full"></div>
                                         ) : (
                                             <Trash className="w-5 h-5"/>
                                         )}
@@ -539,7 +558,7 @@ export const EquipmentList = () => {
             {/* Affichage si aucun résultat */}
             {filteredAndSortedEquipment.length === 0 && equipment.length > 0 && (
                 <div className="text-center py-12">
-                    <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4"/>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun équipement trouvé</h3>
                     <p className="text-gray-500 mb-4">Essayez de modifier vos critères de recherche</p>
                     <button
@@ -563,7 +582,7 @@ export const EquipmentList = () => {
                                 onClick={() => setIsModalOpen(false)}
                                 className="text-gray-500 hover:text-gray-700"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5"/>
                             </button>
                         </div>
 
@@ -589,7 +608,7 @@ export const EquipmentList = () => {
                                         />
                                     ) : (
                                         <div className="text-gray-400 text-center">
-                                            <Upload className="w-8 h-8 mx-auto mb-2" />
+                                            <Upload className="w-8 h-8 mx-auto mb-2"/>
                                             <p>Aucune image</p>
                                         </div>
                                     )}
@@ -618,7 +637,7 @@ export const EquipmentList = () => {
                                 <input
                                     type="text"
                                     value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, name: e.target.value})}
                                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                 />
@@ -631,7 +650,7 @@ export const EquipmentList = () => {
                                 <input
                                     type="number"
                                     value={formData.quantity}
-                                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+                                    onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value)})}
                                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     min="0"
                                     required
@@ -644,7 +663,7 @@ export const EquipmentList = () => {
                                 </label>
                                 <textarea
                                     value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
                                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                     rows={3}
@@ -657,7 +676,7 @@ export const EquipmentList = () => {
                                     <input
                                         type="checkbox"
                                         checked={formData.mobile}
-                                        onChange={(e) => setFormData({ ...formData, mobile: e.target.checked })}
+                                        onChange={(e) => setFormData({...formData, mobile: e.target.checked})}
                                         className="h-5 w-5"
                                     />
                                 </label>
