@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { Link } from 'react-router-dom';
-import { UserCircle, Mail, Tag, Shield, Info, ExternalLink, Users } from 'lucide-react';
+import { UserCircle, Mail, Tag, Shield, Info, ExternalLink, Users, Settings } from 'lucide-react';
+
+// Fonction pour générer l'URL vers le profil utilisateur dans Keycloak
+const getKeycloakUserLink = (userId: string) => {
+    return `${import.meta.env.VITE_KEYCLOAK_URL}/admin/master/console/#/${import.meta.env.VITE_KEYCLOAK_REALM}/users/${userId}/settings`;
+};
 
 export function ProfilePage() {
     const { currentUser, fetchCurrentUser } = useStore();
@@ -159,13 +164,13 @@ export function ProfilePage() {
                                 <div className="flex-shrink-0 text-purple-500">
                                     <Info size={24} />
                                 </div>
-                                <div className="ml-4">
+                                <div className="ml-4 flex-grow">
                                     <h3 className="text-purple-800 font-medium">Informations synchronisées avec Keycloak</h3>
                                     <p className="mt-1 text-purple-700">
                                         🛠️ Vos informations personnelles sont synchronisées avec le système d'authentification central (Keycloak).
-                                        Pour modifier les profils des autres utilisateurs, utilisez la console d'administration.
+                                        Pour modifier les profils des utilisateurs, utilisez la console d'administration.
                                     </p>
-                                    <div className="mt-4">
+                                    <div className="mt-4 flex flex-wrap gap-3">
                                         <Link
                                             to="/admin/users"
                                             className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
@@ -173,6 +178,16 @@ export function ProfilePage() {
                                             <Users size={16} className="mr-2" />
                                             Accéder à la gestion des utilisateurs
                                         </Link>
+
+                                        <a
+                                            href={getKeycloakUserLink(currentUser.id)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center px-4 py-2 bg-purple-200 hover:bg-purple-300 text-purple-900 rounded-md transition-colors"
+                                        >
+                                            <Settings size={16} className="mr-2" />
+                                            Accéder à Keycloak Admin
+                                        </a>
                                     </div>
                                 </div>
                             </div>

@@ -7,6 +7,7 @@ import {Booking} from '../services/Booking';
 import {Room} from '../services/Room';
 import {AlertCircle} from 'lucide-react';
 import {useStore} from '../store';
+import {useKeycloak} from "@react-keycloak/web";
 
 // Interface des props
 interface RoomAvailabilityCalendarProps {
@@ -38,8 +39,11 @@ export const RoomAvailabilityCalendar = ({
     const [error, setError] = useState<string | null>(null);
     const [, setRoomInfo] = useState<Room | null>(null);
 
-    // Utiliser le store pour accéder aux salles déjà chargées
-    const {rooms} = useStore();
+    // Utiliser le store pour accéder aux salles déjà chargées et au rôle de l'utilisateur
+    const {rooms, currentUser} = useStore();
+
+    // Vérifier si l'utilisateur est admin
+    const isAdmin = useKeycloak().keycloak.tokenParsed?.realm_access?.roles?.includes('admin') || false;
 
     useEffect(() => {
         if (!roomId) {
@@ -110,22 +114,33 @@ export const RoomAvailabilityCalendar = ({
         void fetchRoomBookings();
     }, [roomId, rooms, selectedDate]);
 
+    // Vérifier si l'utilisateur est l'organisateur de la réservation
+    const isOrganizerOf = (booking: Booking) => {
+        return currentUser && booking.organizer === currentUser.username;
+    };
+
     // Créer les événements pour le calendrier
     const events = [
         // Réservations existantes
-        ...bookings.map(booking => ({
-            id: booking.id,
-            title: booking.title,
-            start: booking.startTime,
-            end: booking.endTime,
-            backgroundColor: '#f87171',
-            borderColor: '#ef4444',
-            textColor: '#ffffff',
-            extendedProps: {
-                organizer: booking.organizer,
-                attendees: booking.attendees
-            }
-        })),
+        ...bookings.map(booking => {
+            // Vérifier si l'utilisateur peut voir les détails complets
+            const showDetails = isAdmin || isOrganizerOf(booking);
+
+            return {
+                id: booking.id,
+                title: showDetails ? booking.title : "Réservé",
+                start: booking.startTime,
+                end: booking.endTime,
+                backgroundColor: '#f87171',
+                borderColor: '#ef4444',
+                textColor: '#ffffff',
+                extendedProps: {
+                    organizer: showDetails ? booking.organizer : null,
+                    attendees: showDetails ? booking.attendees : null,
+                    showDetails: showDetails
+                }
+            };
+        }),
 
         // Ajouter la réservation en cours si elle existe
         ...(currentBooking ? [{
@@ -193,8 +208,8 @@ export const RoomAvailabilityCalendar = ({
                     right: '',
                 }}
                 allDaySlot={false}
-                slotMinTime="07:00:00"
-                slotMaxTime="21:00:00"
+                slotMinTime="00:00:00"
+                slotMaxTime="24:00:00"
                 height="auto"
                 events={events}
                 selectable={!!onSlotSelect}
@@ -205,12 +220,14 @@ export const RoomAvailabilityCalendar = ({
                 eventContent={(arg) => (
                     <div className="p-1">
                         <div className="font-medium text-sm">{arg.event.title}</div>
-                        {arg.event.id !== 'current' && arg.event.id.toString().indexOf('recurring') === -1 && (
-                            <div className="text-xs opacity-80">
-                                {arg.event.extendedProps.organizer} ·
-                                {arg.event.extendedProps.attendees} pers.
-                            </div>
-                        )}
+                        {arg.event.id !== 'current' &&
+                            arg.event.id.toString().indexOf('recurring') === -1 &&
+                            arg.event.extendedProps.showDetails && (
+                                <div className="text-xs opacity-80">
+                                    {arg.event.extendedProps.organizer} ·
+                                    {arg.event.extendedProps.attendees} pers.
+                                </div>
+                            )}
                     </div>
                 )}
             />

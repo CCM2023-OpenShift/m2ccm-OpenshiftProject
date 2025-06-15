@@ -4,6 +4,8 @@ import { Booking } from '../services/Booking';
 import { Calendar, Users, BookOpen, MapPin, User as UserIcon, Clock, CheckCircle, ChevronDown } from 'lucide-react';
 import { formatBookingTimeRange } from '../composable/formatTimestamp';
 import { formatOrganizer } from '../composable/userFormatter';
+import { useStore } from '../store';
+import {useKeycloak} from "@react-keycloak/web";
 
 export const Dashboard = () => {
     const [rooms, setRooms] = useState<Room[]>([]);
@@ -12,6 +14,12 @@ export const Dashboard = () => {
     const [visibleOngoing, setVisibleOngoing] = useState(5);
     const [visibleUpcoming, setVisibleUpcoming] = useState(5);
     const [visiblePastToday, setVisiblePastToday] = useState(5);
+
+    // Récupérer l'utilisateur courant depuis le store
+    const { currentUser } = useStore();
+
+    // Déterminer si l'utilisateur est admin
+    const isAdmin = useKeycloak().keycloak.tokenParsed?.realm_access?.roles?.includes('admin') || false;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -78,6 +86,11 @@ export const Dashboard = () => {
     // Statistiques générales
     const totalCapacity = rooms.reduce((acc, room) => acc + room.capacity, 0);
 
+    // Fonction pour vérifier si l'utilisateur est l'organisateur d'une réservation
+    const isOrganizerOf = (booking: Booking) => {
+        return currentUser && booking.organizer === currentUser.username;
+    };
+
     if (loading) {
         return (
             <div className="p-6 flex justify-center items-center h-64">
@@ -88,37 +101,44 @@ export const Dashboard = () => {
     }
 
     // Composant réutilisable pour afficher une réservation
-    const BookingCard = ({ booking }: { booking: Booking }) => (
-        <div className="border-b pb-4 last:border-0">
-            <h3 className="font-semibold">{booking.title}</h3>
+    const BookingCard = ({ booking }: { booking: Booking }) => {
+        // Déterminer si l'utilisateur peut voir les détails complets
+        const showDetails = isAdmin || isOrganizerOf(booking);
 
-            <div className="mt-2 space-y-1.5">
-                <p className="text-gray-600 flex items-start">
-                    <Calendar size={16} className="mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
-                    <span>{formatBookingTimeRange(booking.startTime, booking.endTime)}</span>
-                </p>
+        return (
+            <div className="border-b pb-4 last:border-0">
+                <h3 className="font-semibold">{showDetails ? booking.title : "Réservé"}</h3>
 
-                <p className="text-gray-600 flex items-start">
-                    <MapPin size={16} className="mr-2 mt-0.5 text-green-500 flex-shrink-0" />
-                    <span>Salle : {booking.room?.name || 'Salle inconnue'}</span>
-                </p>
+                <div className="mt-2 space-y-1.5">
+                    <p className="text-gray-600 flex items-start">
+                        <Calendar size={16} className="mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
+                        <span>{formatBookingTimeRange(booking.startTime, booking.endTime)}</span>
+                    </p>
 
-                <p className="text-gray-600 flex items-start">
-                    <UserIcon size={16} className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" />
-                    <span>Organisateur : {formatOrganizer(booking.organizer)}</span>
-                </p>
-            </div>
+                    <p className="text-gray-600 flex items-start">
+                        <MapPin size={16} className="mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+                        <span>Salle : {booking.room?.name || 'Salle inconnue'}</span>
+                    </p>
 
-            {booking.attendees > 0 && (
-                <div className="mt-2 text-sm text-gray-500">
-                    <span className="flex items-center">
-                        <Users size={14} className="mr-1" />
-                        {booking.attendees} participant{booking.attendees > 1 ? 's' : ''}
-                    </span>
+                    {showDetails && (
+                        <p className="text-gray-600 flex items-start">
+                            <UserIcon size={16} className="mr-2 mt-0.5 text-indigo-500 flex-shrink-0" />
+                            <span>Organisateur : {formatOrganizer(booking.organizer)}</span>
+                        </p>
+                    )}
                 </div>
-            )}
-        </div>
-    );
+
+                {showDetails && booking.attendees > 0 && (
+                    <div className="mt-2 text-sm text-gray-500">
+                        <span className="flex items-center">
+                            <Users size={14} className="mr-1" />
+                            {booking.attendees} participant{booking.attendees > 1 ? 's' : ''}
+                        </span>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     // Bouton "Voir plus" réutilisable
     const LoadMoreButton = ({

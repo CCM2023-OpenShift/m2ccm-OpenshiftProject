@@ -192,7 +192,7 @@ export function UserManagementPage() {
     };
 
     const getKeycloakUserLink = (userId: string) => {
-        return `https://keycloak-dev-gregorydhmccm-dev.apps.rm1.0a51.p1.openshiftapps.com/admin/master/console/#/myrealm-dev/users/${userId}/settings`;
+        return `${import.meta.env.VITE_KEYCLOAK_URL}/admin/master/console/#/${import.meta.env.VITE_KEYCLOAK_REALM}/users/${userId}/settings`;
     };
 
     // Liste des rôles pour les filtres
