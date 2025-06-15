@@ -35,13 +35,12 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
         }
     }, [bookingData.startTime]);
 
-    // Ajoutez un nouvel useEffect qui dépend de selectedDays pour générer l'aperçu
+    // Générer l'aperçu automatiquement à chaque changement
     useEffect(() => {
-        // Ne générez l'aperçu que si des jours sont sélectionnés et que nous avons une date de début
-        if (selectedDays.length > 0 && bookingData.startTime) {
+        if (bookingData.startTime) {
             generatePreview();
         }
-    }, [selectedDays, bookingData.startTime]);
+    }, [recurrenceType, occurrences, selectedDays, useOccurrences, endDate, bookingData.startTime]);
 
     // Générer un aperçu des dates de réservation
     const generatePreview = () => {
@@ -158,6 +157,9 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
     const handleSubmit = async () => {
         setLoading(true);
         try {
+            // Génère l'aperçu une dernière fois pour s'assurer qu'il est à jour
+            generatePreview();
+
             const bookings = generateRecurringBookings();
             onSubmit(bookings);
         } catch (error) {
@@ -174,6 +176,19 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
                 ? prev.filter(d => d !== day)
                 : [...prev, day]
         );
+    };
+
+    // Fonction pour changer le type de récurrence
+    const handleRecurrenceTypeChange = (type: 'daily' | 'weekly' | 'monthly') => {
+        setRecurrenceType(type);
+        // Si on change vers daily ou monthly, assurons-nous que l'aperçu sera généré correctement
+        if (type !== 'weekly' && selectedDays.length === 0) {
+            // Pour daily et monthly, on n'a pas besoin de jours sélectionnés
+            if (bookingData.startTime) {
+                const startDay = new Date(bookingData.startTime).getDay();
+                setSelectedDays([startDay]);
+            }
+        }
     };
 
     // Vérifier si des données sont manquantes
@@ -254,7 +269,7 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
                                     className={`py-3 px-4 text-center border rounded-lg transition-all ${
                                         recurrenceType === 'daily' ? 'bg-blue-100 border-blue-300 text-blue-700 font-medium' : 'border-gray-300 hover:bg-gray-50 text-gray-600'
                                     }`}
-                                    onClick={() => setRecurrenceType('daily')}
+                                    onClick={() => handleRecurrenceTypeChange('daily')}
                                 >
                                     Quotidienne
                                 </button>
@@ -263,7 +278,7 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
                                     className={`py-3 px-4 text-center border rounded-lg transition-all ${
                                         recurrenceType === 'weekly' ? 'bg-blue-100 border-blue-300 text-blue-700 font-medium' : 'border-gray-300 hover:bg-gray-50 text-gray-600'
                                     }`}
-                                    onClick={() => setRecurrenceType('weekly')}
+                                    onClick={() => handleRecurrenceTypeChange('weekly')}
                                 >
                                     Hebdomadaire
                                 </button>
@@ -272,7 +287,7 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
                                     className={`py-3 px-4 text-center border rounded-lg transition-all ${
                                         recurrenceType === 'monthly' ? 'bg-blue-100 border-blue-300 text-blue-700 font-medium' : 'border-gray-300 hover:bg-gray-50 text-gray-600'
                                     }`}
-                                    onClick={() => setRecurrenceType('monthly')}
+                                    onClick={() => handleRecurrenceTypeChange('monthly')}
                                 >
                                     Mensuelle
                                 </button>
@@ -350,20 +365,15 @@ export const RecurringBookingForm = ({bookingData, onSubmit, onCancel}: Recurrin
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center mb-6">
-                            <button
-                                type="button"
-                                onClick={generatePreview}
-                                className="flex items-center px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 font-medium"
-                            >
-                                <Calendar size={18} className="mr-2"/>
-                                Générer un aperçu des dates
-                            </button>
-
-                            {preview.length > 0 && (
-                                <span className="text-blue-600 font-medium">{preview.length} dates générées</span>
-                            )}
-                        </div>
+                        {/* Affichage du nombre de dates générées */}
+                        {preview.length > 0 && (
+                            <div className="flex justify-end mb-4">
+                                <span className="text-blue-600 font-medium flex items-center">
+                                    <Calendar size={16} className="mr-1"/>
+                                    {preview.length} dates générées
+                                </span>
+                            </div>
+                        )}
 
                         {errorMessage && (
                             <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg flex items-center">
