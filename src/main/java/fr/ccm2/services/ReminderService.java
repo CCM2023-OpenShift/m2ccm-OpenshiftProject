@@ -10,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
@@ -37,6 +38,12 @@ public class ReminderService {
 
     @Inject
     UserService userService;
+
+    @ConfigProperty(name = "app.mail.test.enabled", defaultValue = "false")
+    boolean testModeEnabled;
+
+    @ConfigProperty(name = "app.mail.test.recipient")
+    String testEmailRecipient;
 
     // Instructions d'accès par bâtiment
     private final Map<String, String> buildingAccessInstructions = Map.of(
@@ -85,6 +92,10 @@ public class ReminderService {
         List<Booking> bookingsToNotify = filterAlreadyNotified(bookings, reminderType);
         LOG.info("Après filtrage des notifications déjà envoyées: " + bookingsToNotify.size() + " réservations à notifier");
 
+        if (testModeEnabled) {
+            LOG.info("Mode test activé: tous les emails seront envoyés à " + testEmailRecipient);
+        }
+
         int sent = 0;
         for (Booking booking : bookingsToNotify) {
             try {
@@ -109,7 +120,9 @@ public class ReminderService {
                     continue;
                 }
 
-                String email = organizer.email;
+                // En mode test, on garde l'email original pour les logs, mais on envoie à l'email de test
+                String originalEmail = organizer.email;
+                String emailToUse = testModeEnabled ? testEmailRecipient : originalEmail;
                 String fullName = organizer.displayName != null ? organizer.displayName : organizerUsername;
 
                 Room room = booking.getRoom();
@@ -118,20 +131,22 @@ public class ReminderService {
                 String subject, content;
                 if ("24h".equals(reminderType)) {
                     subject = "Rappel: Votre réservation de salle demain";
-                    content = buildAdvanceReminderEmail(booking, room, fullName);
+                    content = buildAdvanceReminderEmail(booking, room, fullName, organizerUsername, originalEmail);
                 } else {
                     subject = "⚠️ Votre réservation commence bientôt";
-                    content = buildImminentReminderEmail(booking, room, fullName);
+                    content = buildImminentReminderEmail(booking, room, fullName, organizerUsername, originalEmail);
                 }
 
-                // Envoyer l'email
-                mailer.send(Mail.withText(email, subject, content));
+                // Envoyer l'email à l'adresse déterminée
+                mailer.send(Mail.withText(emailToUse, subject, content));
 
-                // Enregistrer la notification comme envoyée
-                SentNotification notification = new SentNotification(booking, reminderType, email);
+                // Enregistrer la notification comme envoyée (avec l'email original)
+                SentNotification notification = new SentNotification(booking, reminderType, originalEmail);
                 em.persist(notification);
 
-                LOG.info("Email " + reminderType + " envoyé à " + email + " pour la réservation " + booking.getId());
+                LOG.info("Email " + reminderType + " envoyé à " +
+                        (testModeEnabled ? testEmailRecipient + " (destinataire original: " + originalEmail + ")" : originalEmail) +
+                        " pour la réservation " + booking.getId());
                 sent++;
 
             } catch (Exception e) {
@@ -143,38 +158,12 @@ public class ReminderService {
         return sent;
     }
 
-    /**
-     * Filtre les réservations pour ne garder que celles qui n'ont pas encore reçu de notification du type spécifié
-     */
-    private List<Booking> filterAlreadyNotified(List<Booking> bookings, String reminderType) {
-        if (bookings.isEmpty()) {
-            return bookings;
-        }
-
-        // Récupérer les IDs des réservations
-        List<Long> bookingIds = bookings.stream()
-                .map(Booking::getId)
-                .collect(Collectors.toList());
-
-        // Trouver les réservations qui ont déjà reçu ce type de notification
-        List<Long> alreadyNotifiedIds = em.createQuery(
-                        "SELECT n.booking.id FROM SentNotification n " +
-                                "WHERE n.booking.id IN :ids AND n.notificationType = :type",
-                        Long.class)
-                .setParameter("ids", bookingIds)
-                .setParameter("type", reminderType)
-                .getResultList();
-
-        // Filtrer la liste originale
-        return bookings.stream()
-                .filter(b -> !alreadyNotifiedIds.contains(b.getId()))
-                .collect(Collectors.toList());
-    }
+    // Autres méthodes restent inchangées...
 
     /**
      * Génère le contenu de l'email pour un rappel 24h avant
      */
-    private String buildAdvanceReminderEmail(Booking booking, Room room, String organizerName) {
+    private String buildAdvanceReminderEmail(Booking booking, Room room, String organizerName, String username, String email) {
         StringBuilder body = new StringBuilder();
 
         body.append("Bonjour ").append(organizerName).append(",\n\n");
@@ -215,13 +204,22 @@ public class ReminderService {
         body.append("\nPour annuler ou modifier votre réservation, connectez-vous à l'application.\n\n");
         body.append("Cordialement,\nLe service de réservation");
 
+        // Information de déboggage en mode test
+        if (testModeEnabled) {
+            body.append("\n\n--------------------------------------\n");
+            body.append("INFORMATION MODE TEST: Ce message était destiné à:\n");
+            body.append("Utilisateur: ").append(username).append("\n");
+            body.append("Email: ").append(email).append("\n");
+            body.append("--------------------------------------");
+        }
+
         return body.toString();
     }
 
     /**
      * Génère le contenu de l'email pour un rappel 1h avant
      */
-    private String buildImminentReminderEmail(Booking booking, Room room, String organizerName) {
+    private String buildImminentReminderEmail(Booking booking, Room room, String organizerName, String username, String email) {
         String buildingCode = room.getBuilding();
         StringBuilder body = new StringBuilder();
 
@@ -251,6 +249,33 @@ public class ReminderService {
         body.append("Bonne séance!\n");
         body.append("Le service de réservation");
 
+        // Information de déboggage en mode test
+        if (testModeEnabled) {
+            body.append("\n\n--------------------------------------\n");
+            body.append("INFORMATION MODE TEST: Ce message était destiné à:\n");
+            body.append("Utilisateur: ").append(username).append("\n");
+            body.append("Email: ").append(email).append("\n");
+            body.append("--------------------------------------");
+        }
+
         return body.toString();
+    }
+
+    private List<Booking> filterAlreadyNotified(List<Booking> bookings, String reminderType) {
+        return bookings.stream()
+                .filter(booking -> {
+                    // Vérifier si une notification a déjà été envoyée pour cette réservation et ce type
+                    Long notificationCount = em.createQuery(
+                                    "SELECT COUNT(n) FROM SentNotification n " +
+                                            "WHERE n.booking.id = :bookingId AND n.notificationType = :type",
+                                    Long.class)
+                            .setParameter("bookingId", booking.getId())
+                            .setParameter("type", reminderType)
+                            .getSingleResult();
+
+                    // Garder uniquement les réservations sans notification
+                    return notificationCount == 0;
+                })
+                .collect(Collectors.toList());  // Compatible avec Java 8+
     }
 }
