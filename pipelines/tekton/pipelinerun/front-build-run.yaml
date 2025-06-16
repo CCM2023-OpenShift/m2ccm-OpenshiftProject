@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: front-build-run
+spec:
+  pipelineRef:
+    name: front-build-pipeline
+  params:
+    - name: repo-url
+      value: https://github.com/CCM2023-OpenShift/m2ccm-OpenshiftProject.git
+    - name: revision
+      value: main

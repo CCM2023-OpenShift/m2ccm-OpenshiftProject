@@ -1,0 +1,10 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: run-quarkus
+spec:
+  pipelineRef:
+    name: quarkus-pipeline
+  workspaces:
+    - name: shared-workspace
+      emptyDir: {}

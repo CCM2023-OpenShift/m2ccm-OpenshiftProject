@@ -1,0 +1,15 @@
+# PipelineRun
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: network-policy-run
+spec:
+  pipelineRef:
+    name: network-policy-pipeline
+  params:
+    - name: openshift-project
+      value: gregorydhmccm-dev
+  workspaces:
+    - name: creds
+      secret:
+        secretName: openshift-credentials

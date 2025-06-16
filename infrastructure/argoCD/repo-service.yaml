@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-repo-server
+  namespace: gregorydhmccm-dev
+spec:
+  selector:
+    app: argocd-repo-server
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8081

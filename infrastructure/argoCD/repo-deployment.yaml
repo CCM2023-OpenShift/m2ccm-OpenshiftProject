@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+  namespace: gregorydhmccm-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argocd-repo-server
+  template:
+    metadata:
+      labels:
+        app: argocd-repo-server
+    spec:
+      containers:
+        - name: repo-server
+          image: quay.io/argoproj/argocd:v2.10.3
+          command: [ "argocd-repo-server" ]
+          ports:
+            - containerPort: 8084
+          volumeMounts:
+            - name: gpg-keys
+              mountPath: /app/config/gpg/keys
+            - name: data
+              mountPath: /tmp
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: gpg-keys
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-repo-server
+  namespace: gregorydhmccm-dev
+spec:
+  selector:
+    app: argocd-repo-server
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8084
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: argocd-repo-server
+  namespace: gregorydhmccm-dev
+spec:
+  to:
+    kind: Service
+    name: argocd-repo-server
+  port:
+    targetPort: http
+
+

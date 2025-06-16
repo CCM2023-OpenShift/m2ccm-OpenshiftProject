@@ -1,0 +1,7 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: keycloak-deploy-run
+spec:
+  pipelineRef:
+    name: keycloak-deploy-pipeline

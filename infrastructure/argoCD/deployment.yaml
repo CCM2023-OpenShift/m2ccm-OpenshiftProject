@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+  namespace: gregorydhmccm-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-server
+    spec:
+      serviceAccountName: argocd-sa
+      containers:
+        - name: argocd-server
+          image: quay.io/argoproj/argocd:v2.10.3
+          command: ["argocd-server"]
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: tmp-data
+              mountPath: /tmp
+      volumes:
+        - name: tmp-data
+          emptyDir: {}
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server
+  namespace: gregorydhmccm-dev
+spec:
+  selector:
+    app.kubernetes.io/name: argocd-server
+  ports:
+    - name: https
+      port: 443
+      targetPort: 8080
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: argocd-server
+  namespace: gregorydhmccm-dev
+spec:
+  to:
+    kind: Service
+    name: argocd-server
+  port:
+    targetPort: https
+  tls:
+    termination: edge

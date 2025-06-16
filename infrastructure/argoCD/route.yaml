@@ -1,0 +1,12 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: argocd-repo-server
+  namespace: gregorydhmccm-dev
+spec:
+  to:
+    kind: Service
+    name: argocd-repo-server
+  port:
+    targetPort: http
+

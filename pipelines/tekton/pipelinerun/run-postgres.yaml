@@ -1,0 +1,7 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: run-postgres
+spec:
+  pipelineRef:
+    name: postgres-pipeline
