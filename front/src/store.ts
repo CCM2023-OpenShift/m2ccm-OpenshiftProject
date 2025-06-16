@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import {AppState, Room, Equipment} from './types';
+import {AppState, Equipment, NotificationParams, Room} from './types';
 import {Room as RoomService} from './services/Room';
 import {Equipment as EquipmentService} from './services/Equipment';
 import User from "./services/User.ts";
@@ -44,96 +44,96 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchRooms: async () => {
         try {
-            set(state => ({loading: {...state.loading, rooms: true}}));
+            set(() => ({loading: {...get().loading, rooms: true}}));
             const data = await RoomService.getAll();
-            set(state => ({
+            set(() => ({
                 rooms: data,
-                loading: {...state.loading, rooms: false}
+                loading: {...get().loading, rooms: false}
             }));
         } catch (error) {
             console.error('Error fetching rooms:', error);
-            set(state => ({loading: {...state.loading, rooms: false}}));
+            set(() => ({loading: {...get().loading, rooms: false}}));
         }
     },
 
     fetchEquipment: async () => {
         try {
-            set(state => ({loading: {...state.loading, equipment: true}}));
+            set(() => ({loading: {...get().loading, equipment: true}}));
             const data = await EquipmentService.getAll();
-            set(state => ({
+            set(() => ({
                 equipment: data,
-                loading: {...state.loading, equipment: false}
+                loading: {...get().loading, equipment: false}
             }));
         } catch (error) {
             console.error('Error fetching equipment:', error);
-            set(state => ({loading: {...state.loading, equipment: false}}));
+            set(() => ({loading: {...get().loading, equipment: false}}));
         }
     },
 
     fetchEquipmentFixed: async () => {
         try {
-            set(state => ({loading: {...state.loading, equipment: true}}));
+            set(() => ({loading: {...get().loading, equipment: true}}));
             const allEquipment = await EquipmentService.getAll();
             const fixedEquipment = allEquipment.filter((equip: EquipmentService) => !equip.getMobile());
-            set(state => ({
+            set(() => ({
                 equipment: fixedEquipment,
-                loading: {...state.loading, equipment: false}
+                loading: {...get().loading, equipment: false}
             }));
         } catch (error) {
             console.error('Error fetching fixed equipment:', error);
-            set(state => ({loading: {...state.loading, equipment: false}}));
+            set(() => ({loading: {...get().loading, equipment: false}}));
         }
     },
 
     fetchBookings: async () => {
         try {
-            set(state => ({loading: {...state.loading, bookings: true}}));
+            set(() => ({loading: {...get().loading, bookings: true}}));
 
             const data = await Booking.getAll();
 
-            set(state => ({
+            set(() => ({
                 bookings: data || [],
-                loading: {...state.loading, bookings: false}
+                loading: {...get().loading, bookings: false}
             }));
         } catch (error) {
             console.error('Error fetching bookings:', error);
-            set(state => ({
+            set(() => ({
                 bookings: [],
-                loading: {...state.loading, bookings: false}
+                loading: {...get().loading, bookings: false}
             }));
         }
     },
 
     fetchCurrentUser: async () => {
         try {
-            set(state => ({loading: {...state.loading, currentUser: true}}));
+            set(() => ({loading: {...get().loading, currentUser: true}}));
             const currentUser = await User.getCurrent();
-            set(state => ({
+            set(() => ({
                 currentUser,
-                loading: {...state.loading, currentUser: false}
+                loading: {...get().loading, currentUser: false}
             }));
         } catch (error) {
             console.error('Store: Error fetching current user:', error);
-            set(state => ({
+            set(() => ({
                 currentUser: null,
-                loading: {...state.loading, currentUser: false}
+                loading: {...get().loading, currentUser: false}
             }));
         }
     },
 
     fetchBookingOrganizers: async () => {
         try {
-            set(state => ({loading: {...state.loading, organizers: true}}));
+            set(() => ({loading: {...get().loading, organizers: true}}));
             const organizers = await User.getBookingOrganizers();
-            set(state => ({
+            set(() => ({
                 availableOrganizers: organizers,
-                loading: {...state.loading, organizers: false}
+                loading: {...get().loading, organizers: false}
             }));
         } catch (error) {
             console.error('Store: Error fetching booking organizers:', error);
-            set(state => ({
+            set(() => ({
                 availableOrganizers: [],
-                loading: {...state.loading, organizers: false}
+                loading: {...get().loading, organizers: false}
             }));
         }
     },
@@ -351,13 +351,13 @@ export const useStore = create<AppState>((set, get) => ({
     // Récupération des équipements disponibles pour une période
     getAvailableEquipments: async (startTime: string, endTime: string) => {
         try {
-            set(state => ({loading: {...state.loading, equipment: true}}));
+            set(() => ({loading: {...get().loading, equipment: true}}));
             const data = await Booking.getAvailableEquipments(startTime, endTime);
-            set(state => ({loading: {...state.loading, equipment: false}}));
+            set(() => ({loading: {...get().loading, equipment: false}}));
             return data;
         } catch (error) {
             console.error('Error fetching available equipment:', error);
-            set(state => ({loading: {...state.loading, equipment: false}}));
+            set(() => ({loading: {...get().loading, equipment: false}}));
             throw error;
         }
     },
@@ -370,7 +370,7 @@ export const useStore = create<AppState>((set, get) => ({
             const createdBooking = await booking.create();
 
             // Mettre à jour la liste des réservations dans le store
-            set(state => ({
+            set((state) => ({
                 bookings: [...state.bookings, createdBooking]
             }));
 
@@ -387,7 +387,7 @@ export const useStore = create<AppState>((set, get) => ({
             const updatedBooking = await booking.update();
 
             // Mettre à jour la liste des réservations dans le store
-            set(state => ({
+            set((state) => ({
                 bookings: state.bookings.map(b =>
                     b.id === updatedBooking.id ? updatedBooking : b
                 )
@@ -402,16 +402,16 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchAllUsers: async () => {
         try {
-            set(state => ({loading: {...state.loading, organizers: true}}));
+            set(() => ({loading: {...get().loading, organizers: true}}));
             const users = await User.getAllUsers();
-            set(state => ({
+            set(() => ({
                 availableOrganizers: users, // Réutilisation du même champ pour stocker tous les utilisateurs
-                loading: {...state.loading, organizers: false}
+                loading: {...get().loading, organizers: false}
             }));
             return users;
         } catch (error) {
             console.error('Error fetching all users:', error);
-            set(state => ({loading: {...state.loading, organizers: false}}));
+            set(() => ({loading: {...get().loading, organizers: false}}));
             throw error;
         }
     },
@@ -421,7 +421,7 @@ export const useStore = create<AppState>((set, get) => ({
             const updatedUser = await User.updateUserStatus(userId, status);
 
             // Mettre à jour la liste des organisateurs si l'utilisateur existe dans la liste
-            set(state => ({
+            set((state) => ({
                 availableOrganizers: state.availableOrganizers.map(user =>
                     user.getId() === userId ? updatedUser : user
                 )
@@ -445,26 +445,26 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchNotifications: async () => {
         try {
-            set(state => ({loading: {...state.loading, notifications: true}}));
+            set(() => ({loading: {...get().loading, notifications: true}}));
             const notifications = await NotificationService.getAll();
 
             const unreadCount = notifications.filter((notification) => !notification.read).length;
 
-            set(state => ({
+            set(() => ({
                 notifications,
                 unreadNotificationsCount: unreadCount,
-                loading: {...state.loading, notifications: false}
+                loading: {...get().loading, notifications: false}
             }));
         } catch (error) {
             console.error('Error fetching notifications:', error);
-            set(state => ({loading: {...state.loading, notifications: false}}));
+            set(() => ({loading: {...get().loading, notifications: false}}));
         }
     },
 
     markNotificationAsRead: async (notificationId: string) => {
         try {
             await NotificationService.markAsRead(notificationId);
-            set(state => ({
+            set((state) => ({
                 notifications: state.notifications.map(notification =>
                     notification.id === notificationId
                         ? { ...notification, read: true }
@@ -480,7 +480,7 @@ export const useStore = create<AppState>((set, get) => ({
     markAllNotificationsAsRead: async () => {
         try {
             await NotificationService.markAllAsRead();
-            set(state => ({
+            set((state) => ({
                 notifications: state.notifications.map(notification => ({ ...notification, read: true })),
                 unreadNotificationsCount: 0
             }));
@@ -492,7 +492,7 @@ export const useStore = create<AppState>((set, get) => ({
     dismissNotification: async (notificationId: string) => {
         try {
             await NotificationService.delete(notificationId);
-            set(state => {
+            set((state) => {
                 const notification = state.notifications.find(n => n.id === notificationId);
                 const wasUnread = notification && !notification.read;
 
@@ -507,4 +507,72 @@ export const useStore = create<AppState>((set, get) => ({
             console.error('Error dismissing notification:', error);
         }
     },
+
+    // Nouvelles méthodes de notifications
+    fetchUnreadNotificationsCount: async () => {
+        try {
+            const count = await NotificationService.getUnreadCount();
+            set(() => ({unreadNotificationsCount: count}));
+            return count;
+        } catch (error) {
+            console.error('Error fetching unread notifications count:', error);
+            // Si erreur, on retourne le compteur actuel
+            return get().unreadNotificationsCount;
+        }
+    },
+
+    fetchNotificationsWithParams: async (params: NotificationParams) => {
+        try {
+            set(() => ({loading: {...get().loading, notifications: true}}));
+            const result = await NotificationService.getAllWithParams(params);
+
+            // On ne met à jour le store que si on demande la première page
+            // pour éviter de remplacer la liste complète lors de la pagination.
+            if (params.offset === 0 || params.offset === undefined) {
+                set(() => ({
+                    notifications: result.notifications,
+                    unreadNotificationsCount: result.notifications.filter(n => !n.read).length,
+                }));
+            }
+
+            set(() => ({loading: {...get().loading, notifications: false}}));
+            return result;
+        } catch (error) {
+            console.error('Error fetching notifications with params:', error);
+            set(() => ({loading: {...get().loading, notifications: false}}));
+
+            // En cas d'erreur, on renvoie les données du store actuel
+            return {
+                notifications: get().notifications,
+                total: get().notifications.length,
+                limit: params.limit || 50,
+                offset: params.offset || 0
+            };
+        }
+    },
+
+    markNotificationAsUnread: async (notificationId: string) => {
+        try {
+            await NotificationService.markAsUnread(notificationId);
+            set((state) => ({
+                notifications: state.notifications.map(notification =>
+                    notification.id === notificationId
+                        ? { ...notification, read: false }
+                        : notification
+                ),
+                unreadNotificationsCount: state.unreadNotificationsCount + 1
+            }));
+        } catch (error) {
+            console.error('Error marking notification as unread:', error);
+        }
+    },
+
+    fetchNotificationTypes: async () => {
+        try {
+            return await NotificationService.getNotificationTypes();
+        } catch (error) {
+            console.error('Error fetching notification types:', error);
+            return [];
+        }
+    }
 }));

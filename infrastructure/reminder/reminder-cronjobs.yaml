@@ -11,7 +11,6 @@ items:
         component: reminder
         environment: production
     spec:
-      # Run every hour
       schedule: "0 * * * *"
       concurrencyPolicy: Forbid
       successfulJobsHistoryLimit: 3

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useKeycloak } from '@react-keycloak/web';
 import { Link } from 'react-router-dom';
-import { Bell, X, Calendar, Check, AlertCircle } from 'lucide-react';
+import { Bell, X, Calendar, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { parseISO, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useStore } from '../store';
@@ -9,6 +9,8 @@ import { useStore } from '../store';
 export const NotificationCenter = () => {
     const { keycloak } = useKeycloak();
     const [showNotifications, setShowNotifications] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -18,30 +20,62 @@ export const NotificationCenter = () => {
         fetchNotifications,
         markNotificationAsRead,
         markAllNotificationsAsRead,
-        dismissNotification
+        dismissNotification,
+        fetchUnreadNotificationsCount, // Nouvelle méthode du store
     } = useStore(state => ({
         notifications: state.notifications,
         unreadNotificationsCount: state.unreadNotificationsCount,
         fetchNotifications: state.fetchNotifications,
         markNotificationAsRead: state.markNotificationAsRead,
         markAllNotificationsAsRead: state.markAllNotificationsAsRead,
-        dismissNotification: state.dismissNotification
+        dismissNotification: state.dismissNotification,
+        fetchUnreadNotificationsCount: state.fetchUnreadNotificationsCount,
     }));
 
-    // Charger les notifications personnelles au chargement et périodiquement
+    // Charger les notifications personnelles et leur compte au chargement
     useEffect(() => {
-        if (keycloak.authenticated) {
-            // Charger les notifications de l'utilisateur au démarrage
+        const loadUserData = async () => {
+            if (keycloak.authenticated) {
+                setLoading(true);
+                setError(null);
+
+                try {
+                    // Charger le nombre de notifications non lues directement
+                    await fetchUnreadNotificationsCount();
+
+                    // Seulement si le dropdown est ouvert, on charge les notifications complètes
+                    if (showNotifications) {
+                        await fetchNotifications();
+                    }
+                } catch (err) {
+                    console.error("Erreur lors du chargement des notifications:", err);
+                    setError("Impossible de charger vos notifications");
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        void loadUserData();
+
+        // Actualiser le compte des notifications non lues toutes les 2 minutes
+        const intervalId = setInterval(() => {
+            if (keycloak.authenticated) {
+                fetchUnreadNotificationsCount().catch(err => {
+                    console.error("Erreur lors de l'actualisation du compteur:", err);
+                });
+            }
+        }, 2 * 60 * 1000);
+
+        return () => clearInterval(intervalId);
+    }, [keycloak.authenticated, keycloak.tokenParsed?.preferred_username, fetchUnreadNotificationsCount]);
+
+    // Charger les notifications complètes quand le dropdown s'ouvre
+    useEffect(() => {
+        if (showNotifications && keycloak.authenticated) {
             void fetchNotifications();
-
-            // Actualiser les notifications toutes les 5 minutes
-            const intervalId = setInterval(() => {
-                void fetchNotifications();
-            }, 5 * 60 * 1000);
-
-            return () => clearInterval(intervalId);
         }
-    }, [keycloak.authenticated, fetchNotifications]);
+    }, [showNotifications, fetchNotifications, keycloak.authenticated]);
 
     // Gestion du clic en dehors du dropdown pour le fermer
     useEffect(() => {
@@ -71,6 +105,12 @@ export const NotificationCenter = () => {
     const handleDismissNotification = (e: React.MouseEvent, notificationId: string) => {
         e.stopPropagation();
         void dismissNotification(notificationId);
+    };
+
+    const handleRefresh = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setLoading(true);
+        fetchNotifications().finally(() => setLoading(false));
     };
 
     const getNotificationIcon = (type: string) => {
@@ -113,6 +153,9 @@ export const NotificationCenter = () => {
         }
     };
 
+    // Récupérer le nom d'utilisateur actuel
+    const currentUsername = keycloak.tokenParsed?.preferred_username;
+
     return (
         <div className="relative z-30" ref={dropdownRef}>
             <button
@@ -134,23 +177,45 @@ export const NotificationCenter = () => {
                     <div className="flex min-h-full items-end justify-center sm:items-start sm:p-0">
                         <div className="w-full max-w-sm sm:max-w-xs rounded-lg bg-white shadow-lg sm:rounded-md">
                             <div className="p-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
-                                <h3 className="font-semibold text-blue-800">Mes Notifications</h3>
-                                {unreadNotificationsCount > 0 && (
+                                <h3 className="font-semibold text-blue-800">
+                                    Mes Notifications
+                                    {loading && (
+                                        <RefreshCw size={14} className="inline ml-2 animate-spin text-blue-600" />
+                                    )}
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    {unreadNotificationsCount > 0 && (
+                                        <button
+                                            className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                                            onClick={handleMarkAllAsRead}
+                                        >
+                                            <Check size={12} className="mr-1" />
+                                            Tout marquer comme lu
+                                        </button>
+                                    )}
                                     <button
                                         className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
-                                        onClick={handleMarkAllAsRead}
+                                        onClick={handleRefresh}
+                                        disabled={loading}
                                     >
-                                        <Check size={12} className="mr-1" />
-                                        Tout marquer comme lu
+                                        <RefreshCw size={12} className={`mr-1 ${loading ? 'animate-spin' : ''}`} />
+                                        Actualiser
                                     </button>
-                                )}
+                                </div>
                             </div>
+
+                            {error && (
+                                <div className="p-2 bg-yellow-50 border-b border-yellow-100 text-xs text-yellow-800">
+                                    {error}
+                                </div>
+                            )}
 
                             <div className="max-h-[70vh] overflow-y-auto">
                                 {(!notifications || notifications.length === 0) ? (
                                     <div className="p-4 text-center text-gray-500">
                                         <Bell size={40} className="mx-auto text-gray-300 mb-2" />
                                         <p>Aucune notification</p>
+                                        <p className="text-xs mt-2">Connecté en tant que {currentUsername}</p>
                                     </div>
                                 ) : (
                                     notifications.map((notification) => (

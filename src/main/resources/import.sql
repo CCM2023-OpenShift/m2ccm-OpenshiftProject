@@ -179,20 +179,12 @@ FROM (VALUES (4, CURRENT_DATE - INTERVAL '10 days' + TIME '08:45', CURRENT_DATE 
 WHERE NOT EXISTS (SELECT 1 FROM booking_equipment);
 
 -- Notifications
-INSERT INTO sent_notifications (booking_id, notification_type, sent_at, organizer_email)
-SELECT *
-FROM (VALUES (22, '24h', '2025-06-15 13:00:00', 'test@gmail.fr'),                   -- Atelier développement Web
-       (23, '24h', '2025-06-16 09:00:00', 'test@gmail.fr'),                   -- Démonstration outils cybersécurité
-       (24, '24h', '2025-06-14 10:00:00', 'test@gmail.fr'),                   -- Réunion projet frontend
-       (22, '1h', '2025-06-16 12:00:00', 'test@gmail.fr'),                    -- Atelier développement Web (1h avant)
-       (26, '1h', CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'test@gmail.fr'), -- Test rappel 1h
-       (8, '24h', '2025-06-15 08:30:00', 'devuser@example.com'),                         -- Cours intensif Python
-       (15, '24h', '2025-06-20 10:00:00', 'devuser@example.com'),                        -- Séminaire cybersécurité
-       (8, '1h', '2025-06-16 07:30:00', 'devuser@example.com'),                          -- Cours intensif Python (1h avant)
-       (27, '24h', '2025-06-15 01:41:00', 'admin@example.com'),                        -- Test rappel 24h
-       (11, '24h', '2025-06-15 11:00:00', 'admin@example.com'),                        -- Soutenance de projet de groupe
-       (11, '1h', '2025-06-16 10:00:00', 'admin@example.com')) AS vals(booking_id, notification_type, sent_at, organizer_email)
-WHERE NOT EXISTS (SELECT 1 FROM sent_notifications);;                         -- Soutenance de projet de groupe (1h avant)
+INSERT INTO sent_notifications (booking_id, notification_type, sent_at, organizer_email, title, message, read, deleted)
+VALUES
+    (22, '24h', '2025-06-15 13:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Atelier développement Web" dans la salle L102 est prévue demain.', false, false),
+    (23, '24h', '2025-06-16 09:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Démonstration outils cybersécurité" dans la salle B201 est prévue demain.', false, false),
+    (24, '24h', '2025-06-14 10:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Réunion projet frontend" dans la salle D101 est prévue demain.', false, false),
+    (26, '1h', CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'admin@example.com', 'Votre réservation commence bientôt', 'Votre réservation "Test rappel 1h" dans la salle B201 commence dans moins dune heure.', false, false);
 
 -- Mise à jour de la séquence pour les IDs
 SELECT setval('sent_notifications_id_seq', (SELECT COALESCE(MAX(id), 0) FROM sent_notifications));

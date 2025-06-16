@@ -22,14 +22,25 @@ public class SentNotification {
     private Booking booking;
 
     @Column(name = "notification_type", nullable = false)
-    private String notificationType; // "24h" or "1h"
+    private String notificationType; // "24h", "1h", "manual", "conflict"
 
     @Column(name = "sent_at", nullable = false)
     private LocalDateTime sentAt;
 
-    // Organizer email (to facilitate queries)
     @Column(name = "organizer_email")
     private String organizerEmail;
+
+    @Column(name = "title")
+    private String title;
+
+    @Column(name = "message", length = 1000)
+    private String message;
+
+    @Column(name = "read_status")
+    private boolean read = false;
+
+    @Column(name = "deleted")
+    private boolean deleted = false;
 
     // Constructors
     public SentNotification() {
@@ -81,5 +92,37 @@ public class SentNotification {
 
     public void setOrganizerEmail(String organizerEmail) {
         this.organizerEmail = organizerEmail;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public boolean isRead() {
+        return read;
+    }
+
+    public void setRead(boolean read) {
+        this.read = read;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }

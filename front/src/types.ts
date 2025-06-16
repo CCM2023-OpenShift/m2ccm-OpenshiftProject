@@ -11,6 +11,13 @@ export interface Notification {
     createdAt: string;
 }
 
+export interface NotificationParams {
+    read?: boolean;
+    limit?: number;
+    offset?: number;
+    type?: string;
+}
+
 export interface Room {
     id: string;
     name: string;
@@ -115,4 +122,13 @@ export interface AppState {
     markNotificationAsRead: (notificationId: string) => Promise<void>;
     markAllNotificationsAsRead: () => Promise<void>;
     dismissNotification: (notificationId: string) => Promise<void>;
+    fetchUnreadNotificationsCount: () => Promise<number>;
+    fetchNotificationsWithParams: (params: {
+        read?: boolean,
+        limit?: number,
+        offset?: number,
+        type?: string
+    }) => Promise<{ notifications: Notification[], total: number, limit: number, offset: number }>;
+    markNotificationAsUnread: (notificationId: string) => Promise<void>;
+    fetchNotificationTypes: () => Promise<any[]>;
 }
