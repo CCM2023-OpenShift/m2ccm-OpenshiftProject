@@ -1,5 +1,16 @@
 import User from "./services/User.ts";
 
+export interface Notification {
+    id: string;
+    userId: string;
+    type: string;
+    title: string;
+    message: string;
+    bookingId?: string;
+    read: boolean;
+    createdAt: string;
+}
+
 export interface Room {
     id: string;
     name: string;
@@ -53,6 +64,7 @@ export interface LoadingState {
     bookings: boolean;
     currentUser: boolean;
     organizers: boolean;
+    notifications: boolean;
 }
 
 export interface UserType {
@@ -73,6 +85,8 @@ export interface AppState {
     currentUser: User | null;
     availableOrganizers: User[];
     loading: LoadingState;
+    notifications: Notification[];
+    unreadNotificationsCount: number;
     fetchAllData: () => Promise<void>;
     fetchRooms: () => Promise<void>;
     fetchEquipment: () => Promise<void>;
@@ -97,4 +111,8 @@ export interface AppState {
     fetchAllUsers: () => Promise<User[]>;
     updateUserStatus: (userId: string, status: boolean) => Promise<User>;
     sendPasswordResetEmail: (userId: string) => Promise<void>;
+    fetchNotifications: () => Promise<void>;
+    markNotificationAsRead: (notificationId: string) => Promise<void>;
+    markAllNotificationsAsRead: () => Promise<void>;
+    dismissNotification: (notificationId: string) => Promise<void>;
 }

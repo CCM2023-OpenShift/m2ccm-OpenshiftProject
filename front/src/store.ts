@@ -4,6 +4,7 @@ import {Room as RoomService} from './services/Room';
 import {Equipment as EquipmentService} from './services/Equipment';
 import User from "./services/User.ts";
 import {Booking} from "./services/Booking.ts";
+import {Notification as NotificationService} from "./services/Notification.ts";
 
 export const useStore = create<AppState>((set, get) => ({
     rooms: [],
@@ -16,8 +17,11 @@ export const useStore = create<AppState>((set, get) => ({
         equipment: false,
         bookings: false,
         currentUser: false,
-        organizers: false
+        organizers: false,
+        notifications: false
     },
+    notifications: [],
+    unreadNotificationsCount: 0,
 
     fetchAllData: async () => {
         const tasks = [
@@ -437,5 +441,70 @@ export const useStore = create<AppState>((set, get) => ({
             console.error('Error sending password reset email:', error);
             throw error;
         }
-    }
+    },
+
+    fetchNotifications: async () => {
+        try {
+            set(state => ({loading: {...state.loading, notifications: true}}));
+            const notifications = await NotificationService.getAll();
+
+            const unreadCount = notifications.filter((notification) => !notification.read).length;
+
+            set(state => ({
+                notifications,
+                unreadNotificationsCount: unreadCount,
+                loading: {...state.loading, notifications: false}
+            }));
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            set(state => ({loading: {...state.loading, notifications: false}}));
+        }
+    },
+
+    markNotificationAsRead: async (notificationId: string) => {
+        try {
+            await NotificationService.markAsRead(notificationId);
+            set(state => ({
+                notifications: state.notifications.map(notification =>
+                    notification.id === notificationId
+                        ? { ...notification, read: true }
+                        : notification
+                ),
+                unreadNotificationsCount: Math.max(state.unreadNotificationsCount - 1, 0)
+            }));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    },
+
+    markAllNotificationsAsRead: async () => {
+        try {
+            await NotificationService.markAllAsRead();
+            set(state => ({
+                notifications: state.notifications.map(notification => ({ ...notification, read: true })),
+                unreadNotificationsCount: 0
+            }));
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    },
+
+    dismissNotification: async (notificationId: string) => {
+        try {
+            await NotificationService.delete(notificationId);
+            set(state => {
+                const notification = state.notifications.find(n => n.id === notificationId);
+                const wasUnread = notification && !notification.read;
+
+                return {
+                    notifications: state.notifications.filter(n => n.id !== notificationId),
+                    unreadNotificationsCount: wasUnread
+                        ? Math.max(state.unreadNotificationsCount - 1, 0)
+                        : state.unreadNotificationsCount
+                };
+            });
+        } catch (error) {
+            console.error('Error dismissing notification:', error);
+        }
+    },
 }));

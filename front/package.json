@@ -16,6 +16,7 @@
     "@fullcalendar/react": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.17",
     "@react-keycloak/web": "^3.4.0",
+    "date-fns": "^4.1.0",
     "keycloak-js": "^26.2.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
