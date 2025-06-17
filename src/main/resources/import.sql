@@ -179,12 +179,12 @@ FROM (VALUES (4, CURRENT_DATE - INTERVAL '10 days' + TIME '08:45', CURRENT_DATE 
 WHERE NOT EXISTS (SELECT 1 FROM booking_equipment);
 
 -- Notifications
-INSERT INTO sent_notifications (booking_id, notification_type, sent_at, organizer_email, title, message, read, deleted)
+INSERT INTO sent_notifications (booking_id, notification_type, sent_at, organizer_email, title, message, read_status, deleted)
 VALUES
     (22, '24h', '2025-06-15 13:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Atelier développement Web" dans la salle L102 est prévue demain.', false, false),
     (23, '24h', '2025-06-16 09:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Démonstration outils cybersécurité" dans la salle B201 est prévue demain.', false, false),
     (24, '24h', '2025-06-14 10:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Réunion projet frontend" dans la salle D101 est prévue demain.', false, false),
-    (26, '1h', CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'admin@example.com', 'Votre réservation commence bientôt', 'Votre réservation "Test rappel 1h" dans la salle B201 commence dans moins dune heure.', false, false);
+    (26, '1h', CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'admin@example.com', 'Votre réservation commence bientôt', 'Votre réservation "Test rappel 1h" dans la salle B201 commence dans moins d''une heure.', false, false);
 
 -- Mise à jour de la séquence pour les IDs
 SELECT setval('sent_notifications_id_seq', GREATEST((SELECT COALESCE(MAX(id), 0) FROM sent_notifications), 1));
