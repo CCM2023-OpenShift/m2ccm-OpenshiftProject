@@ -187,7 +187,7 @@ VALUES
     (26, '1h', CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'admin@example.com', 'Votre réservation commence bientôt', 'Votre réservation "Test rappel 1h" dans la salle B201 commence dans moins dune heure.', false, false);
 
 -- Mise à jour de la séquence pour les IDs
-SELECT setval('sent_notifications_id_seq', (SELECT COALESCE(MAX(id), 0) FROM sent_notifications));
+SELECT setval('sent_notifications_id_seq', GREATEST((SELECT COALESCE(MAX(id), 0) FROM sent_notifications), 1));
 
 -- Met à jour la séquence de la table room
 SELECT setval('room_id_seq', (SELECT COALESCE(MAX(id), 0) FROM room));
