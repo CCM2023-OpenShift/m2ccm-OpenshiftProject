@@ -168,7 +168,6 @@ find_maven_basedir() {
     pwd
   )"
 }
-
 # concatenates all lines of a file
 concat_lines() {
   if [ -f "$1" ]; then

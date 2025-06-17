@@ -51,7 +51,7 @@ export class Notification {
             return notifications.map((item: any) => new Notification().fromJSON(item));
         } catch (error) {
             console.error('Error fetching notifications:', error);
-            return this.getMockNotifications();
+            return [];
         }
     }
 
@@ -95,14 +95,11 @@ export class Notification {
             };
         } catch (error) {
             console.error('Error fetching notifications with params:', error);
-
-            // En cas d'erreur, renvoyer des données mockées
-            const mockNotifs = this.getMockNotifications();
             return {
-                notifications: mockNotifs,
-                total: mockNotifs.length,
-                limit: 50,
-                offset: 0
+                notifications: [],
+                total: 0,
+                limit: params.limit || 50,
+                offset: params.offset || 0
             };
         }
     }
@@ -116,9 +113,7 @@ export class Notification {
             return response?.count || 0;
         } catch (error) {
             console.error('Error fetching unread count:', error);
-            // Si erreur, on compte les notifications non lues des données mockées
-            const mockNotifs = this.getMockNotifications();
-            return mockNotifs.filter(n => !n.read).length;
+            return 0;
         }
     }
 
@@ -180,19 +175,6 @@ export class Notification {
                 limit: 100,
                 offset: 0
             };
-        }
-    }
-
-    /**
-     * Récupère une notification par son ID
-     */
-    public static async getById(id: string): Promise<Notification> {
-        try {
-            const json = await ApiService.get(`${Notification.baseEndpoint}/${id}`);
-            return new Notification().fromJSON(json);
-        } catch (error) {
-            console.error(`Error fetching notification with ID ${id}:`, error);
-            throw error;
         }
     }
 
@@ -374,45 +356,6 @@ export class Notification {
 
     public getCreatedAt(): string {
         return this.createdAt;
-    }
-
-    // Fonction temporaire pour tests sans backend
-    public static getMockNotifications(): Notification[] {
-        // Date fixe pour correspondre au système: 2025-06-16 17:05:04
-        const currentDate = new Date('2025-06-16T17:05:04Z');
-
-        return [
-            new Notification().fromJSON({
-                id: '1',
-                userId: 'M0rd0rian',  // Corrigé la casse
-                type: 'BOOKING_REMINDER',
-                title: 'Rappel: Votre réservation demain',
-                message: 'Votre réservation "Atelier développement Web" dans la salle L102 est prévue demain.',
-                bookingId: '22',
-                read: false,
-                createdAt: new Date(currentDate.getTime() - 4 * 60 * 60 * 1000).toISOString() // 4 heures avant
-            }),
-            new Notification().fromJSON({
-                id: '2',
-                userId: 'M0rd0rian',
-                type: 'BOOKING_REMINDER',
-                title: '⚠️ Votre réservation commence bientôt',
-                message: 'Votre réservation "Test rappel 1h" dans la salle B201 commence dans moins d\'une heure.',
-                bookingId: '26',
-                read: false,
-                createdAt: new Date(currentDate.getTime() - 30 * 60 * 1000).toISOString() // 30 minutes avant
-            }),
-            new Notification().fromJSON({
-                id: '3',
-                userId: 'M0rd0rian',
-                type: 'BOOKING_REMINDER',
-                title: 'Rappel: Votre réservation demain',
-                message: 'Votre réservation "Formation React avancé" dans la salle D101 est prévue demain.',
-                bookingId: '25',
-                read: true,
-                createdAt: new Date(currentDate.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 jour avant
-            })
-        ];
     }
 }
 

@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
-import { useKeycloak } from '@react-keycloak/web';
-import { Link } from 'react-router-dom';
-import { Bell, X, Calendar, Check, AlertCircle, RefreshCw } from 'lucide-react';
-import { parseISO, formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { useStore } from '../store';
+import {useState, useEffect, useRef} from 'react';
+import {useKeycloak} from '@react-keycloak/web';
+import {Link} from 'react-router-dom';
+import {Bell, X, Calendar, Check, AlertCircle, RefreshCw} from 'lucide-react';
+import {parseISO, formatDistanceToNow} from 'date-fns';
+import {fr} from 'date-fns/locale';
+import {useStore} from '../store';
 
 export const NotificationCenter = () => {
-    const { keycloak } = useKeycloak();
+    const {keycloak} = useKeycloak();
     const [showNotifications, setShowNotifications] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export const NotificationCenter = () => {
         markNotificationAsRead,
         markAllNotificationsAsRead,
         dismissNotification,
-        fetchUnreadNotificationsCount, // Nouvelle méthode du store
+        fetchUnreadNotificationsCount,
     } = useStore(state => ({
         notifications: state.notifications,
         unreadNotificationsCount: state.unreadNotificationsCount,
@@ -116,11 +116,11 @@ export const NotificationCenter = () => {
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'BOOKING_REMINDER':
-                return <Calendar size={16} className="text-blue-500" />;
+                return <Calendar size={16} className="text-blue-500"/>;
             case 'BOOKING_CONFLICT':
-                return <AlertCircle size={16} className="text-red-500" />;
+                return <AlertCircle size={16} className="text-red-500"/>;
             default:
-                return <Bell size={16} className="text-gray-500" />;
+                return <Bell size={16} className="text-gray-500"/>;
         }
     };
 
@@ -164,102 +164,114 @@ export const NotificationCenter = () => {
                 onClick={() => setShowNotifications(!showNotifications)}
                 aria-label="Notifications"
             >
-                <Bell size={20} />
+                <Bell size={20}/>
                 {unreadNotificationsCount > 0 && (
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 text-white">
-                        {unreadNotificationsCount}
-                    </span>
+                    <span
+                        className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 text-white">
+          {unreadNotificationsCount}
+        </span>
                 )}
             </button>
 
             {showNotifications && (
-                <div className="fixed inset-0 z-50 overflow-y-auto sm:inset-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-1">
-                    <div className="flex min-h-full items-end justify-center sm:items-start sm:p-0">
-                        <div className="w-full max-w-sm sm:max-w-xs rounded-lg bg-white shadow-lg sm:rounded-md">
-                            <div className="p-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
-                                <h3 className="font-semibold text-blue-800">
-                                    Mes Notifications
-                                    {loading && (
-                                        <RefreshCw size={14} className="inline ml-2 animate-spin text-blue-600" />
-                                    )}
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                    {unreadNotificationsCount > 0 && (
+                <div className="fixed inset-0 z-40 overflow-hidden" style={{pointerEvents: 'none'}}>
+                    <div className="absolute inset-y-0 right-0 pl-10 max-w-full flex">
+                        <div className="relative w-screen max-w-md" style={{pointerEvents: 'auto'}}>
+                            <div className="h-full flex flex-col bg-white shadow-xl">
+                                <div
+                                    className="p-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
+                                    <h3 className="font-semibold text-blue-800">
+                                        Mes Notifications
+                                        {loading && (
+                                            <RefreshCw size={14} className="inline ml-2 animate-spin text-blue-600"/>
+                                        )}
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        {unreadNotificationsCount > 0 && (
+                                            <button
+                                                className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                                                onClick={handleMarkAllAsRead}
+                                            >
+                                                <Check size={12} className="mr-1"/>
+                                                Tout marquer comme lu
+                                            </button>
+                                        )}
                                         <button
                                             className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
-                                            onClick={handleMarkAllAsRead}
+                                            onClick={handleRefresh}
+                                            disabled={loading}
                                         >
-                                            <Check size={12} className="mr-1" />
-                                            Tout marquer comme lu
+                                            <RefreshCw size={12} className={`mr-1 ${loading ? 'animate-spin' : ''}`}/>
+                                            Actualiser
                                         </button>
-                                    )}
-                                    <button
-                                        className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
-                                        onClick={handleRefresh}
-                                        disabled={loading}
-                                    >
-                                        <RefreshCw size={12} className={`mr-1 ${loading ? 'animate-spin' : ''}`} />
-                                        Actualiser
-                                    </button>
-                                </div>
-                            </div>
-
-                            {error && (
-                                <div className="p-2 bg-yellow-50 border-b border-yellow-100 text-xs text-yellow-800">
-                                    {error}
-                                </div>
-                            )}
-
-                            <div className="max-h-[70vh] overflow-y-auto">
-                                {(!notifications || notifications.length === 0) ? (
-                                    <div className="p-4 text-center text-gray-500">
-                                        <Bell size={40} className="mx-auto text-gray-300 mb-2" />
-                                        <p>Aucune notification</p>
-                                        <p className="text-xs mt-2">Connecté en tant que {currentUsername}</p>
-                                    </div>
-                                ) : (
-                                    notifications.map((notification) => (
-                                        <div
-                                            key={notification.id}
-                                            onClick={() => handleNotificationClick(notification.id)}
-                                            className={`p-3 border-b last:border-0 relative cursor-pointer ${
-                                                notification.read ? 'bg-white' : 'bg-blue-50'
-                                            }`}
+                                        <button
+                                            onClick={() => setShowNotifications(false)}
+                                            className="ml-2 text-gray-500 hover:text-gray-700"
                                         >
-                                            <button
-                                                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                                                onClick={(e) => handleDismissNotification(e, notification.id)}
-                                                aria-label="Supprimer"
-                                            >
-                                                <X size={16} />
-                                            </button>
-                                            <div className="flex items-start">
-                                                <div className="flex-shrink-0 mt-1">
-                                                    {getNotificationIcon(notification.type)}
-                                                </div>
-                                                <div className="ml-3 flex-1">
-                                                    <p className="font-semibold text-sm">{notification.title}</p>
-                                                    <p className="text-sm text-gray-600 break-words">{notification.message}</p>
-                                                </div>
-                                            </div>
-                                            <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
-                                                <span>
-                                                    {formatTime(notification.createdAt)}
-                                                </span>
-                                                {notification.bookingId && (
-                                                    <Link
-                                                        to={`/booking?edit=${notification.bookingId}`}
-                                                        className="text-blue-600 hover:text-blue-800 flex items-center"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
-                                                        <Calendar size={12} className="mr-1" />
-                                                        Voir détails
-                                                    </Link>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))
+                                            <X size={16}/>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {error && (
+                                    <div
+                                        className="p-2 bg-yellow-50 border-b border-yellow-100 text-xs text-yellow-800">
+                                        {error}
+                                    </div>
                                 )}
+
+                                <div className="flex-1 overflow-y-auto">
+                                    {(!notifications || notifications.length === 0) ? (
+                                        <div className="p-4 text-center text-gray-500">
+                                            <Bell size={40} className="mx-auto text-gray-300 mb-2"/>
+                                            <p>Aucune notification</p>
+                                            <p className="text-xs mt-2">Connecté en tant que {currentUsername}</p>
+                                        </div>
+                                    ) : (
+                                        notifications.map((notification) => (
+                                            <div
+                                                key={notification.id}
+                                                onClick={() => handleNotificationClick(notification.id)}
+                                                className={`p-3 border-b last:border-0 relative cursor-pointer ${
+                                                    notification.read ? 'bg-white' : 'bg-blue-50'
+                                                }`}
+                                            >
+                                                <button
+                                                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                                                    onClick={(e) => handleDismissNotification(e, notification.id)}
+                                                    aria-label="Supprimer"
+                                                >
+                                                    <X size={16}/>
+                                                </button>
+                                                <div className="flex items-start">
+                                                    <div className="flex-shrink-0 mt-1">
+                                                        {getNotificationIcon(notification.type)}
+                                                    </div>
+                                                    <div className="ml-3 flex-1">
+                                                        <p className="font-semibold text-sm">{notification.title}</p>
+                                                        <p className="text-sm text-gray-600 break-words">{notification.message}</p>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    className="mt-2 flex justify-between items-center text-xs text-gray-500">
+                                            <span>
+                                                {formatTime(notification.createdAt)}
+                                            </span>
+                                                    {notification.bookingId && (
+                                                        <Link
+                                                            to={`/booking?edit=${notification.bookingId}`}
+                                                            className="text-blue-600 hover:text-blue-800 flex items-center"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <Calendar size={12} className="mr-1"/>
+                                                            Voir détails
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

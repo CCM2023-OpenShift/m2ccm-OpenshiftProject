@@ -105,19 +105,19 @@ FROM (VALUES ('Cours de remédiation informatique', CURRENT_DATE - INTERVAL '10 
              ('Rencontre inter-filières', CURRENT_DATE + INTERVAL '15 days' + TIME '14:00',
               CURRENT_DATE + INTERVAL '15 days' + TIME '16:00', 35, 'Jean-Marc Noël', 4),
              ('Atelier développement Web', CURRENT_DATE + INTERVAL '2 days' + TIME '13:00',
-              CURRENT_DATE + INTERVAL '2 days' + TIME '17:00', 15, 'm0rd0rian', 10),
+              CURRENT_DATE + INTERVAL '2 days' + TIME '17:00', 15, 'devadmin1', 10),
              ('Démonstration outils cybersécurité', CURRENT_DATE + INTERVAL '7 days' + TIME '09:00',
-              CURRENT_DATE + INTERVAL '7 days' + TIME '12:00', 12, 'm0rd0rian', 5),
+              CURRENT_DATE + INTERVAL '7 days' + TIME '12:00', 12, 'devadmin1', 5),
              ('Réunion projet frontend', CURRENT_DATE + INTERVAL '3 days' + TIME '10:00',
-              CURRENT_DATE + INTERVAL '3 days' + TIME '11:30', 8, 'm0rd0rian', 7),
+              CURRENT_DATE + INTERVAL '3 days' + TIME '11:30', 8, 'devadmin1', 7),
              ('Formation React avancé', CURRENT_DATE + INTERVAL '10 days' + TIME '09:00',
-              CURRENT_DATE + INTERVAL '10 days' + TIME '17:00', 20, 'm0rd0rian', 2),
+              CURRENT_DATE + INTERVAL '10 days' + TIME '17:00', 20, 'devadmin1', 2),
              ('Test rappel 1h', CURRENT_TIMESTAMP + INTERVAL '1 hour', CURRENT_TIMESTAMP + INTERVAL '2 hours', 5,
-              'm0rd0rian', 3),
+              'devadmin1', 3),
              ('Test rappel 24h', CURRENT_TIMESTAMP + INTERVAL '24 hours', CURRENT_TIMESTAMP + INTERVAL '25 hours', 10,
               'admin.univ', 5),
              ('Réunion importante', CURRENT_TIMESTAMP + INTERVAL '24 hours', CURRENT_TIMESTAMP + INTERVAL '26 hours', 8,
-              'm0rd0rian', 8)) AS vals(title, start_time, end_time, attendees, organizer, room_id)
+              'devadmin1', 8)) AS vals(title, start_time, end_time, attendees, organizer, room_id)
 WHERE NOT EXISTS (SELECT 1 FROM booking);
 
 -- Réservations d'équipements
@@ -184,7 +184,7 @@ VALUES
     (22, '24h', '2025-06-15 13:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Atelier développement Web" dans la salle L102 est prévue demain.', false, false),
     (23, '24h', '2025-06-16 09:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Démonstration outils cybersécurité" dans la salle B201 est prévue demain.', false, false),
     (24, '24h', '2025-06-14 10:00:00', 'admin@example.com', 'Rappel: Votre réservation demain', 'Votre réservation "Réunion projet frontend" dans la salle D101 est prévue demain.', false, false),
-    (26, '1h', CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'admin@example.com', 'Votre réservation commence bientôt', 'Votre réservation "Test rappel 1h" dans la salle B201 commence dans moins d''une heure.', false, false);
+    (25, '1h', CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'admin@example.com', 'Votre réservation commence bientôt', 'Votre réservation "Test rappel 1h" dans la salle B201 commence dans moins d''une heure.', false, false);
 
 -- Mise à jour de la séquence pour les IDs
 SELECT setval('sent_notifications_id_seq', GREATEST((SELECT COALESCE(MAX(id), 0) FROM sent_notifications), 1));
