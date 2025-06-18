@@ -1,0 +1,81 @@
+flowchart LR
+%% PostgreSQL
+  subgraph "Déployer PostgreSQL (infrastructure/postgresql-deployment.yaml)"
+    A2["⬇️ Installer la CLI oc"] --> A3["🔐 Se connecter à OpenShift"]
+    A3 --> A4["🚀 Appliquer le YAML PostgreSQL"]
+  end
+
+%% Quarkus
+  subgraph "Build & Déploiement Quarkus (src/**)"
+    B2["☕ Configurer JDK 21"] --> B3["🏷️ Générer un tag d’image unique"]
+    B3 --> B4["📦 Construire l’application (.jar)"]
+    B4 --> B5["⬇️ Installer la CLI oc"]
+    B5 --> B6["🔐 Se connecter à OpenShift"]
+    B6 --> B7["🛠️ Configurer BuildConfig & ImageStream"]
+    B7 --> B8["⚙️ Ajuster les ressources de build"]
+    B8 --> B9["🧹 Nettoyer les builds échoués"]
+    B9 --> B10["🐳 Lancer le build sur le cluster (oc start-build)"]
+    B10 --> B11["📄 Appliquer le YAML de déploiement"]
+    B11 --> B12["🔄 Déployer avec le tag unique"]
+    B12 --> B13["🌐 Afficher l’URL de l’API"]
+  end
+  B10 -->|dépend de| B12
+
+%% Frontend
+  subgraph "Déployer le front (front/**)"
+    C2["⬇️ Installer la CLI oc"] --> C3["🔐 Se connecter à OpenShift"]
+    C3 --> C4["🚀 Déployer ou mettre à jour vite-oc"]
+    C4 --> C5["🌐 Exposer la Route"]
+    C5 --> C6["🔒 Ajouter TLS"]
+    C6 --> C7["📑 Appliquer le YAML de Route"]
+    C7 --> C8["✅ Vérifier le déploiement & la Route"]
+  end
+
+%% Keycloak
+  subgraph "Déployer Keycloak (infrastructure/keycloak/**)"
+    D2["⬇️ Installer la CLI oc"] --> D3["🔐 Se connecter à OpenShift"]
+    D3 --> D4["🚀 Déployer PostgreSQL pour Keycloak"]
+    D4 --> D5["🚀 Déployer le serveur Keycloak"]
+    D5 --> D6["🔁 Redémarrer Keycloak si besoin"]
+    D6 --> D7["📜 Appliquer la config de realm"]
+    D7 --> D8["⌛ Attendre que Keycloak soit prêt"]
+    D8 --> D9["🌐 Récupérer l’URL de Keycloak"]
+  end
+
+%% Network Policies
+  subgraph "Appliquer les Network Policies (infrastructure/networkpolicies.yaml)"
+    E2["⬇️ Installer la CLI oc"] --> E3["🔐 Se connecter à OpenShift"]
+    E3 --> E4["🚦 Appliquer le YAML des Network Policies"]
+    E4 --> E5["🔍 Vérifier les Network Policies"]
+    E5 --> E6["📝 Décrire isolate-postgresql"]
+  end
+
+%% CI Back uniquement
+  subgraph "CI Back (src/**)"
+    F2["☕ Configurer JDK 21"] --> F3["📦 Construire l’application (local)"]
+  end
+
+%% Build React
+  subgraph "Build de l’application React (front/**)"
+    G2["⬇️ Installer la CLI oc"] --> G3["🔐 Se connecter à OpenShift"]
+    G3 --> G4["🛠️ Créer .env.production"]
+    G4 --> G5["⚙️ Créer ou mettre à jour BuildConfig"]
+    G5 --> G6["🚀 Lancer le build sur le cluster"]
+  end
+
+%% Styles pour thème sombre
+  classDef pg       fill:#2c3e50,stroke:#3498db,stroke-width:2px;
+  classDef quarkus  fill:#2c3e50,stroke:#2ecc71,stroke-width:2px;
+  classDef front    fill:#2c3e50,stroke:#e67e22,stroke-width:2px;
+  classDef keycloak fill:#2c3e50,stroke:#9b59b6,stroke-width:2px;
+  classDef netpol   fill:#2c3e50,stroke:#e74c3c,stroke-width:2px;
+  classDef ciback   fill:#2c3e50,stroke:#1abc9c,stroke-width:2px;
+  classDef react    fill:#2c3e50,stroke:#c0392b,stroke-width:2px;
+
+  class A2,A3,A4 pg
+  class B2,B3,B4,B5,B6,B7,B8,B9,B10,B11,B12,B13 quarkus
+  class C2,C3,C4,C5,C6,C7,C8 front
+  class D2,D3,D4,D5,D6,D7,D8,D9 keycloak
+  class E2,E3,E4,E5,E6 netpol
+  class F2,F3 ciback
+  class G2,G3,G4,G5,G6 react
