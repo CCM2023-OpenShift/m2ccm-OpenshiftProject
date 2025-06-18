@@ -15,7 +15,7 @@ import {LayoutGrid, Calendar, BookOpen, Monitor, History, Users, Search, LogOut,
 import ProfilePage from "./components/ProfilePage.tsx";
 import UserManagementPage from "./components/UserManagementProfile.tsx";
 import NotificationCenter from "./components/NotificationCenter.tsx";
-import AdminNotificationsPage from "./components/AdminNotificationsPage.tsx"; // Ajoutez l'import ici
+import AdminNotificationsPage from "./components/AdminNotificationsPage.tsx";
 
 interface ProtectedRouteProps {
     children: ReactNode;

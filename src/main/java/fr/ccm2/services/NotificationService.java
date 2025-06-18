@@ -242,11 +242,23 @@ public class NotificationService {
         notification.setTitle(data.title);
         notification.setMessage(data.message);
         notification.setSentAt(LocalDateTime.now());
-        notification.setOrganizerEmail(username + "@example.com"); // À remplacer par l'email réel
+
+        // Récupère l'email réel du destinataire
+        String recipientEmail = getEmailForUser(username);
+        notification.setOrganizerEmail(recipientEmail);
+
         notification.setRead(false);
         notification.setDeleted(false);
 
         em.persist(notification);
+
+        // Envoi d'e-mail après la création de la notification
+        if (recipientEmail != null && !recipientEmail.isEmpty()) {
+            String subject = data.title;
+            String body = data.message;
+            emailService.sendNotificationEmail(recipientEmail, subject, body);
+        }
+
         return notification;
     }
 
