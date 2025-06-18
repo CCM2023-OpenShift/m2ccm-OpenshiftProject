@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import {AppState, Equipment, NotificationParams, Room} from './types';
+import {AppState, Equipment, NotificationParams, Room, AdminNotification} from './types';
 import {Room as RoomService} from './services/Room';
 import {Equipment as EquipmentService} from './services/Equipment';
 import User from "./services/User.ts";
@@ -22,6 +22,10 @@ export const useStore = create<AppState>((set, get) => ({
     },
     notifications: [],
     unreadNotificationsCount: 0,
+    adminNotifications: [],
+    totalAdminNotifications: 0,
+    adminNotificationLoading: false,
+    adminNotificationError: null,
 
     fetchAllData: async () => {
         const tasks = [
@@ -573,6 +577,144 @@ export const useStore = create<AppState>((set, get) => ({
         } catch (error) {
             console.error('Error fetching notification types:', error);
             return [];
+        }
+    },
+
+    fetchAdminNotifications: async (page = 1, limit = 10, type = '', organizer = '') => {
+        set({ adminNotificationLoading: true, adminNotificationError: null });
+        try {
+            const offset = (page - 1) * limit;
+
+            const result = await NotificationService.getAllForAdmin({
+                offset,
+                limit,
+                type: type || undefined,
+                organizer: organizer || undefined
+            });
+
+            const adminNotifications: AdminNotification[] = result.notifications.map(notification => ({
+                id: parseInt(notification.id),
+                bookingId: notification.bookingId ? parseInt(notification.bookingId) : 0,
+                bookingTitle: notification.bookingId ? `Réservation #${notification.bookingId}` : '',
+                roomName: '',
+                organizer: notification.userId,
+                organizerEmail: '',
+                notificationType: notification.type,
+                sentAt: notification.createdAt,
+                title: notification.title,
+                message: notification.message,
+                read: notification.read,
+                deleted: false
+            }));
+
+            set({
+                adminNotifications,
+                totalAdminNotifications: result.total,
+                adminNotificationLoading: false
+            });
+        } catch (error) {
+            console.error('Error fetching admin notifications:', error);
+            set({
+                adminNotificationError: 'Échec du chargement des notifications',
+                adminNotificationLoading: false,
+                adminNotifications: []
+            });
+        }
+    },
+
+    createAdminNotification: async (data) => {
+        set({ adminNotificationLoading: true, adminNotificationError: null });
+        try {
+            const result = await NotificationService.createManualNotification(data);
+            await get().fetchAdminNotifications();
+            set({ adminNotificationLoading: false });
+            return result;
+        } catch (error) {
+            console.error('Error creating notification:', error);
+            set({
+                adminNotificationError: 'Échec de la création de la notification',
+                adminNotificationLoading: false
+            });
+            throw error;
+        }
+    },
+
+    updateAdminNotification: async (id, data) => {
+        set({ adminNotificationLoading: true, adminNotificationError: null });
+        try {
+            const result = await NotificationService.updateNotification(id.toString(), data);
+            await get().fetchAdminNotifications();
+            set({ adminNotificationLoading: false });
+            return result;
+        } catch (error) {
+            console.error('Error updating notification:', error);
+            set({
+                adminNotificationError: 'Échec de la mise à jour de la notification',
+                adminNotificationLoading: false
+            });
+        }
+    },
+
+    markAdminNotificationAsRead: async (id) => {
+        try {
+            await NotificationService.markAsRead(id.toString());
+            set(state => ({
+                adminNotifications: state.adminNotifications.map(n =>
+                    n.id === id ? { ...n, read: true } : n
+                )
+            }));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            set({ adminNotificationError: 'Échec de la mise à jour du statut de la notification' });
+        }
+    },
+
+    markAdminNotificationAsUnread: async (id) => {
+        try {
+            await NotificationService.markAsUnread(id.toString());
+            set(state => ({
+                adminNotifications: state.adminNotifications.map(n =>
+                    n.id === id ? { ...n, read: false } : n
+                )
+            }));
+        } catch (error) {
+            console.error('Error marking notification as unread:', error);
+            set({ adminNotificationError: 'Échec de la mise à jour du statut de la notification' });
+        }
+    },
+
+    markAllAdminNotificationsAsRead: async () => {
+        set({ adminNotificationLoading: true, adminNotificationError: null });
+        try {
+            await NotificationService.markAllAsReadAdmin();
+            set(state => ({
+                adminNotifications: state.adminNotifications.map(n => ({ ...n, read: true })),
+                adminNotificationLoading: false
+            }));
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            set({
+                adminNotificationError: 'Échec de la mise à jour des statuts de notification',
+                adminNotificationLoading: false
+            });
+        }
+    },
+
+    deleteAdminNotification: async (id) => {
+        set({ adminNotificationLoading: true, adminNotificationError: null });
+        try {
+            await NotificationService.deleteAdmin(id.toString());
+            set(state => ({
+                adminNotifications: state.adminNotifications.filter(n => n.id !== id),
+                totalAdminNotifications: state.totalAdminNotifications - 1,
+                adminNotificationLoading: false
+            }));
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            set({
+                adminNotificationError: 'Échec de la suppression de la notification',
+                adminNotificationLoading: false
+            });
         }
     }
 }));
