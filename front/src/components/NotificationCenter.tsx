@@ -5,6 +5,7 @@ import {Bell, X, Calendar, Check, AlertCircle, RefreshCw} from 'lucide-react';
 import {parseISO, formatDistanceToNow} from 'date-fns';
 import {fr} from 'date-fns/locale';
 import {useStore} from '../store';
+import type { Notification } from '../types';
 
 export const NotificationCenter = () => {
     const {keycloak} = useKeycloak();
@@ -13,6 +14,7 @@ export const NotificationCenter = () => {
     const [error, setError] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
+    const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
     const {
         notifications,
@@ -32,18 +34,13 @@ export const NotificationCenter = () => {
         fetchUnreadNotificationsCount: state.fetchUnreadNotificationsCount,
     }));
 
-    // Charger les notifications personnelles et leur compte au chargement
     useEffect(() => {
         const loadUserData = async () => {
             if (keycloak.authenticated) {
                 setLoading(true);
                 setError(null);
-
                 try {
-                    // Charger le nombre de notifications non lues directement
                     await fetchUnreadNotificationsCount();
-
-                    // Seulement si le dropdown est ouvert, on charge les notifications complètes
                     if (showNotifications) {
                         await fetchNotifications();
                     }
@@ -58,7 +55,6 @@ export const NotificationCenter = () => {
 
         void loadUserData();
 
-        // Actualiser le compte des notifications non lues toutes les 2 minutes
         const intervalId = setInterval(() => {
             if (keycloak.authenticated) {
                 fetchUnreadNotificationsCount().catch(err => {
@@ -70,14 +66,12 @@ export const NotificationCenter = () => {
         return () => clearInterval(intervalId);
     }, [keycloak.authenticated, keycloak.tokenParsed?.preferred_username, fetchUnreadNotificationsCount]);
 
-    // Charger les notifications complètes quand le dropdown s'ouvre
     useEffect(() => {
         if (showNotifications && keycloak.authenticated) {
             void fetchNotifications();
         }
     }, [showNotifications, fetchNotifications, keycloak.authenticated]);
 
-    // Gestion du clic en dehors du dropdown pour le fermer
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current &&
@@ -153,7 +147,11 @@ export const NotificationCenter = () => {
         }
     };
 
-    // Récupérer le nom d'utilisateur actuel
+    const handleShowDetails = (notification: Notification) => {
+        setSelectedNotification(notification);
+    };
+    const handleCloseDetails = () => setSelectedNotification(null);
+
     const currentUsername = keycloak.tokenParsed?.preferred_username;
 
     return (
@@ -168,8 +166,8 @@ export const NotificationCenter = () => {
                 {unreadNotificationsCount > 0 && (
                     <span
                         className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 text-white">
-          {unreadNotificationsCount}
-        </span>
+                        {unreadNotificationsCount}
+                    </span>
                 )}
             </button>
 
@@ -178,8 +176,7 @@ export const NotificationCenter = () => {
                     <div className="absolute inset-y-0 right-0 pl-10 max-w-full flex">
                         <div className="relative w-screen max-w-md" style={{pointerEvents: 'auto'}}>
                             <div className="h-full flex flex-col bg-white shadow-xl">
-                                <div
-                                    className="p-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
+                                <div className="p-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
                                     <h3 className="font-semibold text-blue-800">
                                         Mes Notifications
                                         {loading && (
@@ -214,8 +211,7 @@ export const NotificationCenter = () => {
                                 </div>
 
                                 {error && (
-                                    <div
-                                        className="p-2 bg-yellow-50 border-b border-yellow-100 text-xs text-yellow-800">
+                                    <div className="p-2 bg-yellow-50 border-b border-yellow-100 text-xs text-yellow-800">
                                         {error}
                                     </div>
                                 )}
@@ -252,20 +248,21 @@ export const NotificationCenter = () => {
                                                         <p className="text-sm text-gray-600 break-words">{notification.message}</p>
                                                     </div>
                                                 </div>
-                                                <div
-                                                    className="mt-2 flex justify-between items-center text-xs text-gray-500">
-                                            <span>
-                                                {formatTime(notification.createdAt)}
-                                            </span>
+                                                <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
+                                                    <span>
+                                                        {formatTime(notification.createdAt)}
+                                                    </span>
                                                     {notification.bookingId && (
-                                                        <Link
-                                                            to={`/booking?edit=${notification.bookingId}`}
+                                                        <button
                                                             className="text-blue-600 hover:text-blue-800 flex items-center"
-                                                            onClick={(e) => e.stopPropagation()}
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                handleShowDetails(notification);
+                                                            }}
                                                         >
                                                             <Calendar size={12} className="mr-1"/>
                                                             Voir détails
-                                                        </Link>
+                                                        </button>
                                                     )}
                                                 </div>
                                             </div>
@@ -273,6 +270,55 @@ export const NotificationCenter = () => {
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- Modal de détails de notification --- */}
+            {selectedNotification && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
+                    <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+                        <button
+                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                            onClick={handleCloseDetails}
+                            aria-label="Fermer"
+                        >
+                            <X size={20}/>
+                        </button>
+                        <h2 className="text-lg font-semibold mb-2">{selectedNotification.title}</h2>
+                        <div className="mb-2 text-sm text-gray-700">
+                            <div><span className="font-medium">Salle :</span> {selectedNotification.roomName}</div>
+                            <div><span className="font-medium">Date/Heure :</span> {formatTime(selectedNotification.createdAt)}</div>
+                            <div><span className="font-medium">Organisateur :</span> {selectedNotification.organizer}</div>
+                            {selectedNotification.bookingTitle && (
+                                <div><span className="font-medium">Titre réservation :</span> {selectedNotification.bookingTitle}</div>
+                            )}
+                            {selectedNotification.message && (
+                                <div className="mt-2"><span className="font-medium">Message :</span> {selectedNotification.message}</div>
+                            )}
+                        </div>
+                        <div className="flex gap-3 mt-4">
+                            {selectedNotification.bookingId && (
+                                <Link
+                                    to={`/calendar?select=${selectedNotification.bookingId}`}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center"
+                                    onClick={() => setSelectedNotification(null)}
+                                >
+                                    <Calendar size={16} className="mr-2"/>
+                                    Aller à l’événement
+                                </Link>
+                            )}
+                            {selectedNotification.bookingId && (
+                                <Link
+                                    to={`/history?select=${selectedNotification.bookingId}`}
+                                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 flex items-center"
+                                    onClick={() => setSelectedNotification(null)}
+                                >
+                                    <Bell size={16} className="mr-2"/>
+                                    Voir dans l’historique
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>

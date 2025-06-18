@@ -1,5 +1,12 @@
 import {create} from 'zustand';
-import {AppState, Equipment, NotificationParams, Room, AdminNotification} from './types';
+import {
+    AppState,
+    Equipment,
+    Notification,
+    NotificationParams,
+    Room,
+    AdminNotification
+} from './types';
 import {Room as RoomService} from './services/Room';
 import {Equipment as EquipmentService} from './services/Equipment';
 import User from "./services/User.ts";
@@ -449,35 +456,35 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchNotifications: async () => {
         try {
-            set(() => ({loading: {...get().loading, notifications: true}}));
+            set({loading: {...get().loading, notifications: true}});
             const serviceNotifications = await NotificationService.getAll();
 
-            // Conversion des notifications du service en notifications conformes à l'interface
-            const notifications: Notification[] = serviceNotifications.map(notification => ({
-                id: notification.id,
-                userId: notification.userId,
-                type: notification.type,
-                title: notification.title,
-                message: notification.message,
-                bookingId: notification.bookingId,
-                read: notification.read,
-                createdAt: notification.createdAt,
-                bookingTitle: notification.bookingTitle || '',
-                roomName: notification.roomName || '',
-                organizer: notification.organizer || notification.userId || '',
-                organizerEmail: notification.organizerEmail || ''
+            // Mapping explicite pour le type Notification du store
+            const notifications: Notification[] = serviceNotifications.map((n: any) => ({
+                id: n.id,
+                userId: n.userId,
+                type: n.type,
+                title: n.title,
+                message: n.message,
+                bookingId: n.bookingId,
+                read: !!n.read,
+                createdAt: n.createdAt || n.sentAt || '',
+                bookingTitle: n.bookingTitle || '',
+                roomName: n.roomName || '',
+                organizer: n.organizer || n.userId || '',
+                organizerEmail: n.organizerEmail || ''
             }));
 
-            const unreadCount = notifications.filter((notification) => !notification.read).length;
+            const unreadCount = notifications.filter(n => !n.read).length;
 
-            set(() => ({
+            set({
                 notifications,
                 unreadNotificationsCount: unreadCount,
                 loading: {...get().loading, notifications: false}
-            }));
+            });
         } catch (error) {
             console.error('Error fetching notifications:', error);
-            set(() => ({loading: {...get().loading, notifications: false}}));
+            set({loading: {...get().loading, notifications: false}});
         }
     },
 
@@ -543,25 +550,44 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchNotificationsWithParams: async (params: NotificationParams) => {
         try {
-            set(() => ({loading: {...get().loading, notifications: true}}));
+            set({loading: {...get().loading, notifications: true}});
             const result = await NotificationService.getAllWithParams(params);
 
-            // On ne met à jour le store que si on demande la première page
-            // pour éviter de remplacer la liste complète lors de la pagination.
-            if (params.offset === 0 || params.offset === undefined) {
-                set(() => ({
-                    notifications: result.notifications,
-                    unreadNotificationsCount: result.notifications.filter(n => !n.read).length,
-                }));
-            }
+            // Mapping explicite vers le type Notification
+            const notifications: Notification[] = (result.notifications || []).map((n: any) => ({
+                id: n.id,
+                userId: n.userId,
+                type: n.type,
+                title: n.title,
+                message: n.message,
+                bookingId: n.bookingId,
+                read: !!n.read,
+                createdAt: n.createdAt || n.sentAt || '',
+                bookingTitle: n.bookingTitle || '',
+                roomName: n.roomName || '',
+                organizer: n.organizer || n.userId || '',
+                organizerEmail: n.organizerEmail || ''
+            }));
 
-            set(() => ({loading: {...get().loading, notifications: false}}));
-            return result;
+            // Mets à jour le store si première page
+            if (params.offset === 0 || params.offset === undefined) {
+                set({
+                    notifications,
+                    unreadNotificationsCount: notifications.filter(n => !n.read).length,
+                });
+            }
+            set({loading: {...get().loading, notifications: false}});
+            // Toujours retourner le bon type, pas la structure brute du backend
+            return {
+                notifications,
+                total: result.total || notifications.length,
+                limit: result.limit || params.limit || 50,
+                offset: result.offset || params.offset || 0
+            };
         } catch (error) {
             console.error('Error fetching notifications with params:', error);
-            set(() => ({loading: {...get().loading, notifications: false}}));
-
-            // En cas d'erreur, on renvoie les données du store actuel
+            set({loading: {...get().loading, notifications: false}});
+            // Toujours retourner la structure typée attendue, même en cas d'erreur
             return {
                 notifications: get().notifications,
                 total: get().notifications.length,
@@ -609,33 +635,32 @@ export const useStore = create<AppState>((set, get) => ({
             });
 
             const adminNotifications: AdminNotification[] = result.notifications.map(notification => {
-                // Utiliser directement les propriétés renvoyées par le backend si elles existent
+                // Utilise tous les champs possibles du backend
                 const adminNotif: AdminNotification = {
-                    // Propriétés de base toujours présentes
                     id: parseInt(notification.id),
                     title: notification.title,
                     message: notification.message,
-                    read: notification.read,
+                    read: Boolean(notification.read),
                     deleted: false,
                     notificationType: notification.type,
                     bookingId: notification.bookingId ? parseInt(notification.bookingId) : 0,
-                    bookingTitle: '',
-                    roomName: '',
-                    organizer: notification.userId || '',
-                    organizerEmail: '',
+                    bookingTitle: notification.bookingTitle || '',
+                    roomName: notification.roomName || '',
+                    organizer: notification.organizer || notification.userId || '',
+                    organizerEmail: notification.organizerEmail || '',
                     sentAt: notification.createdAt
                 };
 
-                if (notification.message) {
+                // Extraction fallback si nécessaire depuis le message
+                if ((!adminNotif.roomName || !adminNotif.bookingTitle) && notification.message) {
                     const roomMatch = notification.message.match(/salle\s+([A-Z][0-9]{1,3})/i);
-                    if (roomMatch && roomMatch[1]) {
+                    if (!adminNotif.roomName && roomMatch && roomMatch[1]) {
                         adminNotif.roomName = roomMatch[1];
                     }
-
                     const titleMatch = notification.message.match(/"([^"]+)"/);
-                    if (titleMatch && titleMatch[1]) {
+                    if (!adminNotif.bookingTitle && titleMatch && titleMatch[1]) {
                         adminNotif.bookingTitle = titleMatch[1];
-                    } else if (notification.bookingId) {
+                    } else if (!adminNotif.bookingTitle && notification.bookingId) {
                         adminNotif.bookingTitle = `Réservation #${notification.bookingId}`;
                     }
                 }

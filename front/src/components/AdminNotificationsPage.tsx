@@ -50,7 +50,6 @@ const AdminNotificationsPage: React.FC = () => {
         forAllUsers: false
     });
 
-    // Chargement initial et lors des changements de filtres
     useEffect(() => {
         if (keycloak.authenticated) {
             try {
@@ -63,14 +62,12 @@ const AdminNotificationsPage: React.FC = () => {
         }
     }, [keycloak.authenticated, currentPage, limit, typeFilter, organizerFilter]);
 
-    // Observer l'erreur dans le store
     useEffect(() => {
         if (adminNotificationError) {
             setError(adminNotificationError);
         }
     }, [adminNotificationError]);
 
-    // Afficher un message de succès temporaire
     const showSuccess = (message: string) => {
         setSuccessMessage(message);
         setTimeout(() => {
@@ -78,7 +75,6 @@ const AdminNotificationsPage: React.FC = () => {
         }, 3000);
     };
 
-    // Handlers
     const handleToggleRead = async (notification: AdminNotification) => {
         try {
             if (notification.read) {
@@ -139,7 +135,6 @@ const AdminNotificationsPage: React.FC = () => {
             showSuccess('Notification(s) créée(s) avec succès');
             setShowCreateModal(false);
 
-            // Reset form
             setCreateForm({
                 title: '',
                 message: '',
@@ -176,7 +171,7 @@ const AdminNotificationsPage: React.FC = () => {
 
     const handleApplyFilters = (e: React.FormEvent) => {
         e.preventDefault();
-        setCurrentPage(1); // Reset to first page with new filters
+        setCurrentPage(1);
         try {
             setError(null);
             void fetchAdminNotifications(1, limit, typeFilter, organizerFilter);
@@ -200,14 +195,11 @@ const AdminNotificationsPage: React.FC = () => {
         }
     };
 
-    // Pagination
     const totalPages = Math.ceil(totalAdminNotifications / limit);
 
     const paginationItems = () => {
         const items = [];
         const maxVisiblePages = 5;
-
-        // Previous button
         items.push(
             <button
                 key="prev"
@@ -218,12 +210,8 @@ const AdminNotificationsPage: React.FC = () => {
                 &laquo;
             </button>
         );
-
-        // Page numbers
         const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
         const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-        // Always show first page
         if (startPage > 1) {
             items.push(
                 <button
@@ -240,10 +228,8 @@ const AdminNotificationsPage: React.FC = () => {
                 items.push(<span key="ellipsis1">...</span>);
             }
         }
-
-        // Pages
         for (let i = startPage; i <= endPage; i++) {
-            if (i === 1) continue; // Skip duplicate first page
+            if (i === 1) continue;
             items.push(
                 <button
                     key={i}
@@ -256,8 +242,6 @@ const AdminNotificationsPage: React.FC = () => {
                 </button>
             );
         }
-
-        // Always show last page
         if (endPage < totalPages) {
             if (endPage < totalPages - 1) {
                 items.push(<span key="ellipsis2">...</span>);
@@ -274,8 +258,6 @@ const AdminNotificationsPage: React.FC = () => {
                 </button>
             );
         }
-
-        // Next button
         items.push(
             <button
                 key="next"
@@ -286,7 +268,6 @@ const AdminNotificationsPage: React.FC = () => {
                 &raquo;
             </button>
         );
-
         return items;
     };
 
@@ -324,7 +305,6 @@ const AdminNotificationsPage: React.FC = () => {
         if (!dateStr) {
             return 'Date non disponible';
         }
-
         try {
             const date = parseISO(dateStr);
             return formatDistanceToNow(date, {addSuffix: true, locale: fr});

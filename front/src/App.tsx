@@ -166,22 +166,22 @@ function Sidebar() {
                             <Link to="/admin/users"
                                   className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                                 <Users className="w-5 h-5 mr-3"/>
-                                Gestion utilisateurs
+                                Gestion Utilisateurs
                             </Link>
                             <Link to="/rooms"
                                   className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                                 <BookOpen className="w-5 h-5 mr-3"/>
-                                Salles
+                                Gestion Salles
                             </Link>
                             <Link to="/equipment"
                                   className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                                 <Monitor className="w-5 h-5 mr-3"/>
-                                Équipements
+                                Gestion Équipements
                             </Link>
                             <Link to="/admin/notifications"
                                   className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                                 <Bell className="w-5 h-5 mr-3"/>
-                                Notifications
+                                Gestion Notifications
                             </Link>
                         </div>
                     </div>

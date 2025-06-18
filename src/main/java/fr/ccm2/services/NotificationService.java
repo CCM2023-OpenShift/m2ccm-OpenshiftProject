@@ -20,6 +20,12 @@ public class NotificationService {
     @Inject
     EntityManager em;
 
+    @Inject
+    UserService userService;
+
+    @Inject
+    EmailService emailService;
+
     /**
      * Récupère les notifications d'un utilisateur avec filtrage
      */
@@ -219,6 +225,14 @@ public class NotificationService {
     /**
      * Crée une notification pour un utilisateur spécifique
      */
+    private String getEmailForUser(String username) {
+        List<fr.ccm2.dto.user.UserDTO> users = userService.searchUsers(username);
+        if (users != null && !users.isEmpty()) {
+            return users.get(0).email;
+        }
+        return null;
+    }
+
     @Transactional
     public SentNotification createNotificationForUser(String username, NotificationCreateDTO data) {
         List<Long> bookingIds = em.createQuery(
@@ -243,7 +257,7 @@ public class NotificationService {
         notification.setMessage(data.message);
         notification.setSentAt(LocalDateTime.now());
 
-        // Récupère l'email réel du destinataire
+        // Récupère l'email réel du destinataire depuis Keycloak via UserService
         String recipientEmail = getEmailForUser(username);
         notification.setOrganizerEmail(recipientEmail);
 
