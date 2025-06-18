@@ -450,7 +450,23 @@ export const useStore = create<AppState>((set, get) => ({
     fetchNotifications: async () => {
         try {
             set(() => ({loading: {...get().loading, notifications: true}}));
-            const notifications = await NotificationService.getAll();
+            const serviceNotifications = await NotificationService.getAll();
+
+            // Conversion des notifications du service en notifications conformes à l'interface
+            const notifications: Notification[] = serviceNotifications.map(notification => ({
+                id: notification.id,
+                userId: notification.userId,
+                type: notification.type,
+                title: notification.title,
+                message: notification.message,
+                bookingId: notification.bookingId,
+                read: notification.read,
+                createdAt: notification.createdAt,
+                bookingTitle: notification.bookingTitle || '',
+                roomName: notification.roomName || '',
+                organizer: notification.organizer || notification.userId || '',
+                organizerEmail: notification.organizerEmail || ''
+            }));
 
             const unreadCount = notifications.filter((notification) => !notification.read).length;
 
@@ -471,7 +487,7 @@ export const useStore = create<AppState>((set, get) => ({
             set((state) => ({
                 notifications: state.notifications.map(notification =>
                     notification.id === notificationId
-                        ? { ...notification, read: true }
+                        ? {...notification, read: true}
                         : notification
                 ),
                 unreadNotificationsCount: Math.max(state.unreadNotificationsCount - 1, 0)
@@ -485,7 +501,7 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             await NotificationService.markAllAsRead();
             set((state) => ({
-                notifications: state.notifications.map(notification => ({ ...notification, read: true })),
+                notifications: state.notifications.map(notification => ({...notification, read: true})),
                 unreadNotificationsCount: 0
             }));
         } catch (error) {
@@ -561,7 +577,7 @@ export const useStore = create<AppState>((set, get) => ({
             set((state) => ({
                 notifications: state.notifications.map(notification =>
                     notification.id === notificationId
-                        ? { ...notification, read: false }
+                        ? {...notification, read: false}
                         : notification
                 ),
                 unreadNotificationsCount: state.unreadNotificationsCount + 1
@@ -581,7 +597,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     fetchAdminNotifications: async (page = 1, limit = 10, type = '', organizer = '') => {
-        set({ adminNotificationLoading: true, adminNotificationError: null });
+        set({adminNotificationLoading: true, adminNotificationError: null});
         try {
             const offset = (page - 1) * limit;
 
@@ -592,20 +608,40 @@ export const useStore = create<AppState>((set, get) => ({
                 organizer: organizer || undefined
             });
 
-            const adminNotifications: AdminNotification[] = result.notifications.map(notification => ({
-                id: parseInt(notification.id),
-                bookingId: notification.bookingId ? parseInt(notification.bookingId) : 0,
-                bookingTitle: notification.bookingId ? `Réservation #${notification.bookingId}` : '',
-                roomName: '',
-                organizer: notification.userId,
-                organizerEmail: '',
-                notificationType: notification.type,
-                sentAt: notification.createdAt,
-                title: notification.title,
-                message: notification.message,
-                read: notification.read,
-                deleted: false
-            }));
+            const adminNotifications: AdminNotification[] = result.notifications.map(notification => {
+                // Utiliser directement les propriétés renvoyées par le backend si elles existent
+                const adminNotif: AdminNotification = {
+                    // Propriétés de base toujours présentes
+                    id: parseInt(notification.id),
+                    title: notification.title,
+                    message: notification.message,
+                    read: notification.read,
+                    deleted: false,
+                    notificationType: notification.type,
+                    bookingId: notification.bookingId ? parseInt(notification.bookingId) : 0,
+                    bookingTitle: '',
+                    roomName: '',
+                    organizer: notification.userId || '',
+                    organizerEmail: '',
+                    sentAt: notification.createdAt
+                };
+
+                if (notification.message) {
+                    const roomMatch = notification.message.match(/salle\s+([A-Z][0-9]{1,3})/i);
+                    if (roomMatch && roomMatch[1]) {
+                        adminNotif.roomName = roomMatch[1];
+                    }
+
+                    const titleMatch = notification.message.match(/"([^"]+)"/);
+                    if (titleMatch && titleMatch[1]) {
+                        adminNotif.bookingTitle = titleMatch[1];
+                    } else if (notification.bookingId) {
+                        adminNotif.bookingTitle = `Réservation #${notification.bookingId}`;
+                    }
+                }
+
+                return adminNotif;
+            });
 
             set({
                 adminNotifications,
@@ -623,11 +659,11 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     createAdminNotification: async (data) => {
-        set({ adminNotificationLoading: true, adminNotificationError: null });
+        set({adminNotificationLoading: true, adminNotificationError: null});
         try {
             const result = await NotificationService.createManualNotification(data);
             await get().fetchAdminNotifications();
-            set({ adminNotificationLoading: false });
+            set({adminNotificationLoading: false});
             return result;
         } catch (error) {
             console.error('Error creating notification:', error);
@@ -640,11 +676,11 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     updateAdminNotification: async (id, data) => {
-        set({ adminNotificationLoading: true, adminNotificationError: null });
+        set({adminNotificationLoading: true, adminNotificationError: null});
         try {
             const result = await NotificationService.updateNotification(id.toString(), data);
             await get().fetchAdminNotifications();
-            set({ adminNotificationLoading: false });
+            set({adminNotificationLoading: false});
             return result;
         } catch (error) {
             console.error('Error updating notification:', error);
@@ -660,12 +696,12 @@ export const useStore = create<AppState>((set, get) => ({
             await NotificationService.markAsRead(id.toString());
             set(state => ({
                 adminNotifications: state.adminNotifications.map(n =>
-                    n.id === id ? { ...n, read: true } : n
+                    n.id === id ? {...n, read: true} : n
                 )
             }));
         } catch (error) {
             console.error('Error marking notification as read:', error);
-            set({ adminNotificationError: 'Échec de la mise à jour du statut de la notification' });
+            set({adminNotificationError: 'Échec de la mise à jour du statut de la notification'});
         }
     },
 
@@ -674,21 +710,21 @@ export const useStore = create<AppState>((set, get) => ({
             await NotificationService.markAsUnread(id.toString());
             set(state => ({
                 adminNotifications: state.adminNotifications.map(n =>
-                    n.id === id ? { ...n, read: false } : n
+                    n.id === id ? {...n, read: false} : n
                 )
             }));
         } catch (error) {
             console.error('Error marking notification as unread:', error);
-            set({ adminNotificationError: 'Échec de la mise à jour du statut de la notification' });
+            set({adminNotificationError: 'Échec de la mise à jour du statut de la notification'});
         }
     },
 
     markAllAdminNotificationsAsRead: async () => {
-        set({ adminNotificationLoading: true, adminNotificationError: null });
+        set({adminNotificationLoading: true, adminNotificationError: null});
         try {
             await NotificationService.markAllAsReadAdmin();
             set(state => ({
-                adminNotifications: state.adminNotifications.map(n => ({ ...n, read: true })),
+                adminNotifications: state.adminNotifications.map(n => ({...n, read: true})),
                 adminNotificationLoading: false
             }));
         } catch (error) {
@@ -701,7 +737,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     deleteAdminNotification: async (id) => {
-        set({ adminNotificationLoading: true, adminNotificationError: null });
+        set({adminNotificationLoading: true, adminNotificationError: null});
         try {
             await NotificationService.deleteAdmin(id.toString());
             set(state => ({

@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useKeycloak } from '@react-keycloak/web';
+import React, {useState, useEffect} from 'react';
+import {useKeycloak} from '@react-keycloak/web';
 import {
     Bell, Check, AlertCircle, RefreshCw, Search, Calendar,
     X, Trash2, Eye, EyeOff, Plus, Filter, MessageCircle, Send
 } from 'lucide-react';
-import { useStore } from '../store';
-import { formatDistanceToNow, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { AdminNotification, AdminNotificationCreateRequest } from '../types';
+import {useStore} from '../store';
+import {formatDistanceToNow, parseISO} from 'date-fns';
+import {fr} from 'date-fns/locale';
+import {AdminNotification, AdminNotificationCreateRequest} from '../types';
 
 const AdminNotificationsPage: React.FC = () => {
-    const { keycloak } = useKeycloak();
+    const {keycloak} = useKeycloak();
     const [currentPage, setCurrentPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [typeFilter, setTypeFilter] = useState('');
@@ -154,7 +154,7 @@ const AdminNotificationsPage: React.FC = () => {
     };
 
     const handleCreateFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
+        const {name, value, type} = e.target;
         const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
 
         setCreateForm(prev => ({
@@ -293,15 +293,15 @@ const AdminNotificationsPage: React.FC = () => {
     const getNotificationTypeIcon = (type: string) => {
         switch (type) {
             case '24h':
-                return <Calendar size={16} className="text-blue-500" />;
+                return <Calendar size={16} className="text-blue-500"/>;
             case '1h':
-                return <Calendar size={16} className="text-orange-500" />;
+                return <Calendar size={16} className="text-orange-500"/>;
             case 'manual':
-                return <MessageCircle size={16} className="text-green-500" />;
+                return <MessageCircle size={16} className="text-green-500"/>;
             case 'conflict':
-                return <AlertCircle size={16} className="text-red-500" />;
+                return <AlertCircle size={16} className="text-red-500"/>;
             default:
-                return <Bell size={16} className="text-gray-500" />;
+                return <Bell size={16} className="text-gray-500"/>;
         }
     };
 
@@ -327,7 +327,7 @@ const AdminNotificationsPage: React.FC = () => {
 
         try {
             const date = parseISO(dateStr);
-            return formatDistanceToNow(date, { addSuffix: true, locale: fr });
+            return formatDistanceToNow(date, {addSuffix: true, locale: fr});
         } catch (error) {
             console.error('Date parsing error:', error);
             return 'Date invalide';
@@ -339,7 +339,7 @@ const AdminNotificationsPage: React.FC = () => {
             <div className="bg-white shadow-md rounded-lg overflow-hidden">
                 <div className="border-b border-gray-200 bg-gray-50 px-6 py-4 flex justify-between items-center">
                     <h1 className="text-xl font-semibold text-gray-800 flex items-center">
-                        <Bell className="mr-2" size={20} />
+                        <Bell className="mr-2" size={20}/>
                         Administration des Notifications
                     </h1>
 
@@ -348,7 +348,7 @@ const AdminNotificationsPage: React.FC = () => {
                             onClick={() => setShowCreateModal(true)}
                             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center"
                         >
-                            <Plus size={16} className="mr-1" />
+                            <Plus size={16} className="mr-1"/>
                             Nouvelle notification
                         </button>
                         {adminNotifications?.some?.(n => !n.read) && (
@@ -356,7 +356,7 @@ const AdminNotificationsPage: React.FC = () => {
                                 onClick={handleMarkAllAsRead}
                                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded flex items-center"
                             >
-                                <Check size={16} className="mr-1" />
+                                <Check size={16} className="mr-1"/>
                                 Tout marquer comme lu
                             </button>
                         )}
@@ -365,7 +365,7 @@ const AdminNotificationsPage: React.FC = () => {
                             className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded"
                             disabled={adminNotificationLoading}
                         >
-                            <RefreshCw size={16} className={adminNotificationLoading ? "animate-spin" : ""} />
+                            <RefreshCw size={16} className={adminNotificationLoading ? "animate-spin" : ""}/>
                         </button>
                     </div>
                 </div>
@@ -409,7 +409,7 @@ const AdminNotificationsPage: React.FC = () => {
                                     placeholder="Rechercher..."
                                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 pl-10"
                                 />
-                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
                             </div>
                         </div>
 
@@ -418,7 +418,7 @@ const AdminNotificationsPage: React.FC = () => {
                                 type="submit"
                                 className="flex items-center bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded"
                             >
-                                <Filter size={16} className="mr-1" />
+                                <Filter size={16} className="mr-1"/>
                                 Filtrer
                             </button>
                             <button
@@ -426,7 +426,7 @@ const AdminNotificationsPage: React.FC = () => {
                                 onClick={clearFilters}
                                 className="flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded"
                             >
-                                <X size={16} className="mr-1" />
+                                <X size={16} className="mr-1"/>
                                 Effacer
                             </button>
                         </div>
@@ -435,23 +435,25 @@ const AdminNotificationsPage: React.FC = () => {
 
                 {/* Messages */}
                 {successMessage && (
-                    <div className="m-4 p-2 bg-green-50 border border-green-200 text-green-700 rounded flex justify-between items-center">
+                    <div
+                        className="m-4 p-2 bg-green-50 border border-green-200 text-green-700 rounded flex justify-between items-center">
                         <span className="flex items-center">
-                            <Check size={16} className="mr-2" /> {successMessage}
+                            <Check size={16} className="mr-2"/> {successMessage}
                         </span>
                         <button onClick={() => setSuccessMessage(null)}>
-                            <X size={16} />
+                            <X size={16}/>
                         </button>
                     </div>
                 )}
 
                 {error && (
-                    <div className="m-4 p-2 bg-red-50 border border-red-200 text-red-700 rounded flex justify-between items-center">
+                    <div
+                        className="m-4 p-2 bg-red-50 border border-red-200 text-red-700 rounded flex justify-between items-center">
                         <span className="flex items-center">
-                            <AlertCircle size={16} className="mr-2" /> {error}
+                            <AlertCircle size={16} className="mr-2"/> {error}
                         </span>
                         <button onClick={() => setError(null)}>
-                            <X size={16} />
+                            <X size={16}/>
                         </button>
                     </div>
                 )}
@@ -460,30 +462,32 @@ const AdminNotificationsPage: React.FC = () => {
                 <div className="overflow-x-auto">
                     {adminNotificationLoading && (
                         <div className="flex justify-center items-center py-8">
-                            <RefreshCw size={24} className="animate-spin text-gray-500" />
+                            <RefreshCw size={24} className="animate-spin text-gray-500"/>
                         </div>
                     )}
 
                     {/* Afficher un message d'erreur ou d'API non implémentée */}
                     {!adminNotificationLoading && error && (
                         <div className="text-center py-8 text-gray-500">
-                            <AlertCircle size={40} className="mx-auto text-red-400 mb-2" />
+                            <AlertCircle size={40} className="mx-auto text-red-400 mb-2"/>
                             <p className="text-red-500 font-medium">Erreur de chargement</p>
-                            <p className="text-sm mt-2">Il semble que l'API d'administration des notifications n'est pas disponible actuellement.</p>
+                            <p className="text-sm mt-2">Il semble que l'API d'administration des notifications n'est pas
+                                disponible actuellement.</p>
                             <button
                                 onClick={handleRefresh}
                                 className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                             >
-                                <RefreshCw size={16} className="inline mr-2" /> Réessayer
+                                <RefreshCw size={16} className="inline mr-2"/> Réessayer
                             </button>
                         </div>
                     )}
 
                     {!adminNotificationLoading && !error && (!adminNotifications || adminNotifications.length === 0) && (
                         <div className="text-center py-8 text-gray-500">
-                            <Bell size={40} className="mx-auto text-gray-300 mb-2" />
+                            <Bell size={40} className="mx-auto text-gray-300 mb-2"/>
                             <p>Aucune notification trouvée</p>
-                            <p className="text-sm mt-2">Essayez de modifier vos filtres ou d'envoyer de nouvelles notifications</p>
+                            <p className="text-sm mt-2">Essayez de modifier vos filtres ou d'envoyer de nouvelles
+                                notifications</p>
                         </div>
                     )}
 
@@ -531,18 +535,21 @@ const AdminNotificationsPage: React.FC = () => {
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
                                         <div className="text-sm text-gray-900">{notification.roomName}</div>
-                                        <div className="text-xs text-gray-500 truncate max-w-xs">{notification.bookingTitle}</div>
+                                        <div
+                                            className="text-xs text-gray-500 truncate max-w-xs">{notification.bookingTitle}</div>
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                                         {formatDate(notification.sentAt)}
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
                                         {notification.read ? (
-                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            <span
+                                                className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                                 Lu
                                             </span>
                                         ) : (
-                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            <span
+                                                className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                                 Non lu
                                             </span>
                                         )}
@@ -556,7 +563,7 @@ const AdminNotificationsPage: React.FC = () => {
                                                 }}
                                                 className="text-gray-500 hover:text-gray-700"
                                             >
-                                                {notification.read ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                {notification.read ? <EyeOff size={16}/> : <Eye size={16}/>}
                                             </button>
                                             <button
                                                 onClick={(e) => {
@@ -565,7 +572,7 @@ const AdminNotificationsPage: React.FC = () => {
                                                 }}
                                                 className="text-red-500 hover:text-red-700"
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash2 size={16}/>
                                             </button>
                                         </div>
                                     </td>
@@ -600,9 +607,11 @@ const AdminNotificationsPage: React.FC = () => {
                             <div>
                                 <p className="text-sm text-gray-700">
                                     Affichage de{' '}
-                                    <span className="font-medium">{Math.min((currentPage - 1) * limit + 1, totalAdminNotifications)}</span>
+                                    <span
+                                        className="font-medium">{Math.min((currentPage - 1) * limit + 1, totalAdminNotifications)}</span>
                                     {' à '}
-                                    <span className="font-medium">{Math.min(currentPage * limit, totalAdminNotifications)}</span>
+                                    <span
+                                        className="font-medium">{Math.min(currentPage * limit, totalAdminNotifications)}</span>
                                     {' sur '}
                                     <span className="font-medium">{totalAdminNotifications}</span>
                                     {' résultats'}
@@ -639,15 +648,17 @@ const AdminNotificationsPage: React.FC = () => {
 
             {/* Modal de visualisation des détails */}
             {showViewModal && selectedNotification && (
-                <div className="fixed inset-0 overflow-y-auto z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+                <div
+                    className="fixed inset-0 overflow-y-auto z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
                         <div className="flex justify-between items-center border-b border-gray-200 px-6 py-4">
                             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                                 {getNotificationTypeIcon(selectedNotification.notificationType)}
                                 <span className="ml-2">Détails de la notification</span>
                             </h3>
-                            <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-500">
-                                <X size={20} />
+                            <button onClick={() => setShowViewModal(false)}
+                                    className="text-gray-400 hover:text-gray-500">
+                                <X size={20}/>
                             </button>
                         </div>
 
@@ -658,8 +669,8 @@ const AdminNotificationsPage: React.FC = () => {
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                         selectedNotification.read ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                                     }`}>
-                                        {selectedNotification.read ? 'Lu' : 'Non lu'}
-                                    </span>
+                            {selectedNotification.read ? 'Lu' : 'Non lu'}
+                        </span>
                                 </div>
                                 <p className="text-sm text-gray-500">
                                     Envoyé {formatDate(selectedNotification.sentAt)}
@@ -676,13 +687,31 @@ const AdminNotificationsPage: React.FC = () => {
                             <div className="border-t border-gray-200 pt-4 mt-4 grid grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <p className="text-gray-500">Destinataire :</p>
-                                    <p className="font-medium">{selectedNotification.organizer}</p>
-                                    <p className="text-xs">{selectedNotification.organizerEmail}</p>
+                                    {selectedNotification.organizer ? (
+                                        <>
+                                            <p className="font-medium">{selectedNotification.organizer}</p>
+                                            {selectedNotification.organizerEmail && (
+                                                <p className="text-xs">{selectedNotification.organizerEmail}</p>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <p className="italic text-gray-400">Aucun destinataire spécifié</p>
+                                    )}
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Réservation :</p>
-                                    <p className="font-medium">{selectedNotification.bookingTitle}</p>
-                                    <p className="text-xs">Salle : {selectedNotification.roomName}</p>
+                                    {selectedNotification.bookingTitle || selectedNotification.bookingId ? (
+                                        <>
+                                            <p className="font-medium">
+                                                {selectedNotification.bookingTitle || `Réservation #${selectedNotification.bookingId}`}
+                                            </p>
+                                            {selectedNotification.roomName && (
+                                                <p className="text-xs">Salle : {selectedNotification.roomName}</p>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <p className="italic text-gray-400">Aucune réservation associée</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -695,10 +724,35 @@ const AdminNotificationsPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <p className="text-gray-500">ID de réservation :</p>
-                                        <p className="font-mono">{selectedNotification.bookingId}</p>
+                                        <p className="font-mono">{selectedNotification.bookingId || '-'}</p>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Extraction des informations du message si elles sont manquantes */}
+                            {(!selectedNotification.roomName || !selectedNotification.bookingTitle) && selectedNotification.message && (
+                                <div className="border-t border-gray-200 pt-4 mt-4">
+                                    <p className="text-gray-500 text-sm">Informations extraites du message :</p>
+                                    <div className="mt-2 text-sm">
+                                        {selectedNotification.message.match(/salle ([^\s"]+)/i) && !selectedNotification.roomName && (
+                                            <p>
+                                                <span className="text-gray-500">Salle probable :</span>{' '}
+                                                <span className="font-medium">
+                                        {selectedNotification.message.match(/salle ([^\s"]+)/i)?.[1]}
+                                    </span>
+                                            </p>
+                                        )}
+                                        {selectedNotification.message.match(/"([^"]+)"/i) && !selectedNotification.bookingTitle && (
+                                            <p>
+                                                <span className="text-gray-500">Titre probable :</span>{' '}
+                                                <span className="font-medium">
+                                        {selectedNotification.message.match(/"([^"]+)"/i)?.[1]}
+                                    </span>
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
@@ -715,11 +769,11 @@ const AdminNotificationsPage: React.FC = () => {
                             >
                                 {selectedNotification.read ? (
                                     <>
-                                        <EyeOff size={16} className="mr-2" /> Marquer comme non lu
+                                        <EyeOff size={16} className="mr-2"/> Marquer comme non lu
                                     </>
                                 ) : (
                                     <>
-                                        <Eye size={16} className="mr-2" /> Marquer comme lu
+                                        <Eye size={16} className="mr-2"/> Marquer comme lu
                                     </>
                                 )}
                             </button>
@@ -731,7 +785,7 @@ const AdminNotificationsPage: React.FC = () => {
                                 }}
                                 className="flex items-center px-4 py-2 rounded bg-red-100 hover:bg-red-200 text-red-800"
                             >
-                                <Trash2 size={16} className="mr-2" /> Supprimer
+                                <Trash2 size={16} className="mr-2"/> Supprimer
                             </button>
 
                             <button
@@ -747,22 +801,25 @@ const AdminNotificationsPage: React.FC = () => {
 
             {/* Modal de création de notification */}
             {showCreateModal && (
-                <div className="fixed inset-0 overflow-y-auto z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+                <div
+                    className="fixed inset-0 overflow-y-auto z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
                         <div className="flex justify-between items-center border-b border-gray-200 px-6 py-4">
                             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                                <Send size={16} className="mr-2 text-blue-500" />
+                                <Send size={16} className="mr-2 text-blue-500"/>
                                 Créer une nouvelle notification
                             </h3>
-                            <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-500">
-                                <X size={20} />
+                            <button onClick={() => setShowCreateModal(false)}
+                                    className="text-gray-400 hover:text-gray-500">
+                                <X size={20}/>
                             </button>
                         </div>
 
                         <form onSubmit={handleCreateSubmit}>
                             <div className="p-6 space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="notificationType">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1"
+                                           htmlFor="notificationType">
                                         Type de notification
                                     </label>
                                     <select
@@ -824,14 +881,16 @@ const AdminNotificationsPage: React.FC = () => {
                                             onChange={handleCreateFormChange}
                                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                         />
-                                        <label htmlFor="forAllUsers" className="ml-2 block text-sm font-medium text-gray-700">
+                                        <label htmlFor="forAllUsers"
+                                               className="ml-2 block text-sm font-medium text-gray-700">
                                             Envoyer à tous les utilisateurs
                                         </label>
                                     </div>
 
                                     {!createForm.forAllUsers && (
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="targetUsers">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1"
+                                                   htmlFor="targetUsers">
                                                 Destinataires (séparés par virgule, espace ou point-virgule)
                                             </label>
                                             <textarea
@@ -868,12 +927,12 @@ const AdminNotificationsPage: React.FC = () => {
                                 >
                                     {adminNotificationLoading ? (
                                         <div className="flex items-center">
-                                            <RefreshCw size={16} className="animate-spin mr-2" />
+                                            <RefreshCw size={16} className="animate-spin mr-2"/>
                                             Envoi...
                                         </div>
                                     ) : (
                                         <div className="flex items-center">
-                                            <Send size={16} className="mr-2" />
+                                            <Send size={16} className="mr-2"/>
                                             Envoyer
                                         </div>
                                     )}

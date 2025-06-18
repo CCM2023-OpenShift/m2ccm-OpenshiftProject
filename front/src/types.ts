@@ -9,6 +9,10 @@ export interface Notification {
     bookingId?: string;
     read: boolean;
     createdAt: string;
+    bookingTitle: string;
+    roomName: string;
+    organizer: string;
+    organizerEmail: string;
 }
 
 export interface NotificationParams {

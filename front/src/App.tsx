@@ -87,7 +87,7 @@ function Sidebar() {
             <div className="flex items-center justify-between p-4 border-b">
                 <h1 className="text-2xl font-bold text-gray-800">Réservation</h1>
                 <div className="flex items-center">
-                    <NotificationCenter />
+                    <NotificationCenter/>
                     <div className="relative ml-4">
                         <button
                             onClick={() => setShowUserMenu(!showUserMenu)}
@@ -178,7 +178,6 @@ function Sidebar() {
                                 <Monitor className="w-5 h-5 mr-3"/>
                                 Équipements
                             </Link>
-                            {/* Ajoutez le lien vers la page d'administration des notifications */}
                             <Link to="/admin/notifications"
                                   className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                                 <Bell className="w-5 h-5 mr-3"/>
@@ -266,7 +265,6 @@ function App() {
                                 </ProtectedRoute>
                             }
                         />
-                        {/* Ajoutez la route pour la page d'administration des notifications */}
                         <Route
                             path="/admin/notifications"
                             element={

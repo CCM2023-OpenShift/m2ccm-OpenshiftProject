@@ -9,10 +9,14 @@ export class Notification {
     public bookingId?: string;
     public read!: boolean;
     public createdAt!: string;
+    public bookingTitle?: string;
+    public roomName?: string;
+    public organizer?: string;
+    public organizerEmail?: string;
 
     // Routes mises à jour sans /api/
     private static baseEndpoint: string = `/notifications`;
-    // Route admin mise à jour
+    // Route admin
     private static adminEndpoint: string = `/notifications/admin`;
 
     public fromJSON(json: any): Notification {
@@ -23,7 +27,11 @@ export class Notification {
         this.message = json?.message;
         this.bookingId = json?.bookingId;
         this.read = json?.read || false;
-        this.createdAt = json?.createdAt;
+        this.createdAt = json?.createdAt || json?.sentAt;
+        this.bookingTitle = json?.bookingTitle || '';
+        this.roomName = json?.roomName || '';
+        this.organizer = json?.organizer || json?.userId || '';
+        this.organizerEmail = json?.organizerEmail || '';
         return this;
     }
 
