@@ -15,6 +15,16 @@ export interface Notification {
     organizerEmail: string;
 }
 
+export interface KeycloakUserCreateData {
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+    role: string;
+    enabled: boolean;
+}
+
 export interface NotificationParams {
     read?: boolean;
     limit?: number;
@@ -177,4 +187,5 @@ export interface AppState {
     markAdminNotificationAsUnread: (id: number) => Promise<void>;
     markAllAdminNotificationsAsRead: () => Promise<void>;
     deleteAdminNotification: (id: number) => Promise<void>;
+    createKeycloakUser: (userData: KeycloakUserCreateData) => Promise<User>;
 }

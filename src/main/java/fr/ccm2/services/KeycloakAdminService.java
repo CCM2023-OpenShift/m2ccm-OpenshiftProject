@@ -1,8 +1,7 @@
 package fr.ccm2.services;
 
+import fr.ccm2.dto.keycloak.*;
 import fr.ccm2.resources.KeycloakAdminResource;
-import fr.ccm2.dto.keycloak.KeycloakTokenResponse;
-import fr.ccm2.dto.keycloak.KeycloakUserResponse;
 import fr.ccm2.dto.user.UserDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -266,6 +265,94 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             LOGGER.severe("❌ Error fetching users from Keycloak: " + e.getMessage());
             throw new RuntimeException("Failed to fetch users from Keycloak", e);
+        }
+    }
+
+    public UserDTO createKeycloakUser(KeycloakUserCreateRequest userRequest) {
+        try {
+            LOGGER.info("👤 Creating new Keycloak user: " + userRequest.username);
+
+            String token = getValidAdminToken();
+            String authHeader = "Bearer " + token;
+
+            // 1. Créer l'objet utilisateur Keycloak
+            KeycloakUserResponse newUser = new KeycloakUserResponse();
+            newUser.username = userRequest.username;
+            newUser.email = userRequest.email;
+            newUser.firstName = userRequest.firstName;
+            newUser.lastName = userRequest.lastName;
+            newUser.enabled = userRequest.enabled;
+
+            // Nous n'envoyons pas le mot de passe dans la requête de création d'utilisateur
+            // Le mot de passe sera défini séparément
+
+            // 2. Créer l'utilisateur
+            LOGGER.info("⬆️ Sending user creation request");
+            keycloakClient.createUser(adminRealm, authHeader, newUser);
+
+            // 3. Rechercher l'utilisateur nouvellement créé pour obtenir son ID
+            LOGGER.info("🔍 Searching for created user to get ID");
+            List<KeycloakUserResponse> createdUsers = keycloakClient.searchUsers(
+                    adminRealm,
+                    authHeader,
+                    userRequest.username,
+                    1
+            );
+
+            if (createdUsers.isEmpty()) {
+                throw new RuntimeException("User was created but could not be found");
+            }
+
+            KeycloakUserResponse createdUser = createdUsers.get(0);
+            String userId = createdUser.id;
+            LOGGER.info("✓ Created user found with ID: " + userId);
+
+            // 4. Définir le mot de passe
+            LOGGER.info("🔐 Setting user password");
+            KeycloakCredentialRepresentation credential = new KeycloakCredentialRepresentation(
+                    userRequest.password,
+                    false // Si true, l'utilisateur devra changer son mot de passe à la première connexion
+            );
+            keycloakClient.resetPassword(adminRealm, userId, authHeader, credential);
+
+            // 5. Assigner le rôle si spécifié
+            if (userRequest.role != null && !userRequest.role.isEmpty()) {
+                LOGGER.info("👑 Assigning role: " + userRequest.role);
+
+                // On récupère d'abord la liste des rôles disponibles
+                List<KeycloakRoleRepresentation> availableRoles = keycloakClient.getRealmRoles(adminRealm, authHeader);
+
+                // On trouve le rôle demandé
+                KeycloakRoleRepresentation roleToAssign = availableRoles.stream()
+                        .filter(role -> role.name.equalsIgnoreCase(userRequest.role))
+                        .findFirst()
+                        .orElse(null);
+
+                if (roleToAssign != null) {
+                    // Assignation du rôle
+                    keycloakClient.assignRealmRoles(
+                            adminRealm,
+                            userId,
+                            authHeader,
+                            Collections.singletonList(roleToAssign)
+                    );
+                    LOGGER.info("✓ Role assigned successfully");
+                } else {
+                    LOGGER.warning("⚠️ Role not found: " + userRequest.role);
+                }
+            }
+
+            // 6. Récupérer l'utilisateur complet et le retourner
+            LOGGER.info("⬇️ Fetching final user data");
+            KeycloakUserResponse finalUser = keycloakClient.getUser(adminRealm, userId, authHeader);
+            LOGGER.info("✅ User created successfully: " + finalUser.username);
+
+            return mapToUserDTO(finalUser);
+
+        } catch (Exception e) {
+            LOGGER.severe("❌ Error creating Keycloak user: " + e.getMessage());
+            LOGGER.severe("Stack trace: " + java.util.Arrays.toString(e.getStackTrace()));
+            throw new RuntimeException("Failed to create Keycloak user", e);
         }
     }
 }

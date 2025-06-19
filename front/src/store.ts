@@ -777,5 +777,19 @@ export const useStore = create<AppState>((set, get) => ({
                 adminNotificationLoading: false
             });
         }
+    },
+
+    createKeycloakUser: async (userData) => {
+        try {
+            const result = await User.createKeycloakUser(userData);
+
+            // Rafraîchir la liste des utilisateurs après création
+            await get().fetchAllUsers();
+
+            return result;
+        } catch (error) {
+            console.error('Error creating Keycloak user:', error);
+            throw error;
+        }
     }
 }));

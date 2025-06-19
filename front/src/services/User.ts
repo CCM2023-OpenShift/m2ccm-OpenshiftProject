@@ -1,3 +1,4 @@
+import { KeycloakUserCreateData } from '../types';
 import ApiService from './apiService';
 
 interface UsernameValidation {
@@ -403,6 +404,21 @@ export class User {
         } catch (error) {
             console.error('Error fetching all users:', error);
             throw new Error('Impossible de récupérer la liste complète des utilisateurs');
+        }
+    }
+
+    /**
+     * Crée un nouvel utilisateur Keycloak (admin uniquement)
+     */
+    public static async createKeycloakUser(userData: KeycloakUserCreateData): Promise<User> {
+        try {
+            const response = await ApiService.post(`${User.baseEndpoint}/create`, userData);
+            return new User().fromJSON(response);
+        } catch (error) {
+            console.error('Error creating Keycloak user:', error);
+            throw new Error(error instanceof Error ?
+                `Erreur lors de la création de lutilisateur: ${error.message}` :
+                'Erreur lors de la création de lutilisateur');
         }
     }
 }
