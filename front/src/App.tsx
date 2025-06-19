@@ -16,6 +16,7 @@ import ProfilePage from "./components/ProfilePage.tsx";
 import UserManagementProfile from "./components/UserManagementProfile.tsx";
 import NotificationCenter from "./components/NotificationCenter.tsx";
 import AdminNotificationsPage from "./components/AdminNotificationsPage.tsx";
+import SwaggerPage from "./components/SwaggerPage.tsx";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -270,6 +271,14 @@ function App() {
                             element={
                                 <ProtectedRoute allowedRoles={['admin']}>
                                     <AdminNotificationsPage/>
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/documentation"
+                            element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                    <SwaggerPage/>
                                 </ProtectedRoute>
                             }
                         />
