@@ -1,5 +1,7 @@
 package fr.ccm2.resources;
 
+import fr.ccm2.dto.keycloak.KeycloakCredentialRepresentation;
+import fr.ccm2.dto.keycloak.KeycloakRoleRepresentation;
 import fr.ccm2.dto.keycloak.KeycloakTokenResponse;
 import fr.ccm2.dto.keycloak.KeycloakUserResponse;
 import jakarta.ws.rs.*;
@@ -89,5 +91,50 @@ public interface KeycloakAdminResource {
             @PathParam("userId") String userId,
             @HeaderParam("Authorization") String authorization,
             List<String> actions
+    );
+
+    /**
+     * Crée un nouvel utilisateur
+     */
+    @POST
+    @Path("/admin/realms/{realm}/users")
+    void createUser(
+            @PathParam("realm") String realm,
+            @HeaderParam("Authorization") String authorization,
+            KeycloakUserResponse userToCreate
+    );
+
+    /**
+     * Définit le mot de passe d'un utilisateur
+     */
+    @PUT
+    @Path("/admin/realms/{realm}/users/{userId}/reset-password")
+    void resetPassword(
+            @PathParam("realm") String realm,
+            @PathParam("userId") String userId,
+            @HeaderParam("Authorization") String authorization,
+            KeycloakCredentialRepresentation credential
+    );
+
+    /**
+     * Assigne des rôles à un utilisateur
+     */
+    @POST
+    @Path("/admin/realms/{realm}/users/{userId}/role-mappings/realm")
+    void assignRealmRoles(
+            @PathParam("realm") String realm,
+            @PathParam("userId") String userId,
+            @HeaderParam("Authorization") String authorization,
+            List<KeycloakRoleRepresentation> roles
+    );
+
+    /**
+     * Récupère les rôles disponibles dans le realm
+     */
+    @GET
+    @Path("/admin/realms/{realm}/roles")
+    List<KeycloakRoleRepresentation> getRealmRoles(
+            @PathParam("realm") String realm,
+            @HeaderParam("Authorization") String authorization
     );
 }

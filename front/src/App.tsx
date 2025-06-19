@@ -13,9 +13,10 @@ import {RoomFinder} from './components/RoomFinder';
 
 import {LayoutGrid, Calendar, BookOpen, Monitor, History, Users, Search, LogOut, Bell} from 'lucide-react';
 import ProfilePage from "./components/ProfilePage.tsx";
-import UserManagementPage from "./components/UserManagementProfile.tsx";
+import UserManagementProfile from "./components/UserManagementProfile.tsx";
 import NotificationCenter from "./components/NotificationCenter.tsx";
 import AdminNotificationsPage from "./components/AdminNotificationsPage.tsx";
+import SwaggerPage from "./components/SwaggerPage.tsx";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -261,7 +262,7 @@ function App() {
                             path="/admin/users"
                             element={
                                 <ProtectedRoute allowedRoles={['admin']}>
-                                    <UserManagementPage/>
+                                    <UserManagementProfile/>
                                 </ProtectedRoute>
                             }
                         />
@@ -270,6 +271,14 @@ function App() {
                             element={
                                 <ProtectedRoute allowedRoles={['admin']}>
                                     <AdminNotificationsPage/>
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/documentation"
+                            element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                    <SwaggerPage/>
                                 </ProtectedRoute>
                             }
                         />

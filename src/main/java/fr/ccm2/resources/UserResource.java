@@ -1,6 +1,8 @@
 package fr.ccm2.resources;
 
+import fr.ccm2.dto.keycloak.KeycloakUserCreateRequest;
 import fr.ccm2.dto.user.UserDTO;
+import fr.ccm2.services.KeycloakAdminService;
 import fr.ccm2.services.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -22,6 +24,9 @@ public class UserResource {
 
     @Inject
     UserService userService;
+
+    @Inject
+    KeycloakAdminService keycloakAdminService;
 
     /**
      * GET /api/users/current
@@ -209,6 +214,25 @@ public class UserResource {
             LOGGER.log(Level.SEVERE, "❌ Error fetching all users", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("{\"error\": \"Erreur lors de la récupération de tous les utilisateurs\"}")
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("/create")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin"})
+    public Response createUser(KeycloakUserCreateRequest userRequest) {
+        try {
+            UserDTO createdUser = keycloakAdminService.createKeycloakUser(userRequest);
+            return Response.status(Response.Status.CREATED)
+                    .entity(createdUser)
+                    .build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error creating user", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error creating user: " + e.getMessage())
                     .build();
         }
     }
