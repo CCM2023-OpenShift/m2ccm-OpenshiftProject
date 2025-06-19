@@ -1,9 +1,17 @@
 import {create} from 'zustand';
-import {AppState, Room, Equipment} from './types';
+import {
+    AppState,
+    Equipment,
+    Notification,
+    NotificationParams,
+    Room,
+    AdminNotification
+} from './types';
 import {Room as RoomService} from './services/Room';
 import {Equipment as EquipmentService} from './services/Equipment';
 import User from "./services/User.ts";
 import {Booking} from "./services/Booking.ts";
+import {Notification as NotificationService} from "./services/Notification.ts";
 
 export const useStore = create<AppState>((set, get) => ({
     rooms: [],
@@ -16,8 +24,15 @@ export const useStore = create<AppState>((set, get) => ({
         equipment: false,
         bookings: false,
         currentUser: false,
-        organizers: false
+        organizers: false,
+        notifications: false
     },
+    notifications: [],
+    unreadNotificationsCount: 0,
+    adminNotifications: [],
+    totalAdminNotifications: 0,
+    adminNotificationLoading: false,
+    adminNotificationError: null,
 
     fetchAllData: async () => {
         const tasks = [
@@ -40,96 +55,96 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchRooms: async () => {
         try {
-            set(state => ({loading: {...state.loading, rooms: true}}));
+            set(() => ({loading: {...get().loading, rooms: true}}));
             const data = await RoomService.getAll();
-            set(state => ({
+            set(() => ({
                 rooms: data,
-                loading: {...state.loading, rooms: false}
+                loading: {...get().loading, rooms: false}
             }));
         } catch (error) {
             console.error('Error fetching rooms:', error);
-            set(state => ({loading: {...state.loading, rooms: false}}));
+            set(() => ({loading: {...get().loading, rooms: false}}));
         }
     },
 
     fetchEquipment: async () => {
         try {
-            set(state => ({loading: {...state.loading, equipment: true}}));
+            set(() => ({loading: {...get().loading, equipment: true}}));
             const data = await EquipmentService.getAll();
-            set(state => ({
+            set(() => ({
                 equipment: data,
-                loading: {...state.loading, equipment: false}
+                loading: {...get().loading, equipment: false}
             }));
         } catch (error) {
             console.error('Error fetching equipment:', error);
-            set(state => ({loading: {...state.loading, equipment: false}}));
+            set(() => ({loading: {...get().loading, equipment: false}}));
         }
     },
 
     fetchEquipmentFixed: async () => {
         try {
-            set(state => ({loading: {...state.loading, equipment: true}}));
+            set(() => ({loading: {...get().loading, equipment: true}}));
             const allEquipment = await EquipmentService.getAll();
             const fixedEquipment = allEquipment.filter((equip: EquipmentService) => !equip.getMobile());
-            set(state => ({
+            set(() => ({
                 equipment: fixedEquipment,
-                loading: {...state.loading, equipment: false}
+                loading: {...get().loading, equipment: false}
             }));
         } catch (error) {
             console.error('Error fetching fixed equipment:', error);
-            set(state => ({loading: {...state.loading, equipment: false}}));
+            set(() => ({loading: {...get().loading, equipment: false}}));
         }
     },
 
     fetchBookings: async () => {
         try {
-            set(state => ({loading: {...state.loading, bookings: true}}));
+            set(() => ({loading: {...get().loading, bookings: true}}));
 
             const data = await Booking.getAll();
 
-            set(state => ({
+            set(() => ({
                 bookings: data || [],
-                loading: {...state.loading, bookings: false}
+                loading: {...get().loading, bookings: false}
             }));
         } catch (error) {
             console.error('Error fetching bookings:', error);
-            set(state => ({
+            set(() => ({
                 bookings: [],
-                loading: {...state.loading, bookings: false}
+                loading: {...get().loading, bookings: false}
             }));
         }
     },
 
     fetchCurrentUser: async () => {
         try {
-            set(state => ({loading: {...state.loading, currentUser: true}}));
+            set(() => ({loading: {...get().loading, currentUser: true}}));
             const currentUser = await User.getCurrent();
-            set(state => ({
+            set(() => ({
                 currentUser,
-                loading: {...state.loading, currentUser: false}
+                loading: {...get().loading, currentUser: false}
             }));
         } catch (error) {
             console.error('Store: Error fetching current user:', error);
-            set(state => ({
+            set(() => ({
                 currentUser: null,
-                loading: {...state.loading, currentUser: false}
+                loading: {...get().loading, currentUser: false}
             }));
         }
     },
 
     fetchBookingOrganizers: async () => {
         try {
-            set(state => ({loading: {...state.loading, organizers: true}}));
+            set(() => ({loading: {...get().loading, organizers: true}}));
             const organizers = await User.getBookingOrganizers();
-            set(state => ({
+            set(() => ({
                 availableOrganizers: organizers,
-                loading: {...state.loading, organizers: false}
+                loading: {...get().loading, organizers: false}
             }));
         } catch (error) {
             console.error('Store: Error fetching booking organizers:', error);
-            set(state => ({
+            set(() => ({
                 availableOrganizers: [],
-                loading: {...state.loading, organizers: false}
+                loading: {...get().loading, organizers: false}
             }));
         }
     },
@@ -347,13 +362,13 @@ export const useStore = create<AppState>((set, get) => ({
     // Récupération des équipements disponibles pour une période
     getAvailableEquipments: async (startTime: string, endTime: string) => {
         try {
-            set(state => ({loading: {...state.loading, equipment: true}}));
+            set(() => ({loading: {...get().loading, equipment: true}}));
             const data = await Booking.getAvailableEquipments(startTime, endTime);
-            set(state => ({loading: {...state.loading, equipment: false}}));
+            set(() => ({loading: {...get().loading, equipment: false}}));
             return data;
         } catch (error) {
             console.error('Error fetching available equipment:', error);
-            set(state => ({loading: {...state.loading, equipment: false}}));
+            set(() => ({loading: {...get().loading, equipment: false}}));
             throw error;
         }
     },
@@ -366,7 +381,7 @@ export const useStore = create<AppState>((set, get) => ({
             const createdBooking = await booking.create();
 
             // Mettre à jour la liste des réservations dans le store
-            set(state => ({
+            set((state) => ({
                 bookings: [...state.bookings, createdBooking]
             }));
 
@@ -383,7 +398,7 @@ export const useStore = create<AppState>((set, get) => ({
             const updatedBooking = await booking.update();
 
             // Mettre à jour la liste des réservations dans le store
-            set(state => ({
+            set((state) => ({
                 bookings: state.bookings.map(b =>
                     b.id === updatedBooking.id ? updatedBooking : b
                 )
@@ -398,16 +413,16 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchAllUsers: async () => {
         try {
-            set(state => ({loading: {...state.loading, organizers: true}}));
+            set(() => ({loading: {...get().loading, organizers: true}}));
             const users = await User.getAllUsers();
-            set(state => ({
+            set(() => ({
                 availableOrganizers: users, // Réutilisation du même champ pour stocker tous les utilisateurs
-                loading: {...state.loading, organizers: false}
+                loading: {...get().loading, organizers: false}
             }));
             return users;
         } catch (error) {
             console.error('Error fetching all users:', error);
-            set(state => ({loading: {...state.loading, organizers: false}}));
+            set(() => ({loading: {...get().loading, organizers: false}}));
             throw error;
         }
     },
@@ -417,7 +432,7 @@ export const useStore = create<AppState>((set, get) => ({
             const updatedUser = await User.updateUserStatus(userId, status);
 
             // Mettre à jour la liste des organisateurs si l'utilisateur existe dans la liste
-            set(state => ({
+            set((state) => ({
                 availableOrganizers: state.availableOrganizers.map(user =>
                     user.getId() === userId ? updatedUser : user
                 )
@@ -436,6 +451,331 @@ export const useStore = create<AppState>((set, get) => ({
         } catch (error) {
             console.error('Error sending password reset email:', error);
             throw error;
+        }
+    },
+
+    fetchNotifications: async () => {
+        try {
+            set({loading: {...get().loading, notifications: true}});
+            const serviceNotifications = await NotificationService.getAll();
+
+            // Mapping explicite pour le type Notification du store
+            const notifications: Notification[] = serviceNotifications.map((n: any) => ({
+                id: n.id,
+                userId: n.userId,
+                type: n.type,
+                title: n.title,
+                message: n.message,
+                bookingId: n.bookingId,
+                read: !!n.read,
+                createdAt: n.createdAt || n.sentAt || '',
+                bookingTitle: n.bookingTitle || '',
+                roomName: n.roomName || '',
+                organizer: n.organizer || n.userId || '',
+                organizerEmail: n.organizerEmail || ''
+            }));
+
+            const unreadCount = notifications.filter(n => !n.read).length;
+
+            set({
+                notifications,
+                unreadNotificationsCount: unreadCount,
+                loading: {...get().loading, notifications: false}
+            });
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            set({loading: {...get().loading, notifications: false}});
+        }
+    },
+
+    markNotificationAsRead: async (notificationId: string) => {
+        try {
+            await NotificationService.markAsRead(notificationId);
+            set((state) => ({
+                notifications: state.notifications.map(notification =>
+                    notification.id === notificationId
+                        ? {...notification, read: true}
+                        : notification
+                ),
+                unreadNotificationsCount: Math.max(state.unreadNotificationsCount - 1, 0)
+            }));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    },
+
+    markAllNotificationsAsRead: async () => {
+        try {
+            await NotificationService.markAllAsRead();
+            set((state) => ({
+                notifications: state.notifications.map(notification => ({...notification, read: true})),
+                unreadNotificationsCount: 0
+            }));
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    },
+
+    dismissNotification: async (notificationId: string) => {
+        try {
+            await NotificationService.delete(notificationId);
+            set((state) => {
+                const notification = state.notifications.find(n => n.id === notificationId);
+                const wasUnread = notification && !notification.read;
+
+                return {
+                    notifications: state.notifications.filter(n => n.id !== notificationId),
+                    unreadNotificationsCount: wasUnread
+                        ? Math.max(state.unreadNotificationsCount - 1, 0)
+                        : state.unreadNotificationsCount
+                };
+            });
+        } catch (error) {
+            console.error('Error dismissing notification:', error);
+        }
+    },
+
+    // Nouvelles méthodes de notifications
+    fetchUnreadNotificationsCount: async () => {
+        try {
+            const count = await NotificationService.getUnreadCount();
+            set(() => ({unreadNotificationsCount: count}));
+            return count;
+        } catch (error) {
+            console.error('Error fetching unread notifications count:', error);
+            // Si erreur, on retourne le compteur actuel
+            return get().unreadNotificationsCount;
+        }
+    },
+
+    fetchNotificationsWithParams: async (params: NotificationParams) => {
+        try {
+            set({loading: {...get().loading, notifications: true}});
+            const result = await NotificationService.getAllWithParams(params);
+
+            // Mapping explicite vers le type Notification
+            const notifications: Notification[] = (result.notifications || []).map((n: any) => ({
+                id: n.id,
+                userId: n.userId,
+                type: n.type,
+                title: n.title,
+                message: n.message,
+                bookingId: n.bookingId,
+                read: !!n.read,
+                createdAt: n.createdAt || n.sentAt || '',
+                bookingTitle: n.bookingTitle || '',
+                roomName: n.roomName || '',
+                organizer: n.organizer || n.userId || '',
+                organizerEmail: n.organizerEmail || ''
+            }));
+
+            // Mets à jour le store si première page
+            if (params.offset === 0 || params.offset === undefined) {
+                set({
+                    notifications,
+                    unreadNotificationsCount: notifications.filter(n => !n.read).length,
+                });
+            }
+            set({loading: {...get().loading, notifications: false}});
+            // Toujours retourner le bon type, pas la structure brute du backend
+            return {
+                notifications,
+                total: result.total || notifications.length,
+                limit: result.limit || params.limit || 50,
+                offset: result.offset || params.offset || 0
+            };
+        } catch (error) {
+            console.error('Error fetching notifications with params:', error);
+            set({loading: {...get().loading, notifications: false}});
+            // Toujours retourner la structure typée attendue, même en cas d'erreur
+            return {
+                notifications: get().notifications,
+                total: get().notifications.length,
+                limit: params.limit || 50,
+                offset: params.offset || 0
+            };
+        }
+    },
+
+    markNotificationAsUnread: async (notificationId: string) => {
+        try {
+            await NotificationService.markAsUnread(notificationId);
+            set((state) => ({
+                notifications: state.notifications.map(notification =>
+                    notification.id === notificationId
+                        ? {...notification, read: false}
+                        : notification
+                ),
+                unreadNotificationsCount: state.unreadNotificationsCount + 1
+            }));
+        } catch (error) {
+            console.error('Error marking notification as unread:', error);
+        }
+    },
+
+    fetchNotificationTypes: async () => {
+        try {
+            return await NotificationService.getNotificationTypes();
+        } catch (error) {
+            console.error('Error fetching notification types:', error);
+            return [];
+        }
+    },
+
+    fetchAdminNotifications: async (page = 1, limit = 10, type = '', organizer = '') => {
+        set({adminNotificationLoading: true, adminNotificationError: null});
+        try {
+            const offset = (page - 1) * limit;
+
+            const result = await NotificationService.getAllForAdmin({
+                offset,
+                limit,
+                type: type || undefined,
+                organizer: organizer || undefined
+            });
+
+            const adminNotifications: AdminNotification[] = result.notifications.map(notification => {
+                // Utilise tous les champs possibles du backend
+                const adminNotif: AdminNotification = {
+                    id: parseInt(notification.id),
+                    title: notification.title,
+                    message: notification.message,
+                    read: Boolean(notification.read),
+                    deleted: false,
+                    notificationType: notification.type,
+                    bookingId: notification.bookingId ? parseInt(notification.bookingId) : 0,
+                    bookingTitle: notification.bookingTitle || '',
+                    roomName: notification.roomName || '',
+                    organizer: notification.organizer || notification.userId || '',
+                    organizerEmail: notification.organizerEmail || '',
+                    sentAt: notification.createdAt
+                };
+
+                // Extraction fallback si nécessaire depuis le message
+                if ((!adminNotif.roomName || !adminNotif.bookingTitle) && notification.message) {
+                    const roomMatch = notification.message.match(/salle\s+([A-Z][0-9]{1,3})/i);
+                    if (!adminNotif.roomName && roomMatch && roomMatch[1]) {
+                        adminNotif.roomName = roomMatch[1];
+                    }
+                    const titleMatch = notification.message.match(/"([^"]+)"/);
+                    if (!adminNotif.bookingTitle && titleMatch && titleMatch[1]) {
+                        adminNotif.bookingTitle = titleMatch[1];
+                    } else if (!adminNotif.bookingTitle && notification.bookingId) {
+                        adminNotif.bookingTitle = `Réservation #${notification.bookingId}`;
+                    }
+                }
+
+                return adminNotif;
+            });
+
+            set({
+                adminNotifications,
+                totalAdminNotifications: result.total,
+                adminNotificationLoading: false
+            });
+        } catch (error) {
+            console.error('Error fetching admin notifications:', error);
+            set({
+                adminNotificationError: 'Échec du chargement des notifications',
+                adminNotificationLoading: false,
+                adminNotifications: []
+            });
+        }
+    },
+
+    createAdminNotification: async (data) => {
+        set({adminNotificationLoading: true, adminNotificationError: null});
+        try {
+            const result = await NotificationService.createManualNotification(data);
+            await get().fetchAdminNotifications();
+            set({adminNotificationLoading: false});
+            return result;
+        } catch (error) {
+            console.error('Error creating notification:', error);
+            set({
+                adminNotificationError: 'Échec de la création de la notification',
+                adminNotificationLoading: false
+            });
+            throw error;
+        }
+    },
+
+    updateAdminNotification: async (id, data) => {
+        set({adminNotificationLoading: true, adminNotificationError: null});
+        try {
+            const result = await NotificationService.updateNotification(id.toString(), data);
+            await get().fetchAdminNotifications();
+            set({adminNotificationLoading: false});
+            return result;
+        } catch (error) {
+            console.error('Error updating notification:', error);
+            set({
+                adminNotificationError: 'Échec de la mise à jour de la notification',
+                adminNotificationLoading: false
+            });
+        }
+    },
+
+    markAdminNotificationAsRead: async (id) => {
+        try {
+            await NotificationService.markAsRead(id.toString());
+            set(state => ({
+                adminNotifications: state.adminNotifications.map(n =>
+                    n.id === id ? {...n, read: true} : n
+                )
+            }));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            set({adminNotificationError: 'Échec de la mise à jour du statut de la notification'});
+        }
+    },
+
+    markAdminNotificationAsUnread: async (id) => {
+        try {
+            await NotificationService.markAsUnread(id.toString());
+            set(state => ({
+                adminNotifications: state.adminNotifications.map(n =>
+                    n.id === id ? {...n, read: false} : n
+                )
+            }));
+        } catch (error) {
+            console.error('Error marking notification as unread:', error);
+            set({adminNotificationError: 'Échec de la mise à jour du statut de la notification'});
+        }
+    },
+
+    markAllAdminNotificationsAsRead: async () => {
+        set({adminNotificationLoading: true, adminNotificationError: null});
+        try {
+            await NotificationService.markAllAsReadAdmin();
+            set(state => ({
+                adminNotifications: state.adminNotifications.map(n => ({...n, read: true})),
+                adminNotificationLoading: false
+            }));
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            set({
+                adminNotificationError: 'Échec de la mise à jour des statuts de notification',
+                adminNotificationLoading: false
+            });
+        }
+    },
+
+    deleteAdminNotification: async (id) => {
+        set({adminNotificationLoading: true, adminNotificationError: null});
+        try {
+            await NotificationService.deleteAdmin(id.toString());
+            set(state => ({
+                adminNotifications: state.adminNotifications.filter(n => n.id !== id),
+                totalAdminNotifications: state.totalAdminNotifications - 1,
+                adminNotificationLoading: false
+            }));
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            set({
+                adminNotificationError: 'Échec de la suppression de la notification',
+                adminNotificationLoading: false
+            });
         }
     }
 }));

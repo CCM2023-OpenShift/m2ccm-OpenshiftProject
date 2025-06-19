@@ -11,9 +11,11 @@ import {BookingCalendar} from './components/BookingCalendar';
 import {NotAuthorized} from './components/NotAuthorized';
 import {RoomFinder} from './components/RoomFinder';
 
-import {LayoutGrid, Calendar, BookOpen, Monitor, History, Users, Search, LogOut} from 'lucide-react';
+import {LayoutGrid, Calendar, BookOpen, Monitor, History, Users, Search, LogOut, Bell} from 'lucide-react';
 import ProfilePage from "./components/ProfilePage.tsx";
 import UserManagementPage from "./components/UserManagementProfile.tsx";
+import NotificationCenter from "./components/NotificationCenter.tsx";
+import AdminNotificationsPage from "./components/AdminNotificationsPage.tsx";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -85,6 +87,7 @@ function Sidebar() {
             <div className="flex items-center justify-between p-4 border-b">
                 <h1 className="text-2xl font-bold text-gray-800">Réservation</h1>
                 <div className="flex items-center">
+                    <NotificationCenter/>
                     <div className="relative ml-4">
                         <button
                             onClick={() => setShowUserMenu(!showUserMenu)}
@@ -163,17 +166,22 @@ function Sidebar() {
                             <Link to="/admin/users"
                                   className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                                 <Users className="w-5 h-5 mr-3"/>
-                                Gestion utilisateurs
+                                Gestion Utilisateurs
                             </Link>
                             <Link to="/rooms"
                                   className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                                 <BookOpen className="w-5 h-5 mr-3"/>
-                                Salles
+                                Gestion Salles
                             </Link>
                             <Link to="/equipment"
                                   className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                                 <Monitor className="w-5 h-5 mr-3"/>
-                                Équipements
+                                Gestion Équipements
+                            </Link>
+                            <Link to="/admin/notifications"
+                                  className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                                <Bell className="w-5 h-5 mr-3"/>
+                                Gestion Notifications
                             </Link>
                         </div>
                     </div>
@@ -254,6 +262,14 @@ function App() {
                             element={
                                 <ProtectedRoute allowedRoles={['admin']}>
                                     <UserManagementPage/>
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/notifications"
+                            element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                    <AdminNotificationsPage/>
                                 </ProtectedRoute>
                             }
                         />

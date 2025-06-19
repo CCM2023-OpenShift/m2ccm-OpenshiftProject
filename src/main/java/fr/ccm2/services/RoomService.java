@@ -31,6 +31,11 @@ public class RoomService {
         Room room = new Room();
         room.setName(dto.name);
         room.setCapacity(dto.capacity);
+
+        room.setBuilding(dto.building);
+        room.setFloor(dto.floor);
+        room.setType(dto.type);
+
         room.setImageUrl(dto.imageUrl);
 
         em.persist(room);
@@ -60,6 +65,11 @@ public class RoomService {
 
         room.setName(dto.name);
         room.setCapacity(dto.capacity);
+
+        room.setBuilding(dto.building);
+        room.setFloor(dto.floor);
+        room.setType(dto.type);
+
         if (dto.imageUrl != null) {
             room.setImageUrl(dto.imageUrl);
         }

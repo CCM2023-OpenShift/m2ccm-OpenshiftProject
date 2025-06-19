@@ -16,6 +16,11 @@ public class RoomMapper {
         dto.capacity = room.getCapacity();
         dto.imageUrl = room.getImageUrl();
 
+        // Ajouter les nouveaux champs
+        dto.building = room.getBuilding();
+        dto.floor = room.getFloor();
+        dto.type = room.getType();
+
         // Ajouter les équipements de la salle (en évitant une boucle infinie)
         if (includeEquipments && room.getRoomEquipments() != null) {
             dto.roomEquipments = room.getRoomEquipments().stream()

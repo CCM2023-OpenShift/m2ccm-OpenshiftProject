@@ -15,6 +15,10 @@ public class Room {
     private String name;
     private Integer capacity;
 
+    private String building;
+    private String floor;
+    private String type;
+
     @Column(name = "image_url")
     private String imageUrl;
 
@@ -32,6 +36,12 @@ public class Room {
     public void setName(String name) { this.name = name; }
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
+    public String getBuilding() { return building; }
+    public void setBuilding(String building) { this.building = building; }
+    public String getFloor() { return floor; }
+    public void setFloor(String floor) { this.floor = floor; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public List<Booking> getBookings() { return bookings; }

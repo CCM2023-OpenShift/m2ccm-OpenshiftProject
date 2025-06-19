@@ -11,7 +11,10 @@ import {
     Image as ImageIcon,
     Search,
     Filter,
-    SlidersHorizontal
+    SlidersHorizontal,
+    Building,
+    LayoutGrid,
+    FileText
 } from 'lucide-react';
 import {Room} from '../types';
 import {useImageValidation} from '../hooks/useImageValidation';
@@ -20,10 +23,13 @@ interface RoomFilters {
     search: string;
     minCapacity: number;
     maxCapacity: number;
+    building: string;
+    floor: string;
+    type: string;
     hasImage: 'all' | 'with' | 'without';
     hasEquipment: 'all' | 'with' | 'without';
     equipmentName: string;
-    sortBy: 'name' | 'capacity' | 'equipment-count';
+    sortBy: 'name' | 'capacity' | 'equipment-count' | 'building' | 'floor' | 'type';
     sortOrder: 'asc' | 'desc';
 }
 
@@ -49,6 +55,9 @@ export const RoomList = () => {
         search: '',
         minCapacity: 0,
         maxCapacity: 1000,
+        building: '',
+        floor: '',
+        type: '',
         hasImage: 'all',
         hasEquipment: 'all',
         equipmentName: '',
@@ -59,6 +68,9 @@ export const RoomList = () => {
     const [formData, setFormData] = useState({
         name: '',
         capacity: '',
+        building: '',
+        floor: '',
+        type: '',
         roomEquipments: [] as { equipmentId: string; quantity: number }[],
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -78,6 +90,31 @@ export const RoomList = () => {
         void fetchEquipmentFixed();
     }, [fetchRooms, fetchEquipmentFixed]);
 
+    // Récupérer les valeurs uniques des bâtiments, étages et types
+    const uniqueBuildings = useMemo(() => {
+        const buildings = new Set<string>();
+        rooms.forEach(room => {
+            if (room.building) buildings.add(room.building);
+        });
+        return Array.from(buildings).sort();
+    }, [rooms]);
+
+    const uniqueFloors = useMemo(() => {
+        const floors = new Set<string>();
+        rooms.forEach(room => {
+            if (room.floor) floors.add(room.floor);
+        });
+        return Array.from(floors).sort();
+    }, [rooms]);
+
+    const uniqueTypes = useMemo(() => {
+        const types = new Set<string>();
+        rooms.forEach(room => {
+            if (room.type) types.add(room.type);
+        });
+        return Array.from(types).sort();
+    }, [rooms]);
+
     // Logique de filtrage et tri
     const filteredAndSortedRooms = useMemo(() => {
         let filtered = rooms.filter((room: Room) => {
@@ -87,6 +124,18 @@ export const RoomList = () => {
             // Filtre par capacité
             const capacityMatch = room.capacity >= filters.minCapacity &&
                 room.capacity <= filters.maxCapacity;
+
+            // Filtre par bâtiment
+            const buildingMatch = !filters.building ||
+                (room.building && room.building.toLowerCase() === filters.building.toLowerCase());
+
+            // Filtre par étage
+            const floorMatch = !filters.floor ||
+                (room.floor && room.floor.toLowerCase() === filters.floor.toLowerCase());
+
+            // Filtre par type
+            const typeMatch = !filters.type ||
+                (room.type && room.type.toLowerCase() === filters.type.toLowerCase());
 
             // Filtre par image
             const imageMatch = filters.hasImage === 'all' ||
@@ -108,7 +157,7 @@ export const RoomList = () => {
                 }) ?? false;
             }
 
-            return searchMatch && capacityMatch && imageMatch && equipmentMatch && equipmentNameMatch;
+            return searchMatch && capacityMatch && buildingMatch && floorMatch && typeMatch && imageMatch && equipmentMatch && equipmentNameMatch;
         });
 
         // Tri
@@ -129,6 +178,18 @@ export const RoomList = () => {
                     aValue = Array.isArray(a.roomEquipments) ? a.roomEquipments.length : 0;
                     bValue = Array.isArray(b.roomEquipments) ? b.roomEquipments.length : 0;
                     break;
+                case 'building':
+                    aValue = (a.building || '').toLowerCase();
+                    bValue = (b.building || '').toLowerCase();
+                    break;
+                case 'floor':
+                    aValue = (a.floor || '').toLowerCase();
+                    bValue = (b.floor || '').toLowerCase();
+                    break;
+                case 'type':
+                    aValue = (a.type || '').toLowerCase();
+                    bValue = (b.type || '').toLowerCase();
+                    break;
                 default:
                     return 0;
             }
@@ -147,6 +208,9 @@ export const RoomList = () => {
             search: '',
             minCapacity: 0,
             maxCapacity: 1000,
+            building: '',
+            floor: '',
+            type: '',
             hasImage: 'all',
             hasEquipment: 'all',
             equipmentName: '',
@@ -163,6 +227,7 @@ export const RoomList = () => {
         const totalCapacity = rooms.reduce((sum: number, r: Room) => sum + r.capacity, 0);
         const avgCapacity = total > 0 ? Math.round(totalCapacity / total) : 0;
         const maxCapacity = total > 0 ? Math.max(...rooms.map((r: Room) => r.capacity)) : 0;
+        const buildingsCount = new Set(rooms.filter(r => r.building).map(r => r.building)).size;
 
         return {
             total,
@@ -170,7 +235,8 @@ export const RoomList = () => {
             withEquipment,
             totalCapacity,
             avgCapacity,
-            maxCapacity
+            maxCapacity,
+            buildingsCount
         };
     }, [rooms]);
 
@@ -220,6 +286,9 @@ export const RoomList = () => {
         const roomData = {
             name: formData.name,
             capacity: Number(formData.capacity),
+            building: formData.building,
+            floor: formData.floor,
+            type: formData.type,
             roomEquipments: formData.roomEquipments.map((re) => ({
                 id: '',
                 quantity: re.quantity,
@@ -257,7 +326,7 @@ export const RoomList = () => {
 
             setIsModalOpen(false);
             setEditingRoom(null);
-            setFormData({name: '', capacity: '', roomEquipments: []});
+            setFormData({name: '', capacity: '', building: '', floor: '', type: '', roomEquipments: []});
             setImageFile(null);
             setImagePreview(null);
         } catch (error) {
@@ -271,6 +340,9 @@ export const RoomList = () => {
         setFormData({
             name: room.name,
             capacity: room.capacity.toString(),
+            building: room.building || '',
+            floor: room.floor || '',
+            type: room.type || '',
             roomEquipments: room.roomEquipments.map((re) => ({
                 equipmentId: re.equipmentId,
                 quantity: re.quantity,
@@ -306,10 +378,11 @@ export const RoomList = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-3xl font-bold">Gestion des salles</h1>
-                    <div className="flex space-x-6 mt-2 text-sm text-gray-600">
+                    <div className="flex flex-wrap space-x-4 mt-2 text-sm text-gray-600">
                         <span>Total: <strong>{stats.total}</strong></span>
                         <span>Avec images: <strong>{stats.withImages}</strong></span>
                         <span>Avec équipements: <strong>{stats.withEquipment}</strong></span>
+                        <span>Bâtiments: <strong>{stats.buildingsCount}</strong></span>
                         <span>Capacité totale: <strong>{stats.totalCapacity}</strong></span>
                         <span>Capacité max: <strong>{stats.maxCapacity}</strong></span>
                         <span>Capacité moy: <strong>{stats.avgCapacity}</strong></span>
@@ -318,7 +391,7 @@ export const RoomList = () => {
                 <button
                     onClick={() => {
                         setEditingRoom(null);
-                        setFormData({name: '', capacity: '', roomEquipments: []});
+                        setFormData({name: '', capacity: '', building: '', floor: '', type: '', roomEquipments: []});
                         setImageFile(null);
                         setImagePreview(null);
                         setIsModalOpen(true);
@@ -392,6 +465,51 @@ export const RoomList = () => {
                             />
                         </div>
 
+                        {/* Bâtiment */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Bâtiment</label>
+                            <select
+                                value={filters.building}
+                                onChange={(e) => setFilters({...filters, building: e.target.value})}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Tous</option>
+                                {uniqueBuildings.map(building => (
+                                    <option key={building} value={building}>{building}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Étage */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Étage</label>
+                            <select
+                                value={filters.floor}
+                                onChange={(e) => setFilters({...filters, floor: e.target.value})}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Tous</option>
+                                {uniqueFloors.map(floor => (
+                                    <option key={floor} value={floor}>{floor}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Type */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                            <select
+                                value={filters.type}
+                                onChange={(e) => setFilters({...filters, type: e.target.value})}
+                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Tous</option>
+                                {uniqueTypes.map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         {/* Images */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
@@ -443,6 +561,9 @@ export const RoomList = () => {
                             >
                                 <option value="name">Nom</option>
                                 <option value="capacity">Capacité</option>
+                                <option value="building">Bâtiment</option>
+                                <option value="floor">Étage</option>
+                                <option value="type">Type</option>
                                 <option value="equipment-count">Nb équipements</option>
                             </select>
                         </div>
@@ -541,6 +662,28 @@ export const RoomList = () => {
                                 <span>Capacité: {room.capacity} personnes</span>
                             </div>
 
+                            {/* Nouveaux champs */}
+                            {room.building && (
+                                <div className="flex items-center mb-2">
+                                    <Building className="w-5 h-5 text-gray-500 mr-2"/>
+                                    <span>Bâtiment: {room.building}</span>
+                                </div>
+                            )}
+
+                            {room.floor && (
+                                <div className="flex items-center mb-2">
+                                    <LayoutGrid className="w-5 h-5 text-gray-500 mr-2"/>
+                                    <span>Étage: {room.floor}</span>
+                                </div>
+                            )}
+
+                            {room.type && (
+                                <div className="flex items-center mb-4">
+                                    <FileText className="w-5 h-5 text-gray-500 mr-2"/>
+                                    <span>Type: {room.type}</span>
+                                </div>
+                            )}
+
                             <div className="mb-4">
                                 <h3 className="font-semibold mb-2">Équipements:</h3>
                                 {Array.isArray(room.roomEquipments) && room.roomEquipments.length > 0 ? (
@@ -569,14 +712,19 @@ export const RoomList = () => {
                                         📷 Image
                                     </span>
                                 )}
-                                {Array.isArray(room.roomEquipments) && room.roomEquipments.length > 0 && (
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                        🔧 {room.roomEquipments.length} équipement(s)
+                                {room.building && (
+                                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                                        🏢 {room.building}
                                     </span>
                                 )}
-                                {room.capacity >= 50 && (
-                                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                                        👥 Grande salle
+                                {room.type && (
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                        📋 {room.type}
+                                    </span>
+                                )}
+                                {Array.isArray(room.roomEquipments) && room.roomEquipments.length > 0 && (
+                                    <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
+                                        🔧 {room.roomEquipments.length} équipement(s)
                                     </span>
                                 )}
                             </div>
@@ -600,7 +748,7 @@ export const RoomList = () => {
                 </div>
             )}
 
-            {/* Modal (reste identique à ton code original) */}
+            {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -642,6 +790,64 @@ export const RoomList = () => {
                                     required
                                     min="0"
                                 />
+                            </div>
+
+                            {/* Nouveaux champs */}
+                            <div className="mb-4">
+                                <label className="block text-gray-700 font-semibold mb-2">
+                                    Bâtiment
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.building}
+                                    onChange={(e) => setFormData({...formData, building: e.target.value})}
+                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: Bloc A"
+                                    list="buildings-list"
+                                />
+                                <datalist id="buildings-list">
+                                    {uniqueBuildings.map(building => (
+                                        <option key={building} value={building}/>
+                                    ))}
+                                </datalist>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700 font-semibold mb-2">
+                                    Étage
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.floor}
+                                    onChange={(e) => setFormData({...formData, floor: e.target.value})}
+                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: RDC, 1er, 2ème"
+                                    list="floors-list"
+                                />
+                                <datalist id="floors-list">
+                                    {uniqueFloors.map(floor => (
+                                        <option key={floor} value={floor}/>
+                                    ))}
+                                </datalist>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700 font-semibold mb-2">
+                                    Type
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.type}
+                                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: Salle de cours, Laboratoire, Amphithéâtre"
+                                    list="types-list"
+                                />
+                                <datalist id="types-list">
+                                    {uniqueTypes.map(type => (
+                                        <option key={type} value={type}/>
+                                    ))}
+                                </datalist>
                             </div>
 
                             {/* Section Image */}
